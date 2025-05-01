@@ -39,6 +39,20 @@ final class DdevImplTest extends BasePlatformTestCase {
     }
 
     @Test
+    void headVersion() throws CommandFailedException {
+        final Version expected = new Version("v1.24.4-36-ge74e3a95f");
+        final ProcessOutput processOutput = new ProcessOutput("ddev version v1.24.4-36-ge74e3a95f", "", 0, false, false);
+
+        final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+        mockProcessExecutor.addProcessOutput("ddev --version", processOutput);
+
+        Version actual = new DdevImpl().version("ddev", getProject());
+        Assertions.assertEquals(expected, actual);
+        Assertions.assertTrue(actual.isHeadVersion());
+        Assertions.assertEquals("36-ge74e3a95f", actual.getBuildInfo());
+    }
+
+    @Test
     void detailedVersions() throws CommandFailedException, IOException {
         Versions expected = new Versions("v1.19.0", "20.10.12", "v2.2.2", "docker-desktop");
 
