@@ -12,6 +12,10 @@
         <ddevConfigArgumentProvider implementation="de.php_perfect.intellij.ddev.php.PhpVersionArgumentProvider"/>
     </extensions>
 
+    <extensions defaultExtensionNs="com.jetbrains.php">
+        <composer.execProvider implementation="de.php_perfect.intellij.ddev.php.composer.DdevComposerExecutionProvider"/>
+    </extensions>
+
     <projectListeners>
         <listener class="de.php_perfect.intellij.ddev.php.server.ConfigureServerListener"
                   topic="de.php_perfect.intellij.ddev.DescriptionChangedListener"/>
