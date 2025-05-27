@@ -15,6 +15,7 @@ import de.php_perfect.intellij.ddev.dockerCompose.DockerComposeConfig;
 import de.php_perfect.intellij.ddev.dockerCompose.DockerComposeCredentialProvider;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.List;
 
 public final class NodeInterpreterProviderImpl implements NodeInterpreterProvider {
@@ -26,20 +27,66 @@ public final class NodeInterpreterProviderImpl implements NodeInterpreterProvide
         this.project = project;
     }
 
+    /**
+     * Configures a Node.js interpreter for the DDEV environment.
+     * If an interpreter with matching compose file already exists, it will be reused.
+     * Otherwise, a new interpreter will be created and configured.
+     *
+     * @param nodeInterpreterConfig Configuration for the Node.js interpreter
+     */
     public void configureNodeInterpreter(final @NotNull NodeInterpreterConfig nodeInterpreterConfig) {
         final NodeRemoteInterpreters nodeRemoteInterpreters = NodeRemoteInterpreters.getInstance();
+        final Collection<NodeJSRemoteSdkAdditionalData> interpreters = nodeRemoteInterpreters.getInterpreters();
+        final String normalizedTargetPath = normalizePath(nodeInterpreterConfig.composeFilePath());
 
-        if (!nodeRemoteInterpreters.getInterpreters().isEmpty()) {
+        // Check if we already have a matching remote interpreter set up
+        if (!interpreters.isEmpty() && isInterpreterAlreadyConfigured(interpreters, normalizedTargetPath)) {
+            LOG.debug("Found existing nodejs interpreter");
             return;
         }
 
+        // Create and configure a new interpreter
         LOG.debug("Creating nodejs interpreter");
 
-        final DockerComposeCredentialsHolder credentials = DockerComposeCredentialProvider.getInstance().getDdevDockerComposeCredentials(new DockerComposeConfig(List.of(nodeInterpreterConfig.composeFilePath()), nodeInterpreterConfig.name()));
-        final NodeJSRemoteSdkAdditionalData sdkData = this.buildNodeJSRemoteSdkAdditionalData(credentials, nodeInterpreterConfig.binaryPath());
-        nodeRemoteInterpreters.add(sdkData);
+        // Create credentials for Docker Compose
+        final DockerComposeCredentialsHolder credentials = DockerComposeCredentialProvider.getInstance()
+            .getDdevDockerComposeCredentials(
+                new DockerComposeConfig(List.of(nodeInterpreterConfig.composeFilePath()), nodeInterpreterConfig.name())
+            );
 
-        NodeJsInterpreterManager.getInstance(this.project).setInterpreterRef(NodeJsInterpreterRef.create(sdkData.getSdkId()));
+        // Build and configure the SDK data
+        final NodeJSRemoteSdkAdditionalData sdkData = buildNodeJSRemoteSdkAdditionalData(
+            credentials, nodeInterpreterConfig.binaryPath()
+        );
+
+        // Register the new interpreter
+        nodeRemoteInterpreters.add(sdkData);
+        NodeJsInterpreterManager.getInstance(this.project)
+            .setInterpreterRef(NodeJsInterpreterRef.create(sdkData.getSdkId()));
+    }
+
+    /**
+     * @param interpreters Collection of existing interpreters
+     * @param normalizedTargetPath Normalized path to match against
+     * @return true if a matching interpreter exists, false otherwise
+     */
+    private boolean isInterpreterAlreadyConfigured(Collection<NodeJSRemoteSdkAdditionalData> interpreters, String normalizedTargetPath) {
+        for (NodeJSRemoteSdkAdditionalData interpreter : interpreters) {
+            Object credentialsObj = interpreter.connectionCredentials().getCredentials();
+
+            if (credentialsObj instanceof DockerComposeCredentialsHolder credentials &&
+                credentials.getComposeFilePaths() != null) {
+
+                for (String composeFilePath : credentials.getComposeFilePaths()) {
+                    String normalizedExistingPath = normalizePath(composeFilePath);
+                    if (normalizedExistingPath.contains(normalizedTargetPath)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     private @NotNull NodeJSRemoteSdkAdditionalData buildNodeJSRemoteSdkAdditionalData(DockerComposeCredentialsHolder credentials, @NotNull String binaryPath) {
@@ -59,5 +106,20 @@ public final class NodeInterpreterProviderImpl implements NodeInterpreterProvide
         } catch (ExecutionException e) {
             return null;
         }
+    }
+
+    /**
+     * Normalizes a file path by replacing backslashes with forward slashes
+     * and ensuring consistent path separators for comparison.
+     *
+     * @param path The path to normalize
+     * @return The normalized path
+     */
+    private String normalizePath(String path) {
+        if (path == null) {
+            return "";
+        }
+        // Replace backslashes with forward slashes for consistent comparison
+        return path.replace('\\', '/');
     }
 }
