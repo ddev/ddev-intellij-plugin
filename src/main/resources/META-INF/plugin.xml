@@ -22,15 +22,18 @@
 
     <idea-version since-build="232.8660.185" until-build="241.*"/>
     <depends>com.intellij.modules.platform</depends>
+    <!-- Required dependencies -->
+    <depends>intellij.platform.ijent.impl</depends> <!-- Remote Execution Agent -->
+    <depends config-file="DdevIntegration-withDocker.xml">Docker</depends>
+
+    <!-- Optional dependencies -->
     <depends config-file="DdevIntegration-withTerminal.xml" optional="true">org.jetbrains.plugins.terminal</depends>
     <depends config-file="DdevIntegration-withDatabase.xml" optional="true">com.intellij.database</depends>
-    <depends config-file="DdevIntegration-withDocker.xml" optional="true">org.jetbrains.plugins.phpstorm-docker
-    </depends>
     <depends config-file="DdevIntegration-withPhp.xml" optional="true">
-        org.jetbrains.plugins.phpstorm-remote-interpreter
+        com.jetbrains.php
     </depends>
     <depends config-file="DdevIntegration-withNodeRemoteInterpreter.xml" optional="true">
-        org.jetbrains.plugins.node-remote-interpreter
+        NodeJS
     </depends>
 
     <resource-bundle>messages.DdevIntegrationBundle</resource-bundle>

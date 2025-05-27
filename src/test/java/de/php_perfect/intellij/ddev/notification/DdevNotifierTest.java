@@ -73,7 +73,7 @@ final class DdevNotifierTest extends BasePlatformTestCase {
         Notification[] notifications = notificationManager.getNotificationsOfType(Notification.class, project);
         assertEmpty(notifications);
 
-        new DdevNotifierImpl(project).notifyMissingPlugin("Some Plugin");
+        new DdevNotifierImpl(project).notifyMissingPlugin("Some Plugin", "Test Feature");
 
         this.waitForEventQueue();
 

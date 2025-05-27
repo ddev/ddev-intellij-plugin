@@ -58,12 +58,25 @@ public final class DdevNotifierImpl implements DdevNotifier {
     }
 
     @Override
-    public void notifyMissingPlugin(final @NotNull String pluginName) {
+    public void notifyMissingPlugin(final @NotNull String pluginName, final @NotNull String featureName) {
         ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
                 .getNotificationGroup(STICKY)
                 .createNotification(
                         DdevIntegrationBundle.message("notification.MissingPlugin.title"),
-                        DdevIntegrationBundle.message("notification.MissingPlugin.text", pluginName),
+                        DdevIntegrationBundle.message("notification.MissingPlugin.withFeature.text", pluginName, featureName),
+                        NotificationType.WARNING
+                )
+                .addAction(new ManagePluginsAction())
+                .notify(this.project), ModalityState.nonModal());
+    }
+
+    @Override
+    public void notifyMissingPlugins(final @NotNull String pluginNames, final @NotNull String featureName) {
+        ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
+                .getNotificationGroup(STICKY)
+                .createNotification(
+                        DdevIntegrationBundle.message("notification.MissingPlugins.title"),
+                        DdevIntegrationBundle.message("notification.MissingPlugins.withFeature.text", pluginNames, featureName),
                         NotificationType.WARNING
                 )
                 .addAction(new ManagePluginsAction())

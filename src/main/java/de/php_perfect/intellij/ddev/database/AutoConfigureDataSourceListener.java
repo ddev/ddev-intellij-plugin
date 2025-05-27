@@ -4,6 +4,8 @@ import com.intellij.openapi.project.Project;
 import de.php_perfect.intellij.ddev.DatabaseInfoChangedListener;
 import de.php_perfect.intellij.ddev.cmd.DatabaseInfo;
 import de.php_perfect.intellij.ddev.settings.DdevSettingsState;
+import de.php_perfect.intellij.ddev.util.FeatureRequiredPlugins;
+import de.php_perfect.intellij.ddev.util.PluginChecker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,6 +29,10 @@ public final class AutoConfigureDataSourceListener implements DatabaseInfoChange
         }
 
         if (databaseInfo.type() == null || databaseInfo.version() == null || databaseInfo.name() == null || databaseInfo.username() == null || databaseInfo.password() == null) {
+            return;
+        }
+
+        if (PluginChecker.isMissingRequiredPlugins(this.project, FeatureRequiredPlugins.DATABASE, "database auto-registration")) {
             return;
         }
 

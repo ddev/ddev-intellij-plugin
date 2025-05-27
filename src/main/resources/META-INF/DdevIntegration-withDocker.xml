@@ -1,6 +1,4 @@
 <idea-plugin>
-    <depends>Docker</depends>
-
     <extensions defaultExtensionNs="com.intellij">
         <applicationService
                 serviceImplementation="de.php_perfect.intellij.ddev.dockerCompose.DockerComposeCredentialProviderImpl"
