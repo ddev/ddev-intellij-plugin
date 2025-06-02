@@ -28,7 +28,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.13.1")
     implementation("io.sentry:sentry:8.12.0")
 
-    val junitVersion = "5.12.2"
+    val junitVersion = "5.13.0"
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
