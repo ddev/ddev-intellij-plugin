@@ -74,6 +74,8 @@
                             serviceInterface="de.php_perfect.intellij.ddev.cmd.parser.JsonParser"/>
         <applicationService serviceImplementation="de.php_perfect.intellij.ddev.cmd.DockerImpl"
                             serviceInterface="de.php_perfect.intellij.ddev.cmd.Docker"/>
+        <applicationService serviceImplementation="de.php_perfect.intellij.ddev.addon.AddonUtilsServiceImpl"
+                            serviceInterface="de.php_perfect.intellij.ddev.addon.AddonUtilsService"/>
 
         <projectService serviceImplementation="de.php_perfect.intellij.ddev.index.ManagedConfigurationIndexImpl"
                         serviceInterface="de.php_perfect.intellij.ddev.index.ManagedConfigurationIndex"/>
@@ -98,6 +100,7 @@
                              key="settings.title"/>
 
         <postStartupActivity implementation="de.php_perfect.intellij.ddev.InitPluginActivity"/>
+        <postStartupActivity implementation="de.php_perfect.intellij.ddev.addon.AddonCacheStartupActivity"/>
 
         <statusBarWidgetFactory order="before light.edit.large.file.encoding.widget"
                                 implementation="de.php_perfect.intellij.ddev.statusBar.DdevStatusBarWidgetFactoryImpl"
@@ -147,6 +150,18 @@
                 <override-text place="MainMenu"/>
                 <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
             </action>
+            <separator/>
+            <action id="DdevIntegration.Run.AddAddon" icon="AllIcons.General.Add"
+                    class="de.php_perfect.intellij.ddev.actions.DdevAddAddonAction">
+                <override-text place="MainMenu"/>
+                <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
+            </action>
+            <action id="DdevIntegration.Run.DeleteAddon" icon="AllIcons.General.Remove"
+                    class="de.php_perfect.intellij.ddev.actions.DdevDeleteAddonAction">
+                <override-text place="MainMenu"/>
+                <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
+            </action>
+
         </group>
         <group id="DdevIntegration.Services" class="de.php_perfect.intellij.ddev.actions.ServicesActionGroup"/>
         <action id="DdevIntegration.CheckVersion" class="de.php_perfect.intellij.ddev.actions.CheckVersionAction"/>

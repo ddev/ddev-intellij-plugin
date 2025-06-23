@@ -36,7 +36,6 @@ public class Description {
 
     private final @Nullable String mailpitHttpUrl;
 
-
     private final @Nullable Map<String, Service> services;
 
     @SerializedName("dbinfo")
