@@ -44,11 +44,13 @@ jobs:
           text: ${{ github.ref }}
           regex: '(eap|beta|alpha).*$'
 
-      - name: Publish to JetBrains Marketplace
-        uses: gradle/gradle-build-action@v3
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
-          arguments: publishPlugin
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Publish to JetBrains Marketplace
+        run: ./gradlew publishPlugin
         env:
           PUBLISH_CHANNEL: ${{ steps.match-channel.outputs.group1 }}
 

@@ -45,21 +45,91 @@ public class Description {
     @SerializedName("primary_url")
     private final @Nullable String primaryUrl;
 
-    public Description(@Nullable String name, @Nullable String phpVersion, @Nullable Status status, @Nullable String mailHogHttpsUrl, @Nullable String mailHogHttpUrl, @Nullable String mailpitHttpsUrl, @Nullable String mailpitHttpUrl, @Nullable DatabaseInfo databaseInfo, @Nullable String primaryUrl) {
-        this(name, phpVersion, status, mailHogHttpsUrl, mailHogHttpUrl, mailpitHttpsUrl, mailpitHttpUrl, new HashMap<>(), databaseInfo, primaryUrl);
+    // Private constructor for builder
+    private Description(Builder builder) {
+        this.name = builder.name;
+        this.phpVersion = builder.phpVersion;
+        this.status = builder.status;
+        this.mailHogHttpsUrl = builder.mailHogHttpsUrl;
+        this.mailHogHttpUrl = builder.mailHogHttpUrl;
+        this.mailpitHttpsUrl = builder.mailpitHttpsUrl;
+        this.mailpitHttpUrl = builder.mailpitHttpUrl;
+        this.services = builder.services != null ? builder.services : new HashMap<>();
+        this.databaseInfo = builder.databaseInfo;
+        this.primaryUrl = builder.primaryUrl;
     }
 
-    public Description(@Nullable String name, @Nullable String phpVersion, @Nullable Status status, @Nullable String mailHogHttpsUrl, @Nullable String mailHogHttpUrl, @Nullable String mailpitHttpsUrl, @Nullable String mailpitHttpUrl, @Nullable Map<String, Service> services, @Nullable DatabaseInfo databaseInfo, @Nullable String primaryUrl) {
-        this.name = name;
-        this.phpVersion = phpVersion;
-        this.status = status;
-        this.mailHogHttpsUrl = mailHogHttpsUrl;
-        this.mailHogHttpUrl = mailHogHttpUrl;
-        this.mailpitHttpsUrl = mailpitHttpsUrl;
-        this.mailpitHttpUrl = mailpitHttpUrl;
-        this.services = services;
-        this.databaseInfo = databaseInfo;
-        this.primaryUrl = primaryUrl;
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private @Nullable String name;
+        private @Nullable String phpVersion;
+        private @Nullable Status status;
+        private @Nullable String mailHogHttpsUrl;
+        private @Nullable String mailHogHttpUrl;
+        private @Nullable String mailpitHttpsUrl;
+        private @Nullable String mailpitHttpUrl;
+        private @Nullable Map<String, Service> services;
+        private @Nullable DatabaseInfo databaseInfo;
+        private @Nullable String primaryUrl;
+
+        private Builder() {}
+
+        public Builder name(@Nullable String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder phpVersion(@Nullable String phpVersion) {
+            this.phpVersion = phpVersion;
+            return this;
+        }
+
+        public Builder status(@Nullable Status status) {
+            this.status = status;
+            return this;
+        }
+
+        public Builder mailHogHttpsUrl(@Nullable String mailHogHttpsUrl) {
+            this.mailHogHttpsUrl = mailHogHttpsUrl;
+            return this;
+        }
+
+        public Builder mailHogHttpUrl(@Nullable String mailHogHttpUrl) {
+            this.mailHogHttpUrl = mailHogHttpUrl;
+            return this;
+        }
+
+        public Builder mailpitHttpsUrl(@Nullable String mailpitHttpsUrl) {
+            this.mailpitHttpsUrl = mailpitHttpsUrl;
+            return this;
+        }
+
+        public Builder mailpitHttpUrl(@Nullable String mailpitHttpUrl) {
+            this.mailpitHttpUrl = mailpitHttpUrl;
+            return this;
+        }
+
+        public Builder services(@Nullable Map<String, Service> services) {
+            this.services = services;
+            return this;
+        }
+
+        public Builder databaseInfo(@Nullable DatabaseInfo databaseInfo) {
+            this.databaseInfo = databaseInfo;
+            return this;
+        }
+
+        public Builder primaryUrl(@Nullable String primaryUrl) {
+            this.primaryUrl = primaryUrl;
+            return this;
+        }
+
+        public Description build() {
+            return new Description(this);
+        }
     }
 
     public @Nullable String getName() {

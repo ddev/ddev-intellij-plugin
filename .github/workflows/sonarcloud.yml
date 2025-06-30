@@ -49,11 +49,14 @@ jobs:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
 
+      - name: Setup Gradle
+        if: ${{ env.SONAR_TOKEN != null }}
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
       - name: Run sonarqube
         if: ${{ env.SONAR_TOKEN != null }}
-        uses: gradle/gradle-build-action@v3
-        with:
-          arguments: -Dtest.ignoreFailures=true sonarqube --info --stacktrace
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+        run: ./gradlew -Dtest.ignoreFailures=true sonarqube --info --stacktrace
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -32,8 +32,7 @@ public class Service {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Service)) return false;
-        Service service = (Service) o;
+        if (!(o instanceof Service service)) return false;
         return Objects.equals(getFullName(), service.getFullName()) && Objects.equals(getHttpUrl(), service.getHttpUrl()) && Objects.equals(getHttpsUrl(), service.getHttpsUrl());
     }
 

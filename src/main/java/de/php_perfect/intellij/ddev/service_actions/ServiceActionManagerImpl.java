@@ -1,4 +1,4 @@
-package de.php_perfect.intellij.ddev.serviceActions;
+package de.php_perfect.intellij.ddev.service_actions;
 
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.Disposable;

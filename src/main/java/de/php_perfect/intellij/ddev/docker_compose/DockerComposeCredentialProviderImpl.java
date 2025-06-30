@@ -1,4 +1,4 @@
-package de.php_perfect.intellij.ddev.dockerCompose;
+package de.php_perfect.intellij.ddev.docker_compose;
 
 import com.intellij.docker.DockerCloudType;
 import com.intellij.docker.remote.DockerComposeCredentialsHolder;

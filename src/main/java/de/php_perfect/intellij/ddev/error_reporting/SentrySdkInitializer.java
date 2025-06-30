@@ -1,4 +1,4 @@
-package de.php_perfect.intellij.ddev.errorReporting;
+package de.php_perfect.intellij.ddev.error_reporting;
 
 import com.intellij.openapi.application.ApplicationInfo;
 import io.sentry.Sentry;

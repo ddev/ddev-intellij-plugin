@@ -25,22 +25,34 @@ repositories {
 }
 
 dependencies {
-    implementation("com.google.code.gson:gson:2.13.1")
-    implementation("io.sentry:sentry:8.16.0")
-
+    // Version declarations
+    val gsonVersion = "2.13.1"
+    val sentryVersion = "8.16.0"
     val junitVersion = "5.13.2"
-    testImplementation("junit:junit:4.13.2")
+    val junit4Version = "4.13.2"
+    val junitPlatformVersion = "1.13.2"
+    val mockitoVersion = "5.18.0"
+    val assertjVersion = "3.27.3"
+    val pluginVerifierVersion = "1.384"
+
+    // Implementation dependencies
+    implementation("com.google.code.gson:gson:$gsonVersion")
+    implementation("io.sentry:sentry:$sentryVersion")
+
+    // Test dependencies
+    testImplementation("junit:junit:$junit4Version")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
+    testImplementation("org.mockito:mockito-core:$mockitoVersion")
+    testImplementation("org.assertj:assertj-core:$assertjVersion")
+
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-params:$junitVersion")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.13.2")
-    testImplementation("org.mockito:mockito-core:5.18.0")
-    testImplementation("org.assertj:assertj-core:3.27.3")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
 
     intellijPlatform {
         phpstorm(properties("platformVersion"))
-        pluginVerifier("1.384")
+        pluginVerifier(pluginVerifierVersion)
         zipSigner()
         testFramework(TestFrameworkType.Platform)
 

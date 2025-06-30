@@ -56,8 +56,8 @@ public final class DdevTerminalRunner extends AbstractTerminalRunner<PtyProcess>
         return new PtyProcessTtyConnector(process, StandardCharsets.UTF_8) {
             @Override
             public void close() {
-                if (process instanceof UnixPtyProcess) {
-                    ((UnixPtyProcess) process).hangup();
+                if (process instanceof UnixPtyProcess unixPtyProcess) {
+                    unixPtyProcess.hangup();
                     AppExecutorUtil.getAppScheduledExecutorService().schedule(() -> {
                         if (process.isAlive()) {
                             LOG.info("Terminal hasn't been terminated by SIGHUP, performing default termination");

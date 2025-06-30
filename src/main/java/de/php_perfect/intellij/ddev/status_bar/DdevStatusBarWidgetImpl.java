@@ -1,4 +1,4 @@
-package de.php_perfect.intellij.ddev.statusBar;
+package de.php_perfect.intellij.ddev.status_bar;
 
 import com.intellij.openapi.actionSystem.ActionGroup;
 import com.intellij.openapi.actionSystem.ActionManager;
@@ -66,8 +66,12 @@ public final class DdevStatusBarWidgetImpl extends EditorBasedStatusBarPopup {
     private final class StatusBarUpdateListener implements StateChangedListener {
         @Override
         public void onDdevChanged(@NotNull State state) {
-            DdevStatusBarWidgetImpl.this.putState(state);
+            putState(state);
             DdevStatusBarWidgetImpl.this.update();
+        }
+
+        private void putState(State state) {
+            DdevStatusBarWidgetImpl.this.getProject().putUserData(DDEV_STATE_KEY, state);
         }
     }
 
@@ -137,10 +141,6 @@ public final class DdevStatusBarWidgetImpl extends EditorBasedStatusBarPopup {
             case PAUSED -> DdevIntegrationBundle.message("status.Paused");
             case UNHEALTHY -> DdevIntegrationBundle.message("status.Unhealthy");
         };
-    }
-
-    private void putState(State state) {
-        this.getProject().putUserData(DDEV_STATE_KEY, state);
     }
 
     private State fetchState() {

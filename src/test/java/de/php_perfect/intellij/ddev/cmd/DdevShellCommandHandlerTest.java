@@ -5,8 +5,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-public final class DdevShellCommandHandlerTest extends BasePlatformTestCase {
+final class DdevShellCommandHandlerTest extends BasePlatformTestCase {
     @Override
     @BeforeEach
     protected void setUp() throws Exception {
@@ -19,25 +21,12 @@ public final class DdevShellCommandHandlerTest extends BasePlatformTestCase {
         super.tearDown();
     }
 
-    @Test
-    void nonDdevCommand() {
+    @ParameterizedTest
+    @ValueSource(strings = {"cat abc", "ddev ", "ddev foo"})
+    void invalidDdevCommands(String command) {
         final DdevShellCommandHandlerImpl ddevShellCommandHandlerImpl = new DdevShellCommandHandlerImpl();
 
-        Assertions.assertFalse(ddevShellCommandHandlerImpl.matches(this.getProject(), null, true, "cat abc"));
-    }
-
-    @Test
-    void incompleteDdevCommand() {
-        final DdevShellCommandHandlerImpl ddevShellCommandHandlerImpl = new DdevShellCommandHandlerImpl();
-
-        Assertions.assertFalse(ddevShellCommandHandlerImpl.matches(this.getProject(), null, true, "ddev "));
-    }
-
-    @Test
-    void unkownDdevCommand() {
-        final DdevShellCommandHandlerImpl ddevShellCommandHandlerImpl = new DdevShellCommandHandlerImpl();
-
-        Assertions.assertFalse(ddevShellCommandHandlerImpl.matches(this.getProject(), null, true, "ddev foo"));
+        Assertions.assertFalse(ddevShellCommandHandlerImpl.matches(this.getProject(), null, true, command));
     }
 
     @Test

@@ -1,4 +1,4 @@
-package de.php_perfect.intellij.ddev.dockerCompose;
+package de.php_perfect.intellij.ddev.docker_compose;
 
 import de.php_perfect.intellij.ddev.index.IndexableConfiguration;
 import org.jetbrains.annotations.NotNull;
