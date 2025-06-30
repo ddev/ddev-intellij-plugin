@@ -10,7 +10,9 @@ public interface DdevNotifier {
 
     void notifyAlreadyLatestVersion();
 
-    void notifyMissingPlugin(@NotNull String pluginName);
+    void notifyMissingPlugin(@NotNull String pluginName, @NotNull String featureName);
+
+    void notifyMissingPlugins(@NotNull String pluginNames, @NotNull String featureName);
 
     void notifyPhpInterpreterUpdated(@NotNull String phpVersion);
 

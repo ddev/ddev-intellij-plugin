@@ -1,6 +1,5 @@
 <idea-plugin>
-    <depends>NodeJS</depends>
-    <depends>org.jetbrains.plugins.phpstorm-docker</depends>
+    <depends>org.jetbrains.plugins.node-remote-interpreter</depends>
 
     <extensions defaultExtensionNs="com.intellij">
         <projectService serviceImplementation="de.php_perfect.intellij.ddev.node.NodeInterpreterProviderImpl"
