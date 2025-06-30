@@ -1,4 +1,4 @@
-package de.php_perfect.intellij.ddev.dockerCompose;
+package de.php_perfect.intellij.ddev.docker_compose;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;

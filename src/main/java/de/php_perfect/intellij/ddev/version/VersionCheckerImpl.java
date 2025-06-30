@@ -48,11 +48,11 @@ public final class VersionCheckerImpl implements VersionChecker {
                 final LatestRelease latestRelease = ReleaseClient.getInstance().loadCurrentVersion(progressIndicator);
                 progressIndicator.checkCanceled();
 
-                if (latestRelease == null || latestRelease.getTagName() == null) {
+                if (latestRelease == null || latestRelease.tagName() == null) {
                     return;
                 }
 
-                final Version latestVersion = new Version(latestRelease.getTagName());
+                final Version latestVersion = new Version(latestRelease.tagName());
 
                 if (VersionCompare.needsUpdate(currentVersion, latestVersion)) {
                     DdevNotifier.getInstance(project).notifyNewVersionAvailable(currentVersion.toString(), latestVersion.toString());

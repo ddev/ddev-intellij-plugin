@@ -8,6 +8,7 @@ import de.php_perfect.intellij.ddev.cmd.DatabaseInfo.Type;
 import de.php_perfect.intellij.ddev.cmd.Description;
 import de.php_perfect.intellij.ddev.cmd.Description.Status;
 import de.php_perfect.intellij.ddev.cmd.Service;
+import de.php_perfect.intellij.ddev.service_actions.ServiceActionManagerImpl;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +30,7 @@ final class ServiceActionManagerImplTest {
                         anAction("Open existing action", "https://www.existing.com", "existing action")
                 )));
 
-        serviceActionManager.updateActionsByDescription(aDescription("test", Status.RUNNING));
+        serviceActionManager.updateActionsByDescription(aDescription());
 
         assertThat(serviceActionManager.getServiceActions()).isEqualTo(array(
                 aMailhogAction(),
@@ -46,7 +47,7 @@ final class ServiceActionManagerImplTest {
                         anAction("Open existing action", "https://www.existing.com", "existing action")
                 )));
 
-        serviceActionManager.updateActionsByDescription(aMailpitDescription("test", Status.RUNNING));
+        serviceActionManager.updateActionsByDescription(aMailpitDescription());
 
         assertThat(serviceActionManager.getServiceActions()).isEqualTo(array(
                 aMailhogAction(),
@@ -63,28 +64,39 @@ final class ServiceActionManagerImplTest {
                 "Open Mailhog service in your browser");
     }
 
-    private AnAction aMailpitAction() {
-        return anAction("Open Mailpit", "https://www.test.com",
-                "Open Mailpit service in your browser");
-    }
-
-    private Description aDescription(String name, Description.Status status) {
+    private Description aDescription() {
         var dataBaseInfo = new DatabaseInfo(Type.MYSQL, "5.7", 2133, "db", "localhost",
                 "root", "root", 2133);
 
-        var httpUrl = String.format("http://www.%s.com", name);
-        var httpsUrl = String.format("https://www.%s.com", name);
+        var httpUrl = "http://www.test.com";
+        var httpsUrl = "https://www.test.com";
 
-        return new Description(name, "7.4", status, httpsUrl, httpUrl, null, null, Map.of(name, new Service(name, httpsUrl, httpUrl)), dataBaseInfo, null);
+        return Description.builder()
+                .name("test")
+                .phpVersion("7.4")
+                .status(Status.RUNNING)
+                .mailHogHttpsUrl(httpsUrl)
+                .mailHogHttpUrl(httpUrl)
+                .services(Map.of("test", new Service("test", httpsUrl, httpUrl)))
+                .databaseInfo(dataBaseInfo)
+                .build();
     }
 
-    private Description aMailpitDescription(String name, Description.Status status) {
+    private Description aMailpitDescription() {
         var dataBaseInfo = new DatabaseInfo(Type.MYSQL, "5.7", 2133, "db", "localhost",
                 "root", "root", 2133);
 
-        var httpUrl = String.format("http://www.%s.com", name);
-        var httpsUrl = String.format("https://www.%s.com", name);
+        var httpUrl = "http://www.test.com";
+        var httpsUrl = "https://www.test.com";
 
-        return new Description(name, "7.4", status, null, null, httpsUrl, httpUrl, Map.of(name, new Service(name, httpsUrl, httpUrl)), dataBaseInfo, null);
+        return Description.builder()
+                .name("test")
+                .phpVersion("7.4")
+                .status(Status.RUNNING)
+                .mailpitHttpsUrl(httpsUrl)
+                .mailpitHttpUrl(httpUrl)
+                .services(Map.of("test", new Service("test", httpsUrl, httpUrl)))
+                .databaseInfo(dataBaseInfo)
+                .build();
     }
 }

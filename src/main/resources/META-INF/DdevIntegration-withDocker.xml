@@ -1,10 +1,10 @@
 <idea-plugin>
     <extensions defaultExtensionNs="com.intellij">
         <applicationService
-                serviceImplementation="de.php_perfect.intellij.ddev.dockerCompose.DockerComposeCredentialProviderImpl"
-                serviceInterface="de.php_perfect.intellij.ddev.dockerCompose.DockerComposeCredentialProvider"/>
+                serviceImplementation="de.php_perfect.intellij.ddev.docker_compose.DockerComposeCredentialProviderImpl"
+                serviceInterface="de.php_perfect.intellij.ddev.docker_compose.DockerComposeCredentialProvider"/>
 
-        <projectService serviceImplementation="de.php_perfect.intellij.ddev.dockerCompose.DdevComposeFileLoaderImpl"
-                        serviceInterface="de.php_perfect.intellij.ddev.dockerCompose.DdevComposeFileLoader"/>
+        <projectService serviceImplementation="de.php_perfect.intellij.ddev.docker_compose.DdevComposeFileLoaderImpl"
+                        serviceInterface="de.php_perfect.intellij.ddev.docker_compose.DdevComposeFileLoader"/>
     </extensions>
 </idea-plugin>

@@ -11,8 +11,8 @@ import com.intellij.util.PathMappingSettings;
 import com.jetbrains.nodejs.remote.NodeJSRemoteInterpreterManager;
 import com.jetbrains.nodejs.remote.NodeJSRemoteSdkAdditionalData;
 import com.jetbrains.nodejs.remote.NodeRemoteInterpreters;
-import de.php_perfect.intellij.ddev.dockerCompose.DockerComposeConfig;
-import de.php_perfect.intellij.ddev.dockerCompose.DockerComposeCredentialProvider;
+import de.php_perfect.intellij.ddev.docker_compose.DockerComposeConfig;
+import de.php_perfect.intellij.ddev.docker_compose.DockerComposeCredentialProvider;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;

@@ -4,7 +4,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import de.php_perfect.intellij.ddev.DescriptionChangedListener;
 import de.php_perfect.intellij.ddev.cmd.Description;
-import de.php_perfect.intellij.ddev.dockerCompose.DdevComposeFileLoader;
+import de.php_perfect.intellij.ddev.docker_compose.DdevComposeFileLoader;
 import de.php_perfect.intellij.ddev.settings.DdevSettingsState;
 import de.php_perfect.intellij.ddev.util.FeatureRequiredPlugins;
 import de.php_perfect.intellij.ddev.util.PluginChecker;

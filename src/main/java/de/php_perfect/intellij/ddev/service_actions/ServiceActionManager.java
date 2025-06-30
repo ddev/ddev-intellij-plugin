@@ -1,4 +1,4 @@
-package de.php_perfect.intellij.ddev.serviceActions;
+package de.php_perfect.intellij.ddev.service_actions;
 
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.project.Project;

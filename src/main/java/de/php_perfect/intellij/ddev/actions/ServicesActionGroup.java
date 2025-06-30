@@ -7,7 +7,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import de.php_perfect.intellij.ddev.cmd.Description;
-import de.php_perfect.intellij.ddev.serviceActions.ServiceActionManager;
+import de.php_perfect.intellij.ddev.service_actions.ServiceActionManager;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import de.php_perfect.intellij.ddev.state.State;
 import org.jetbrains.annotations.NotNull;

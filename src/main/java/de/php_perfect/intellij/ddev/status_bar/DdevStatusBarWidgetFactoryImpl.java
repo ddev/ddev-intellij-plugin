@@ -1,4 +1,4 @@
-package de.php_perfect.intellij.ddev.statusBar;
+package de.php_perfect.intellij.ddev.status_bar;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.StatusBar;

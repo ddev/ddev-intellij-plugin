@@ -69,7 +69,7 @@ public final class DdevDataSourceManagerImpl implements DdevDataSourceManager {
 
                 @Override
                 public void resumeWith(@NotNull Object o) {
-
+                    // No action needed - auto-introspection is fire-and-forget
                 }
             });
         });

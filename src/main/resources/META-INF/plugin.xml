@@ -43,7 +43,7 @@
                   topic="de.php_perfect.intellij.ddev.StateInitializedListener" activeInTestMode="false"/>
         <listener class="de.php_perfect.intellij.ddev.state.StartWatcherListener"
                   topic="de.php_perfect.intellij.ddev.StateInitializedListener" activeInTestMode="false"/>
-        <listener class="de.php_perfect.intellij.ddev.serviceActions.ServiceActionChangedListener"
+        <listener class="de.php_perfect.intellij.ddev.service_actions.ServiceActionChangedListener"
                   topic="de.php_perfect.intellij.ddev.DescriptionChangedListener" activeInTestMode="false"/>
         <listener class="de.php_perfect.intellij.ddev.state.UnknownStateListener"
                   topic="de.php_perfect.intellij.ddev.StateChangedListener" activeInTestMode="false"/>
@@ -55,7 +55,7 @@
     </extensionPoints>
 
     <extensions defaultExtensionNs="com.intellij">
-        <errorHandler implementation="de.php_perfect.intellij.ddev.errorReporting.SentryErrorReporter"/>
+        <errorHandler implementation="de.php_perfect.intellij.ddev.error_reporting.SentryErrorReporter"/>
 
         <notificationGroup id="DdevIntegration.Sticky" key="notificationGroup.sticky" displayType="STICKY_BALLOON"/>
         <notificationGroup id="DdevIntegration.NonSticky" key="notificationGroup.nonSticky" displayType="BALLOON"/>
@@ -91,8 +91,8 @@
                         serviceInterface="de.php_perfect.intellij.ddev.state.StateWatcher"/>
         <projectService serviceImplementation="de.php_perfect.intellij.ddev.cmd.RunnerImpl"
                         serviceInterface="de.php_perfect.intellij.ddev.cmd.Runner"/>
-        <projectService serviceImplementation="de.php_perfect.intellij.ddev.serviceActions.ServiceActionManagerImpl"
-                        serviceInterface="de.php_perfect.intellij.ddev.serviceActions.ServiceActionManager"/>
+        <projectService serviceImplementation="de.php_perfect.intellij.ddev.service_actions.ServiceActionManagerImpl"
+                        serviceInterface="de.php_perfect.intellij.ddev.service_actions.ServiceActionManager"/>
         <projectService serviceImplementation="de.php_perfect.intellij.ddev.version.VersionCheckerImpl"
                         serviceInterface="de.php_perfect.intellij.ddev.version.VersionChecker"/>
 
@@ -103,7 +103,7 @@
         <postStartupActivity implementation="de.php_perfect.intellij.ddev.InitPluginActivity"/>
 
         <statusBarWidgetFactory order="before light.edit.large.file.encoding.widget"
-                                implementation="de.php_perfect.intellij.ddev.statusBar.DdevStatusBarWidgetFactoryImpl"
+                                implementation="de.php_perfect.intellij.ddev.status_bar.DdevStatusBarWidgetFactoryImpl"
                                 id="DdevStatusBarWidget"/>
 
         <statistics.gotItTooltipAllowlist prefix="ddev.features"/>

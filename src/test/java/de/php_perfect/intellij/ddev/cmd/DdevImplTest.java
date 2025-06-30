@@ -66,7 +66,13 @@ final class DdevImplTest extends BasePlatformTestCase {
 
     @Test
     void describe() throws CommandFailedException, IOException {
-        Description expected = new Description("acol", "8.1", Description.Status.STOPPED, null, null, null, null, new HashMap<>(), null, "https://acol.ddev.site");
+        Description expected = Description.builder()
+                .name("acol")
+                .phpVersion("8.1")
+                .status(Description.Status.STOPPED)
+                .services(new HashMap<>())
+                .primaryUrl("https://acol.ddev.site")
+                .build();
 
         ProcessOutput processOutput = new ProcessOutput(Files.readString(Path.of("src/test/resources/ddev_describe.json")), "", 0, false, false);
 

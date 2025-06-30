@@ -4,7 +4,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
-import de.php_perfect.intellij.ddev.errorReporting.SentrySdkInitializer;
+import de.php_perfect.intellij.ddev.error_reporting.SentrySdkInitializer;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import kotlin.Unit;
 import kotlin.coroutines.Continuation;
