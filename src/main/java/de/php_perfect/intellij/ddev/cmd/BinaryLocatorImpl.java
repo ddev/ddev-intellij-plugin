@@ -13,7 +13,7 @@ public class BinaryLocatorImpl implements BinaryLocator {
 
     private static final @NotNull String DDEV_COMMAND = "ddev";
 
-    private static final int COMMAND_TIMEOUT = 8_000;
+    private static final int BINARY_LOOKUP_TIMEOUT = 15_000;
 
     @Override
     public @Nullable String findInPath(@NotNull Project project) {
@@ -21,7 +21,7 @@ public class BinaryLocatorImpl implements BinaryLocator {
         final GeneralCommandLine commandLine = new GeneralCommandLine(WhichProvider.getWhichCommand(projectDir), DDEV_COMMAND).withWorkDirectory(projectDir);
 
         try {
-            final ProcessOutput processOutput = ProcessExecutor.getInstance().executeCommandLine(commandLine, COMMAND_TIMEOUT, true);
+            final ProcessOutput processOutput = ProcessExecutor.getInstance().executeCommandLine(commandLine, BINARY_LOOKUP_TIMEOUT, true);
 
             if (processOutput.getExitCode() != 0) {
                 return null;

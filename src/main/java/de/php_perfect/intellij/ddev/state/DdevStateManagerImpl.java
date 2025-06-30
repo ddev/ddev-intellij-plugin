@@ -13,11 +13,16 @@ import de.php_perfect.intellij.ddev.settings.DdevSettingsState;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class DdevStateManagerImpl implements DdevStateManager {
     private static final @NotNull Logger LOG = Logger.getInstance(DdevStateManagerImpl.class);
     private final @NotNull StateImpl state = new StateImpl();
     private final @NotNull Project project;
+
+    // Concurrency control to prevent multiple status checks from running simultaneously
+    private final AtomicBoolean isDescriptionUpdateRunning = new AtomicBoolean(false);
+    private final AtomicBoolean isConfigurationUpdateRunning = new AtomicBoolean(false);
 
     public DdevStateManagerImpl(@NotNull Project project) {
         this.project = project;
@@ -61,17 +66,40 @@ public final class DdevStateManagerImpl implements DdevStateManager {
 
     @Override
     public void updateConfiguration() {
-        LOG.debug("Updating DDEV configuration data");
-        this.checkChanged(() -> {
-            this.checkConfiguration();
-            this.checkDescription();
-        });
+        // Prevent concurrent configuration updates
+        if (!isConfigurationUpdateRunning.compareAndSet(false, true)) {
+            LOG.debug("DDEV configuration update already in progress, skipping");
+            return;
+        }
+
+        try {
+            LOG.debug("Updating DDEV configuration data");
+            this.checkChanged(() -> {
+                this.checkConfiguration();
+                // Only check description if no description update is currently running
+                if (!isDescriptionUpdateRunning.get()) {
+                    this.checkDescription();
+                }
+            });
+        } finally {
+            isConfigurationUpdateRunning.set(false);
+        }
     }
 
     @Override
     public void updateDescription() {
-        LOG.debug("Updating DDEV description data");
-        this.checkChanged(this::checkDescription);
+        // Prevent concurrent description updates to avoid multiple 'ddev describe' commands
+        if (!isDescriptionUpdateRunning.compareAndSet(false, true)) {
+            LOG.debug("DDEV description update already in progress, skipping");
+            return;
+        }
+
+        try {
+            LOG.debug("Updating DDEV description data");
+            this.checkChanged(this::checkDescription);
+        } finally {
+            isDescriptionUpdateRunning.set(false);
+        }
     }
 
     @Override
