@@ -9,7 +9,7 @@ plugins {
     id("org.jetbrains.changelog") version "2.2.1"
     id("org.jetbrains.intellij.platform") version "2.3.0"
     id("java")
-    id("org.sonarqube") version "6.1.0.5360"
+    id("org.sonarqube") version "6.2.0.5505"
     id("jacoco")
 }
 
@@ -26,16 +26,16 @@ repositories {
 
 dependencies {
     implementation("com.google.code.gson:gson:2.13.1")
-    implementation("io.sentry:sentry:8.11.0")
+    implementation("io.sentry:sentry:8.16.0")
 
-    val junitVersion = "5.12.2"
+    val junitVersion = "5.13.2"
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-params:$junitVersion")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.2")
-    testImplementation("org.mockito:mockito-core:5.17.0")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.13.2")
+    testImplementation("org.mockito:mockito-core:5.18.0")
     testImplementation("org.assertj:assertj-core:3.27.3")
 
     intellijPlatform {
