@@ -13,7 +13,7 @@ public class BinaryLocatorImpl implements BinaryLocator {
 
     private static final @NotNull String DDEV_COMMAND = "ddev";
 
-    private static final int COMMAND_TIMEOUT = 8_000;
+    private static final int COMMAND_TIMEOUT = 10_000;
 
     @Override
     public @Nullable String findInPath(@NotNull Project project) {
