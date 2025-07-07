@@ -30,7 +30,7 @@ dependencies {
     val sentryVersion = "8.17.0"
     val junitVersion = "5.13.2"
     val junit4Version = "4.13.2"
-    val junitPlatformVersion = "1.13.2"
+    val junitPlatformVersion = "1.13.3"
     val mockitoVersion = "5.18.0"
     val assertjVersion = "3.27.3"
     val pluginVerifierVersion = "1.384"
