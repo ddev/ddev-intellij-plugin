@@ -30,10 +30,10 @@
     <depends config-file="DdevIntegration-withTerminal.xml" optional="true">org.jetbrains.plugins.terminal</depends>
     <depends config-file="DdevIntegration-withDatabase.xml" optional="true">com.intellij.database</depends>
     <depends config-file="DdevIntegration-withPhp.xml" optional="true">
-        com.jetbrains.php
+        org.jetbrains.plugins.phpstorm-docker
     </depends>
     <depends config-file="DdevIntegration-withNodeRemoteInterpreter.xml" optional="true">
-        NodeJS
+        org.jetbrains.plugins.node-remote-interpreter
     </depends>
 
     <resource-bundle>messages.DdevIntegrationBundle</resource-bundle>

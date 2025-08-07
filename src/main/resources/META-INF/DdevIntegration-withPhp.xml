@@ -1,7 +1,4 @@
 <idea-plugin>
-    <depends>org.jetbrains.plugins.phpstorm-remote-interpreter</depends>
-    <depends>org.jetbrains.plugins.phpstorm-docker</depends>
-
     <extensions defaultExtensionNs="com.intellij">
         <projectService serviceImplementation="de.php_perfect.intellij.ddev.php.server.ServerConfigManagerImpl"
                         serviceInterface="de.php_perfect.intellij.ddev.php.server.ServerConfigManager"/>
