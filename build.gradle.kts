@@ -33,7 +33,7 @@ dependencies {
     val junitPlatformVersion = "1.13.4"
     val mockitoVersion = "5.18.0"
     val assertjVersion = "3.27.3"
-    val pluginVerifierVersion = "1.384"
+    val pluginVerifierVersion = "1.388"
 
     // Implementation dependencies
     implementation("com.google.code.gson:gson:$gsonVersion")
