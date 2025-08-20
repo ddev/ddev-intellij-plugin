@@ -2,16 +2,11 @@ package de.php_perfect.intellij.ddev.database;
 
 import com.intellij.database.dataSource.LocalDataSource;
 import com.intellij.database.dataSource.LocalDataSourceManager;
-import com.intellij.database.util.DataSourceUtilKt;
-import com.intellij.database.util.LoaderContext;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import de.php_perfect.intellij.ddev.index.IndexEntry;
 import de.php_perfect.intellij.ddev.index.ManagedConfigurationIndex;
-import kotlin.coroutines.Continuation;
-import kotlin.coroutines.CoroutineContext;
-import kotlin.coroutines.EmptyCoroutineContext;
 import org.jetbrains.annotations.NotNull;
 
 public final class DdevDataSourceManagerImpl implements DdevDataSourceManager {
@@ -60,18 +55,6 @@ public final class DdevDataSourceManagerImpl implements DdevDataSourceManager {
 
         ApplicationManager.getApplication().invokeLater(() -> {
             localDataSourceManager.fireDataSourceUpdated(dataSource);
-            LoaderContext loaderContext = LoaderContext.selectGeneralTask(project, dataSource);
-            DataSourceUtilKt.performAutoIntrospection(loaderContext, false, new Continuation<>() {
-                @Override
-                public @NotNull CoroutineContext getContext() {
-                    return EmptyCoroutineContext.INSTANCE;
-                }
-
-                @Override
-                public void resumeWith(@NotNull Object o) {
-                    // No action needed - auto-introspection is fire-and-forget
-                }
-            });
         });
 
         managedConfigurationIndex.set(dataSource.getUniqueId(), DataSourceConfig.class, hash);
