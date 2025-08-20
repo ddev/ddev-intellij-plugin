@@ -32,7 +32,7 @@ dependencies {
     val junit4Version = "4.13.2"
     val junitPlatformVersion = "1.13.4"
     val mockitoVersion = "5.19.0"
-    val assertjVersion = "3.27.3"
+    val assertjVersion = "3.27.4"
     val pluginVerifierVersion = "1.388"
 
     // Implementation dependencies
