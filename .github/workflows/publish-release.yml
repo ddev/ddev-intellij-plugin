@@ -10,7 +10,7 @@ jobs:
     steps:
       # Check out current repository
       - name: Fetch Sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Extract Tag Name
         uses: olegtarasov/get-tag@v2.1
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Extract Tag Name
         uses: olegtarasov/get-tag@v2.1

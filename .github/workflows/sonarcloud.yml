@@ -23,7 +23,7 @@ jobs:
 
       # Check out current repository
       - name: Fetch Sources
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         if: ${{ env.SONAR_TOKEN != null }}
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
