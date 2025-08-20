@@ -13,7 +13,7 @@ jobs:
     steps:
       # Load secrets from 1Password
       - name: Load secrets from 1Password
-        uses: 1password/load-secrets-action@v2
+        uses: 1password/load-secrets-action@v3
         if: ${{ env.OP_SERVICE_ACCOUNT_TOKEN != null }}
         with:
           export-env: true
