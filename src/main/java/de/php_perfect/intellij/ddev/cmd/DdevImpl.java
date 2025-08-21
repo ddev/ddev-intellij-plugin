@@ -16,11 +16,18 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class DdevImpl implements Ddev {
-    private static final int COMMAND_TIMEOUT = 8_000;
+    // Short timeout for simple version command that should be nearly instant
+    private static final int VERSION_COMMAND_TIMEOUT = 15_000;
+
+    // Medium timeout for detailed version command with JSON parsing
+    private static final int DETAILED_VERSION_COMMAND_TIMEOUT = 30_000;
+
+    // Long timeout for status commands due to possibly being blocked by ddev being busy
+    private static final int STATUS_COMMAND_TIMEOUT = 300_000;
 
     @Override
     public @NotNull Version version(@NotNull String binary, @NotNull Project project) throws CommandFailedException {
-        final String versionString = this.executePlain(binary, "--version", project);
+        final String versionString = this.executeVersionCommand(binary, project);
         final Pattern r = Pattern.compile("ddev version (v.*)$");
         final Matcher m = r.matcher(versionString);
 
@@ -28,25 +35,25 @@ public final class DdevImpl implements Ddev {
             return new Version(m.group(1));
         }
 
-        throw new CommandFailedException("Unexpcted output of ddev version command: " + versionString);
+        throw new CommandFailedException("Unexpected output of ddev version command: " + versionString);
     }
 
     public @NotNull Versions detailedVersions(final @NotNull String binary, final @NotNull Project project) throws CommandFailedException {
-        return execute(binary, "version", Versions.class, project);
+        return execute(binary, "version", Versions.class, project, DETAILED_VERSION_COMMAND_TIMEOUT);
     }
 
     public @NotNull Description describe(final @NotNull String binary, final @NotNull Project project) throws CommandFailedException {
-        return execute(binary, "describe", Description.class, project);
+        return execute(binary, "describe", Description.class, project, STATUS_COMMAND_TIMEOUT);
     }
 
-    private @NotNull String executePlain(final @NotNull String binary, final @NotNull String action, final @NotNull Project project) throws CommandFailedException {
-        final GeneralCommandLine commandLine = createDdevCommandLine(binary, action, project, false);
+    private @NotNull String executeVersionCommand(final @NotNull String binary, final @NotNull Project project) throws CommandFailedException {
+        final GeneralCommandLine commandLine = createDdevCommandLine(binary, "--version", project, false);
 
         try {
-            final ProcessOutput processOutput = ProcessExecutor.getInstance().executeCommandLine(commandLine, COMMAND_TIMEOUT, false);
+            final ProcessOutput processOutput = ProcessExecutor.getInstance().executeCommandLine(commandLine, VERSION_COMMAND_TIMEOUT, false);
 
             if (processOutput.isTimeout()) {
-                throw new CommandFailedException("Command timed out after " + (COMMAND_TIMEOUT / 1000) + " seconds: " + commandLine.getCommandLineString() + " in " + commandLine.getWorkDirectory().getPath());
+                throw new CommandFailedException("Command timed out after " + (VERSION_COMMAND_TIMEOUT / 1000) + " seconds: " + commandLine.getCommandLineString() + " in " + commandLine.getWorkDirectory().getPath());
             }
 
             if (processOutput.getExitCode() != 0) {
@@ -59,15 +66,15 @@ public final class DdevImpl implements Ddev {
         }
     }
 
-    private @NotNull <T> T execute(final @NotNull String binary, final @NotNull String action, final @NotNull Type type, final @NotNull Project project) throws CommandFailedException {
+    private @NotNull <T> T execute(final @NotNull String binary, final @NotNull String action, final @NotNull Type type, final @NotNull Project project, int timeout) throws CommandFailedException {
         final GeneralCommandLine commandLine = createDdevCommandLine(binary, action, project);
 
         ProcessOutput processOutput = null;
         try {
-            processOutput = ProcessExecutor.getInstance().executeCommandLine(commandLine, COMMAND_TIMEOUT, false);
+            processOutput = ProcessExecutor.getInstance().executeCommandLine(commandLine, timeout, false);
 
             if (processOutput.isTimeout()) {
-                throw new CommandFailedException("Command timed out after " + (COMMAND_TIMEOUT / 1000) + " seconds: " + commandLine.getCommandLineString() + " in " + commandLine.getWorkDirectory().getPath());
+                throw new CommandFailedException("Command timed out after " + (timeout / 1000) + " seconds: " + commandLine.getCommandLineString() + " in " + commandLine.getWorkDirectory().getPath());
             }
 
             if (processOutput.getExitCode() != 0) {

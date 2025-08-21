@@ -27,7 +27,12 @@ abstract class DdevAwareAction extends DumbAwareAction {
             return;
         }
 
-        e.getPresentation().setEnabled(this.isActive(project));
+        try {
+            e.getPresentation().setEnabled(this.isActive(project));
+        } catch (Exception ex) {
+            // if state access fails, disable the action
+            e.getPresentation().setEnabled(false);
+        }
     }
 
     protected abstract boolean isActive(@NotNull Project project);

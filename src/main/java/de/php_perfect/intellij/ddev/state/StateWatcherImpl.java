@@ -1,6 +1,7 @@
 package de.php_perfect.intellij.ddev.state;
 
 import com.intellij.openapi.Disposable;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.concurrency.AppExecutorUtil;
@@ -29,9 +30,11 @@ public final class StateWatcherImpl implements StateWatcher, Disposable {
 
         this.scheduledFuture = AppExecutorUtil.getAppScheduledExecutorService().scheduleWithFixedDelay(() -> {
             LOG.debug("DDEV state watcher triggering update");
-            DdevStateManager ddevStateManager = DdevStateManager.getInstance(this.project);
-            ddevStateManager.updateConfiguration();
-            ddevStateManager.updateDescription();
+            ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                DdevStateManager ddevStateManager = DdevStateManager.getInstance(this.project);
+                ddevStateManager.updateConfiguration();
+                ddevStateManager.updateDescription();
+            });
         }, 10L, 10L, TimeUnit.SECONDS);
         LOG.info("DDEV state watcher started");
     }
