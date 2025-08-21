@@ -4,6 +4,53 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
+## [1.2.7]
+
+### Changed
+* Fix incorrect versions in CHANGELOG.md by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/413
+* Update the GitHub URLs after the move to DDEV org & replace contact info by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/422
+* ci: move secrets to 1password, fixes #421 by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/426
+* ci: fix missing secret checks for sonarcloud workflow by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/429
+* fix: update plugin dependency checks and notifications, fixes #402 by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/428
+* feat: update version detection to support ddev head version by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/433
+* fix: resolve SonarQube warnings by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/458
+* fix: remove problematic manual database introspection causing ref count mismatch by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/476
+* feat: adapt timeouts for ddev command calls by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/479
+* fix: resolve EDT violation in process creation by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/480
+* feat: run manual database introspection only when adding the ddev connection by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/481
+* fix: handle race condition in widget initialization by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/483
+* feat: add experimental ddev executor for composer by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/482
+
+### Dependency Updates
+* Bump org.sonarqube from 6.0.1.5171 to 6.1.0.5360 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/418
+* Bump org.junit.platform:junit-platform-launcher from 1.11.3 to 1.12.2 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/417
+* Bump org.mockito:mockito-core from 5.16.0 to 5.17.0 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/416
+* Bump getsentry/action-release from 2 to 3 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/419
+* Bump io.sentry:sentry from 8.8.0 to 8.9.0 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/420
+* Bump com.google.code.gson:gson from 2.13.0 to 2.13.1 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/425
+* Bump io.sentry:sentry from 8.9.0 to 8.10.0 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/427
+* Bump io.sentry:sentry from 8.10.0 to 8.11.0 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/430
+* build: bump io.sentry:sentry from 8.11.1 to 8.12.0 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/436
+* build: bump org.sonarqube from 6.1.0.5360 to 6.2.0.5505 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/438
+* build: bump org.mockito:mockito-core from 5.17.0 to 5.18.0 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/440
+* build: bump junitVersion from 5.12.2 to 5.13.2 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/452
+* build: bump io.sentry:sentry from 8.12.0 to 8.15.1 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/455
+* build: bump org.junit.platform:junit-platform-launcher from 1.12.2 to 1.13.2 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/453
+* build: bump io.sentry:sentry from 8.15.1 to 8.16.0 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/456
+* build: bump io.sentry:sentry from 8.16.0 to 8.17.0 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/461
+* build: bump org.junit.platform:junit-platform-launcher from 1.13.2 to 1.13.3 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/460
+* build: bump junitVersion from 5.13.2 to 5.13.3 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/459
+* build: bump org.junit.platform:junit-platform-launcher from 1.13.3 to 1.13.4 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/462
+* build: bump io.sentry:sentry from 8.17.0 to 8.18.0 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/465
+* build: bump org.jetbrains.changelog from 2.2.1 to 2.4.0 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/467
+* build: bump org.mockito:mockito-core from 5.18.0 to 5.19.0 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/475
+* build: bump actions/checkout from 4 to 5 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/474
+* build: bump 1password/load-secrets-action from 2 to 3 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/473
+* build: bump io.sentry:sentry from 8.18.0 to 8.19.1 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/471
+* build: bump org.assertj:assertj-core from 3.27.3 to 3.27.4 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/468
+
+**Full Changelog**: https://github.com/ddev/ddev-intellij-plugin/compare/1.2.6...v1.27
+
 ## [1.2.6]
 
 ### Changed
