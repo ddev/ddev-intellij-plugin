@@ -20,6 +20,7 @@ import de.php_perfect.intellij.ddev.DdevIntegrationBundle;
 import de.php_perfect.intellij.ddev.StateChangedListener;
 import de.php_perfect.intellij.ddev.cmd.Description;
 import de.php_perfect.intellij.ddev.icons.DdevIntegrationIcons;
+import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import de.php_perfect.intellij.ddev.state.State;
 import de.php_perfect.intellij.ddev.tutorial.GotItTutorial;
 import org.jetbrains.annotations.NonNls;
@@ -66,6 +67,10 @@ public final class DdevStatusBarWidgetImpl extends EditorBasedStatusBarPopup {
     private final class StatusBarUpdateListener implements StateChangedListener {
         @Override
         public void onDdevChanged(@NotNull State state) {
+            LOG.debug("Status bar received state update: available=" + state.isAvailable() +
+                     ", configured=" + state.isConfigured() +
+                     ", binary=" + state.getDdevBinary() +
+                     ", version=" + state.getDdevVersion());
             putState(state);
             DdevStatusBarWidgetImpl.this.update();
         }
@@ -91,10 +96,19 @@ public final class DdevStatusBarWidgetImpl extends EditorBasedStatusBarPopup {
     @Override
     protected @NotNull WidgetState getWidgetState(@Nullable VirtualFile file) {
         State state = this.fetchState();
-        if (state == null || !state.isAvailable() || !state.isConfigured()) {
+
+        // Enhanced logging to help diagnose status indicator issues
+        if (!state.isAvailable()) {
+            LOG.debug("Status indicator hidden: DDEV not available (version: " + state.getDdevVersion() + ", binary: " + state.getDdevBinary() + ")");
             return WidgetState.HIDDEN;
         }
 
+        if (!state.isConfigured()) {
+            LOG.debug("Status indicator hidden: DDEV not configured (no .ddev/config.yaml found)");
+            return WidgetState.HIDDEN;
+        }
+
+        LOG.debug("Status indicator visible: DDEV available and configured");
         String toolTipText = DdevIntegrationBundle.message("statusBar.toolTip");
         String statusText = this.getStatusText();
         WidgetState widgetState = new WidgetState(toolTipText, statusText, true);
@@ -112,17 +126,9 @@ public final class DdevStatusBarWidgetImpl extends EditorBasedStatusBarPopup {
     }
 
     private @NotNull @NlsContexts.StatusBarText String getStatusText() {
-        Description description = null;
-        Description.Status status = null;
         State state = this.fetchState();
-
-        if (state != null) {
-            description = state.getDescription();
-        }
-
-        if (description != null) {
-            status = description.getStatus();
-        }
+        Description description = state.getDescription();
+        Description.Status status = description != null ? description.getStatus() : null;
 
         return this.buildStatusMessage(status);
     }
@@ -144,6 +150,16 @@ public final class DdevStatusBarWidgetImpl extends EditorBasedStatusBarPopup {
     }
 
     private State fetchState() {
-        return this.getProject().getUserData(DDEV_STATE_KEY);
+        // First try to get cached state from user data
+        State state = this.getProject().getUserData(DDEV_STATE_KEY);
+
+        // If no cached state, get current state directly from state manager
+        // This handles the case where the widget is checked before state initialization completes
+        if (state == null) {
+            LOG.debug("No cached state found, fetching current state from DdevStateManager");
+            state = DdevStateManager.getInstance(this.getProject()).getState();
+        }
+
+        return state;
     }
 }
