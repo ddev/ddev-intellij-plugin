@@ -49,7 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 * build: bump io.sentry:sentry from 8.18.0 to 8.19.1 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/471
 * build: bump org.assertj:assertj-core from 3.27.3 to 3.27.4 by @dependabot[bot] in https://github.com/ddev/ddev-intellij-plugin/pull/468
 
-**Full Changelog**: https://github.com/ddev/ddev-intellij-plugin/compare/1.2.6...v1.27
+**Full Changelog**: https://github.com/ddev/ddev-intellij-plugin/compare/1.2.6...1.2.7
 
 ## [1.2.6]
 
