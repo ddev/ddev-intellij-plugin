@@ -32,20 +32,25 @@ public final class RunnerImpl implements Runner, Disposable {
 
     @Override
     public void run(@NotNull GeneralCommandLine commandLine, @NotNull String title, @Nullable Runnable afterCompletion) {
-        ApplicationManager.getApplication().invokeLater(() -> {
+        // Create process handler on background thread to avoid EDT violations
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 final ProcessHandler processHandler = this.createProcessHandler(commandLine);
-                final RunContentExecutor runContentExecutor = new RunContentExecutor(this.project, processHandler)
-                        .withTitle(title)
-                        .withActivateToolWindow(true)
-                        .withAfterCompletion(afterCompletion)
-                        .withStop(processHandler::destroyProcess, () -> !processHandler.isProcessTerminated());
-                Disposer.register(this, runContentExecutor);
-                runContentExecutor.run();
+
+                // Switch back to EDT for UI operations
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    final RunContentExecutor runContentExecutor = new RunContentExecutor(this.project, processHandler)
+                            .withTitle(title)
+                            .withActivateToolWindow(true)
+                            .withAfterCompletion(afterCompletion)
+                            .withStop(processHandler::destroyProcess, () -> !processHandler.isProcessTerminated());
+                    Disposer.register(this, runContentExecutor);
+                    runContentExecutor.run();
+                }, ModalityState.nonModal());
             } catch (ExecutionException exception) {
                 LOG.warn("An error occurred running " + commandLine.getCommandLineString(), exception);
             }
-        }, ModalityState.nonModal());
+        });
     }
 
     private @NotNull ProcessHandler createProcessHandler(GeneralCommandLine commandLine) throws ExecutionException {
