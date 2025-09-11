@@ -26,7 +26,7 @@ repositories {
 
 dependencies {
     // Version declarations
-    val gsonVersion = "2.13.1"
+    val gsonVersion = "2.13.2"
     val sentryVersion = "8.19.1"
     val junitVersion = "5.13.4"
     val junit4Version = "4.13.2"
