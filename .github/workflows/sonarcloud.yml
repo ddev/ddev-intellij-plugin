@@ -31,7 +31,7 @@ jobs:
       # Validate wrapper
       - name: Gradle Wrapper Validation
         if: ${{ env.SONAR_TOKEN != null }}
-        uses: gradle/actions/wrapper-validation@v4
+        uses: gradle/actions/wrapper-validation@v5
 
       # Set up Java environment for the next steps
       - name: Setup Java
@@ -51,7 +51,7 @@ jobs:
 
       - name: Setup Gradle
         if: ${{ env.SONAR_TOKEN != null }}
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v5
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
