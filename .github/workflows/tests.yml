@@ -40,14 +40,14 @@ jobs:
 
       - name: Upload Test Report
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: test-report-${{ matrix.os }}
           path: build/reports/tests/test
 
       - name: Upload HTML test coverage report
         if: ${{ matrix.os == 'ubuntu-latest' && always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: coverage-report
           path: build/reports/jacoco/test/html
