@@ -32,6 +32,10 @@ public final class AutoConfigureDataSourceListener implements DatabaseInfoChange
             return;
         }
 
+        if (databaseInfo.publishedPort() <= 0) {
+            return;
+        }
+
         if (PluginChecker.isMissingRequiredPlugins(this.project, FeatureRequiredPlugins.DATABASE, "database auto-registration")) {
             return;
         }
