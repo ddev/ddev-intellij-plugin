@@ -28,7 +28,7 @@ dependencies {
     // Version declarations
     val gsonVersion = "2.13.1"
     val sentryVersion = "8.19.1"
-    val junitVersion = "5.13.4"
+    val junitVersion = "6.0.1"
     val junit4Version = "4.13.2"
     val junitPlatformVersion = "1.13.4"
     val mockitoVersion = "5.19.0"
