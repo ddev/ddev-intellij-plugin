@@ -13,7 +13,7 @@ import com.jetbrains.php.config.interpreters.PhpInterpretersManagerImpl;
 import com.jetbrains.php.config.interpreters.PhpInterpretersPhpInfoCacheImpl;
 import com.jetbrains.php.config.phpInfo.PhpInfo;
 import com.jetbrains.php.config.phpInfo.PhpInfoUtil;
-import com.jetbrains.php.remote.composer.ComposerRemoteInterpreterExecution;
+import de.php_perfect.intellij.ddev.php.composer.DdevComposerExecution;
 import com.jetbrains.php.remote.docker.compose.PhpDockerComposeStartCommand;
 import com.jetbrains.php.remote.docker.compose.PhpDockerComposeTypeData;
 import com.jetbrains.php.remote.interpreter.PhpRemoteSdkAdditionalData;
@@ -26,7 +26,6 @@ import de.php_perfect.intellij.ddev.notification.DdevNotifier;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
-import java.util.Objects;
 
 public final class PhpInterpreterProviderImpl implements PhpInterpreterProvider {
     private static final String LEGACY_INTERPRETER_NAME = "DDEV";
@@ -68,7 +67,7 @@ public final class PhpInterpreterProviderImpl implements PhpInterpreterProvider 
         this.updateInterpreter(interpreter, interpreterConfig);
         this.loadPhpInfo(interpreter);
         this.setDefaultIfNotSet(interpreter);
-        this.updateComposerInterpreterIfNotSet(interpreter);
+        this.updateComposerInterpreterIfNotSet();
         this.updateRemoteMapping(interpreter);
 
         managedConfigurationIndex.set(interpreter.getId(), DdevInterpreterConfig.class, hash);
@@ -84,11 +83,11 @@ public final class PhpInterpreterProviderImpl implements PhpInterpreterProvider 
         RemoteMappingsManager.getInstance(project).setForServer(mappings);
     }
 
-    private void updateComposerInterpreterIfNotSet(@NotNull final PhpInterpreter interpreter) {
+    private void updateComposerInterpreterIfNotSet() {
         final ComposerDataService composerSettings = ComposerDataService.getInstance(project);
 
-        if (!Objects.equals(composerSettings.getComposerExecution().getInterpreterId(), interpreter.getId())) {
-            composerSettings.setComposerExecution(new ComposerRemoteInterpreterExecution(interpreter.getName(), "composer"));
+        if (!(composerSettings.getComposerExecution() instanceof DdevComposerExecution)) {
+            composerSettings.setComposerExecution(new DdevComposerExecution());
         }
     }
 

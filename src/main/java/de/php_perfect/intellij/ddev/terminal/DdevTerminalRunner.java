@@ -2,6 +2,8 @@ package de.php_perfect.intellij.ddev.terminal;
 
 import com.intellij.execution.configurations.PtyCommandLine;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.progress.EmptyProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.NlsContexts;
 import com.intellij.terminal.pty.PtyProcessTtyConnector;
@@ -21,6 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 public final class DdevTerminalRunner extends AbstractTerminalRunner<PtyProcess> {
     private static final Logger LOG = Logger.getInstance(DdevTerminalRunner.class);
@@ -42,10 +45,15 @@ public final class DdevTerminalRunner extends AbstractTerminalRunner<PtyProcess>
 
         commandLine.setWorkDirectory(getProject().getBasePath());
 
-        final PtyCommandLine patchedCommandLine = WslAware.patchCommandLine(commandLine);
+        // Wrap WSL patching in progress indicator context to avoid "no ProgressIndicator" errors
+        final AtomicReference<PtyCommandLine> patchedCommandLineRef = new AtomicReference<>();
+        ProgressManager.getInstance().runProcess(
+                () -> patchedCommandLineRef.set(WslAware.patchCommandLine(commandLine)),
+                new EmptyProgressIndicator()
+        );
 
         try {
-            return (PtyProcess) patchedCommandLine.createProcess();
+            return (PtyProcess) patchedCommandLineRef.get().createProcess();
         } catch (com.intellij.execution.ExecutionException e) {
             throw new ExecutionException("Opening DDEV Terminal failed", e);
         }

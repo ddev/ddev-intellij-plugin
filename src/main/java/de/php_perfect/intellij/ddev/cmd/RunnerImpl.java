@@ -10,6 +10,8 @@ import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.progress.EmptyProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
 import de.php_perfect.intellij.ddev.cmd.wsl.WslAware;
@@ -54,7 +56,14 @@ public final class RunnerImpl implements Runner, Disposable {
     }
 
     private @NotNull ProcessHandler createProcessHandler(GeneralCommandLine commandLine) throws ExecutionException {
-        final ProcessHandler handler = new ColoredProcessHandler(WslAware.patchCommandLine(commandLine));
+        // Wrap WSL patching in progress indicator context to avoid "no ProgressIndicator" errors
+        final GeneralCommandLine[] patchedCommandLine = new GeneralCommandLine[1];
+        ProgressManager.getInstance().runProcess(
+                () -> patchedCommandLine[0] = WslAware.patchCommandLine(commandLine),
+                new EmptyProgressIndicator()
+        );
+
+        final ProcessHandler handler = new ColoredProcessHandler(patchedCommandLine[0]);
         ProcessTerminatedListener.attach(handler);
 
         return handler;
