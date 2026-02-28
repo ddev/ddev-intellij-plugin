@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
+## [1.2.8]
+
+### Changed
+* Set Composer DDEV executor as the standard by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/526
+
+### Fixed
+* Fix Sentry release failing due to shallow clone by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/485
+* Add DB port check before updating connection URL by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/516  
+* Move WSL command line patching into runProcess by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/524
+
+### Dependency Updates
+* Bump actions/setup-java from 4 to 5 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/486
+* Bump actions/upload-artifact from 4 to 6 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/519
+* Bump actions/checkout from 5 to 6 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/517
+* Bump actions/cache from 4 to 5 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/520
+* Bump gradle/actions from 4 to 5 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/503
+* Bump gradle-wrapper from 8.13 to 9.3.0 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/525
+* Bump org.sonarqube from 6.2.0.5505 to 7.0.1.6134 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/510
+* Bump junitVersion from 5.13.4 to 6.0.1 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/514
+* Configure Dependabot for major and security updates only by @Copilot in https://github.com/ddev/ddev-intellij-plugin/pull/511
+
+Full Changelog: https://github.com/ddev/ddev-intellij-plugin/compare/1.2.7...1.2.8
+
 ## [1.2.7]
 
 ### Changed
