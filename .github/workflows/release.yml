@@ -36,7 +36,7 @@ jobs:
         run: ./gradlew getChangelog --quiet --no-header --console=plain > build/extracted_release_changelog.md
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           prerelease: ${{ contains(github.ref, 'eap') || contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
           body_path: build/extracted_release_changelog.md
