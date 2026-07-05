@@ -20,6 +20,8 @@ repositories {
     mavenCentral()
     intellijPlatform {
         defaultRepositories()
+        // For building against EAP versions, e.g. -PplatformVersion=262-EAP-SNAPSHOT
+        snapshots()
     }
 }
 
@@ -50,7 +52,10 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
 
     intellijPlatform {
-        phpstorm(properties("platformVersion"))
+        // EAP/snapshot versions are not distributed as installers
+        phpstorm(properties("platformVersion")) {
+            useInstaller = properties("platformVersion").map { !it.contains("SNAPSHOT") }
+        }
         pluginVerifier(pluginVerifierVersion)
         zipSigner()
         testFramework(TestFrameworkType.Platform)
