@@ -7,9 +7,9 @@ fun environment(key: String) = providers.environmentVariable(key)
 
 plugins {
     id("org.jetbrains.changelog") version "2.5.0"
-    id("org.jetbrains.intellij.platform") version "2.16.0"
+    id("org.jetbrains.intellij.platform") version "2.17.0"
     id("java")
-    id("org.sonarqube") version "7.0.1.6134"
+    id("org.sonarqube") version "7.3.1.8318"
     id("jacoco")
 }
 
@@ -26,14 +26,14 @@ repositories {
 
 dependencies {
     // Version declarations
-    val gsonVersion = "2.13.1"
-    val sentryVersion = "8.19.1"
-    val junitVersion = "6.0.1"
+    val gsonVersion = "2.14.0"
+    val sentryVersion = "8.47.0"
+    val junitVersion = "6.1.1"
     val junit4Version = "4.13.2"
-    val junitPlatformVersion = "6.0.1"
-    val mockitoVersion = "5.19.0"
-    val assertjVersion = "3.27.4"
-    val pluginVerifierVersion = "1.388"
+    val junitPlatformVersion = "6.1.1"
+    val mockitoVersion = "5.23.0"
+    val assertjVersion = "3.27.7"
+    val pluginVerifierVersion = "1.408"
 
     // Implementation dependencies
     implementation("com.google.code.gson:gson:$gsonVersion")
