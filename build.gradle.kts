@@ -9,7 +9,6 @@ plugins {
     id("org.jetbrains.changelog") version "2.5.0"
     id("org.jetbrains.intellij.platform") version "2.17.0"
     id("java")
-    id("org.sonarqube") version "7.3.1.8318"
     id("jacoco")
 }
 
@@ -181,19 +180,6 @@ tasks {
 
         reports {
             xml.required.set(true)
-        }
-    }
-}
-
-/* SonarCloud */
-tasks.sonarqube {
-    dependsOn(tasks.build, tasks.jacocoTestReport)
-
-    sonarqube {
-        properties {
-            property("sonar.projectKey", "php-perfect_ddev-intellij-plugin")
-            property("sonar.organization", "php-perfect")
-            property("sonar.host.url", "https://sonarcloud.io/")
         }
     }
 }
