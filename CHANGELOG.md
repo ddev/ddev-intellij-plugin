@@ -2,7 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+The formats is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+
+## [1.2.9]
+
+### Changed
+* Add support for 2026.2 by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/535
 
 ## [1.2.8]
 

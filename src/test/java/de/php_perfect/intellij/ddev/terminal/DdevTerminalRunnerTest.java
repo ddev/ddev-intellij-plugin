@@ -24,7 +24,7 @@ final class DdevTerminalRunnerTest extends BasePlatformTestCase {
     }
 
     @Test
-    void createProcessNotExistentDdev() throws NoSuchFieldException, IllegalAccessException {
+    void createTtyConnectorNotExistentDdev() throws NoSuchFieldException, IllegalAccessException {
         Project project = getProject();
         DdevTerminalRunner ddevTerminalRunner = new DdevTerminalRunner(project);
 
@@ -35,9 +35,11 @@ final class DdevTerminalRunnerTest extends BasePlatformTestCase {
         field.set(state, null);
 
         final Map<String, String> envVariables = Map.of();
-        final ShellStartupOptions.Builder builder = new ShellStartupOptions.Builder(project.getBasePath(), null, null, null, null, null, envVariables, null);
+        final ShellStartupOptions.Builder builder = new ShellStartupOptions.Builder();
+        builder.setWorkingDirectory(project.getBasePath());
+        builder.setEnvVariables(envVariables);
 
-        Assertions.assertThrowsExactly(ExecutionException.class, () -> ddevTerminalRunner.createProcess(builder.build()));
+        Assertions.assertThrowsExactly(ExecutionException.class, () -> ddevTerminalRunner.createTtyConnector(builder.build()));
     }
 
     @Test

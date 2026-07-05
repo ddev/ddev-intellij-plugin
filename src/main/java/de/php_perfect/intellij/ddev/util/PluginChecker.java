@@ -1,6 +1,6 @@
 package de.php_perfect.intellij.ddev.util;
 
-import com.intellij.ide.plugins.PluginManager;
+import com.intellij.ide.plugins.PluginManagerCore;
 import com.intellij.openapi.extensions.PluginId;
 import com.intellij.openapi.project.Project;
 import de.php_perfect.intellij.ddev.notification.DdevNotifier;
@@ -50,13 +50,10 @@ public final class PluginChecker {
      * @return List of missing plugin display names, empty if all are available
      */
     public static @NotNull List<String> getMissingPlugins(@NotNull List<String> requiredPlugins) {
-        final var pluginManager = PluginManager.getInstance();
         final List<String> missingPluginNames = new ArrayList<>();
 
         for (final String id : requiredPlugins) {
-            final PluginId pluginId = PluginId.findId(id);
-
-            if (pluginId == null || pluginManager.findEnabledPlugin(pluginId) == null) {
+            if (!PluginManagerCore.isLoaded(PluginId.getId(id))) {
                 String displayName = PluginDisplayNameMapper.getDisplayName(id);
                 missingPluginNames.add(displayName);
             }
