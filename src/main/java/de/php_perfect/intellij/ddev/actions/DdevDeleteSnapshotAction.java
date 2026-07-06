@@ -82,6 +82,7 @@ public final class DdevDeleteSnapshotAction extends DdevRunAction {
                             }
                         })
                         .setNamerForFiltering(Snapshot::getName)
+                        .setFilterAlwaysVisible(true)
                         .setItemChosenCallback(snapshot -> DdevDeleteSnapshotAction.confirmAndDelete(project, snapshot))
                         .createPopup()
                         .showCenteredInCurrentWindow(project);

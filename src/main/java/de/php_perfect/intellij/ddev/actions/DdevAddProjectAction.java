@@ -63,6 +63,7 @@ public final class DdevAddProjectAction extends DdevRunAction {
                 .createPopupChooserBuilder(PROJECT_TYPES)
                 .setTitle(DdevIntegrationBundle.message("addProject.type.title"))
                 .setNamerForFiltering(type -> type)
+                .setFilterAlwaysVisible(true)
                 .setItemChosenCallback(type -> createProject(project, directory.getPath(), projectName.trim(), type))
                 .createPopup()
                 .showCenteredInCurrentWindow(project);

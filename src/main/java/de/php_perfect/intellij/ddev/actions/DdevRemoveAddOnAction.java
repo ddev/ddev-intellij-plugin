@@ -57,6 +57,7 @@ public final class DdevRemoveAddOnAction extends DdevRunAction {
                             }
                         })
                         .setNamerForFiltering(addOn -> addOn.getName() + " " + addOn.getRepository())
+                        .setFilterAlwaysVisible(true)
                         .setItemChosenCallback(addOn -> {
                             if (addOn.getName() != null) {
                                 DdevRunner.getInstance().removeAddOn(project, addOn.getName());

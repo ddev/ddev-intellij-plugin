@@ -622,6 +622,7 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
                                 }
                             })
                             .setNamerForFiltering(Snapshot::getName)
+                            .setFilterAlwaysVisible(true)
                             .setItemChosenCallback(snapshot -> {
                                 if (snapshot.getName() != null) {
                                     DdevRunner.getInstance().restoreSnapshot(DdevProjectsPanel.this.ideProject, appRoot, snapshot.getName());
