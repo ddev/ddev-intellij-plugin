@@ -89,7 +89,7 @@ final class DdevRunnerImplTest extends BasePlatformTestCase {
 
         new DdevRunnerImpl().share(getProject());
 
-        Mockito.verify(this.runner).run(commandLine.capture(), Mockito.eq("DDEV Share"));
+        Mockito.verify(this.runner).run(commandLine.capture(), Mockito.eq("DDEV Share"), Mockito.any(Runnable.class), Mockito.any());
         Assertions.assertEquals("ddev share", commandLine.getValue().getCommandLineString());
         Assertions.assertEquals("true", commandLine.getValue().getEnvironment().get("DDEV_NONINTERACTIVE"));
     }

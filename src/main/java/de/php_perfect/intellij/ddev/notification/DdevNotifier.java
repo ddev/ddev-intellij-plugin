@@ -26,6 +26,10 @@ public interface DdevNotifier {
 
     void notifyDdevCommandFailed(@NotNull String command, @NotNull String reason);
 
+    void notifyAddOnListFailed();
+
+    void notifySnapshotListFailed();
+
     static DdevNotifier getInstance(@NotNull Project project) {
         return project.getService(DdevNotifier.class);
     }

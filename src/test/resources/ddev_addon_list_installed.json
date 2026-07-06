@@ -1,0 +1,1 @@
+{"level":"info","msg":"1 add-on found.","raw":[{"Name":"adminer","Repository":"ddev/ddev-adminer","Version":"v1.3.1","Dependencies":null,"InstallDate":"2026-07-06T01:24:14+02:00","ProjectFiles":["docker-compose.adminer.yaml","docker-compose.adminer_norouter.yaml","commands/host/adminer"],"GlobalFiles":[],"RemovalActions":[]}],"time":"2026-07-06T01:24:14+02:00"}
