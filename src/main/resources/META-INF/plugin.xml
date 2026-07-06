@@ -160,6 +160,27 @@
                 <override-text place="MainMenu"/>
                 <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
             </action>
+            <separator/>
+            <action id="DdevIntegration.Run.CreateSnapshot" icon="AllIcons.Actions.MenuSaveall"
+                    class="de.php_perfect.intellij.ddev.actions.DdevCreateSnapshotAction">
+                <override-text place="MainMenu"/>
+                <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
+            </action>
+            <action id="DdevIntegration.Run.RestoreSnapshot" icon="AllIcons.Actions.Rollback"
+                    class="de.php_perfect.intellij.ddev.actions.DdevRestoreSnapshotAction">
+                <override-text place="MainMenu"/>
+                <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
+            </action>
+            <action id="DdevIntegration.Run.DeleteSnapshot" icon="AllIcons.General.Delete"
+                    class="de.php_perfect.intellij.ddev.actions.DdevDeleteSnapshotAction">
+                <override-text place="MainMenu"/>
+                <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
+            </action>
+            <action id="DdevIntegration.Run.ClearSnapshots" icon="AllIcons.Actions.GC"
+                    class="de.php_perfect.intellij.ddev.actions.DdevClearSnapshotsAction">
+                <override-text place="MainMenu"/>
+                <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
+            </action>
         </group>
         <group id="DdevIntegration.Services" class="de.php_perfect.intellij.ddev.actions.ServicesActionGroup"/>
         <action id="DdevIntegration.CheckVersion" class="de.php_perfect.intellij.ddev.actions.CheckVersionAction"/>
