@@ -192,6 +192,42 @@
                 <override-text place="MainMenu"/>
                 <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
             </action>
+            <separator/>
+            <action id="DdevIntegration.Run.ChangePhpVersion"
+                    class="de.php_perfect.intellij.ddev.actions.DdevChangePhpVersionAction">
+                <override-text place="MainMenu"/>
+                <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
+            </action>
+            <action id="DdevIntegration.Run.ChangeNodejsVersion"
+                    class="de.php_perfect.intellij.ddev.actions.DdevChangeNodejsVersionAction">
+                <override-text place="MainMenu"/>
+                <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
+            </action>
+            <action id="DdevIntegration.Run.ChangeWebserverType"
+                    class="de.php_perfect.intellij.ddev.actions.DdevChangeWebserverTypeAction">
+                <override-text place="MainMenu"/>
+                <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
+            </action>
+            <action id="DdevIntegration.Run.ChangeDatabaseVersion"
+                    class="de.php_perfect.intellij.ddev.actions.DdevChangeDatabaseVersionAction">
+                <override-text place="MainMenu"/>
+                <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
+            </action>
+            <action id="DdevIntegration.Run.RenameProject"
+                    class="de.php_perfect.intellij.ddev.actions.DdevRenameProjectAction">
+                <override-text place="MainMenu"/>
+                <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
+            </action>
+            <action id="DdevIntegration.Run.EditPhpConfig" icon="AllIcons.Actions.EditSource"
+                    class="de.php_perfect.intellij.ddev.actions.DdevEditPhpConfigAction">
+                <override-text place="MainMenu"/>
+                <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
+            </action>
+            <action id="DdevIntegration.Run.EditWebserverConfig" icon="AllIcons.Actions.EditSource"
+                    class="de.php_perfect.intellij.ddev.actions.DdevEditWebserverConfigAction">
+                <override-text place="MainMenu"/>
+                <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
+            </action>
         </group>
         <group id="DdevIntegration.Services" class="de.php_perfect.intellij.ddev.actions.ServicesActionGroup"/>
         <action id="DdevIntegration.CheckVersion" class="de.php_perfect.intellij.ddev.actions.CheckVersionAction"/>
