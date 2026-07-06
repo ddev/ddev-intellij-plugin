@@ -154,6 +154,11 @@
                 <override-text place="MainMenu"/>
                 <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
             </action>
+            <action id="DdevIntegration.Run.AddProject" icon="AllIcons.General.Add"
+                    class="de.php_perfect.intellij.ddev.actions.DdevAddProjectAction">
+                <override-text place="MainMenu"/>
+                <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
+            </action>
             <separator/>
             <action id="DdevIntegration.Run.EnableXdebug" icon="AllIcons.Actions.StartDebugger"
                     class="de.php_perfect.intellij.ddev.actions.DdevEnableXdebugAction">
