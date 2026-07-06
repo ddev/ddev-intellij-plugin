@@ -27,6 +27,8 @@ public final class DdevSettingsComponent {
     private final @NotNull JBCheckBox autoConfigureDataSource = new JBCheckBox(DdevIntegrationBundle.message("settings.automaticConfiguration.autoConfigureDataSource"));
     private final @NotNull JBCheckBox autoConfigurePhpInterpreter = new JBCheckBox(DdevIntegrationBundle.message("settings.automaticConfiguration.phpInterpreter"));
     private final @NotNull JBCheckBox autoConfigureNodeJsInterpreter = new JBCheckBox(DdevIntegrationBundle.message("settings.automaticConfiguration.nodeJsInterpreter"));
+    private final @NotNull JBCheckBox createSnapshotOnStop = new JBCheckBox(DdevIntegrationBundle.message("settings.createSnapshotOnStop"));
+    private final @NotNull JBCheckBox omitSnapshotOnDelete = new JBCheckBox(DdevIntegrationBundle.message("settings.omitSnapshotOnDelete"));
     private final @NotNull TextFieldWithBrowseButton ddevBinary = new TextFieldWithBrowseButton();
 
     public DdevSettingsComponent(Project project) {
@@ -84,11 +86,19 @@ public final class DdevSettingsComponent {
                         .withDescription("")
         );
 
+        final JPanel snapshotPanel = new JPanel();
+        snapshotPanel.setBorder(IdeBorderFactory.createTitledBorder(DdevIntegrationBundle.message("settings.snapshots"), true));
+        snapshotPanel.setLayout(new BoxLayout(snapshotPanel, BoxLayout.Y_AXIS));
+        snapshotPanel.add(this.createSnapshotOnStop);
+        snapshotPanel.add(Box.createVerticalStrut(5));
+        snapshotPanel.add(this.omitSnapshotOnDelete);
+
         this.jPanel = FormBuilder.createFormBuilder()
                 .addLabeledComponent(new JBLabel(DdevIntegrationBundle.message("settings.ddevBinary")), this.ddevBinary, 1, false)
                 .addComponent(checkForUpdatesPanel, 1)
                 .addComponent(watchDdevPanel, 1)
                 .addComponent(panel, 1)
+                .addComponent(snapshotPanel, 1)
                 .addComponentFillVertically(new JPanel(), 0)
                 .getPanel();
     }
@@ -184,6 +194,22 @@ public final class DdevSettingsComponent {
 
     public void setWatchDdevCheckboxStatus(boolean newStatus) {
         this.watchDdevCheckbox.setSelected(newStatus);
+    }
+
+    public boolean getCreateSnapshotOnStop() {
+        return this.createSnapshotOnStop.isSelected();
+    }
+
+    public void setCreateSnapshotOnStop(boolean newStatus) {
+        this.createSnapshotOnStop.setSelected(newStatus);
+    }
+
+    public boolean getOmitSnapshotOnDelete() {
+        return this.omitSnapshotOnDelete.isSelected();
+    }
+
+    public void setOmitSnapshotOnDelete(boolean newStatus) {
+        this.omitSnapshotOnDelete.setSelected(newStatus);
     }
 
     public @NotNull String getDdevBinary() {
