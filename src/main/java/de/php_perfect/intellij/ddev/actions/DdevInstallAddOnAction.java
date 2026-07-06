@@ -4,7 +4,8 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
-import com.intellij.ui.SimpleListCellRenderer;
+import com.intellij.ui.ColoredListCellRenderer;
+import com.intellij.ui.SimpleTextAttributes;
 import de.php_perfect.intellij.ddev.DdevIntegrationBundle;
 import de.php_perfect.intellij.ddev.cmd.AddOn;
 import de.php_perfect.intellij.ddev.cmd.CommandFailedException;
@@ -50,14 +51,18 @@ public final class DdevInstallAddOnAction extends DdevRunAction {
                 JBPopupFactory.getInstance()
                         .createPopupChooserBuilder(this.addOns)
                         .setTitle(DdevIntegrationBundle.message("addOn.install.popupTitle"))
-                        .setRenderer(new SimpleListCellRenderer<AddOn>() {
+                        .setRenderer(new ColoredListCellRenderer<AddOn>() {
                             @Override
-                            public void customize(@NotNull JList<? extends AddOn> list, AddOn addOn, int index, boolean selected, boolean hasFocus) {
-                                this.setText(addOn.getTitle());
-                                this.setToolTipText(addOn.getDescription());
+                            protected void customizeCellRenderer(@NotNull JList<? extends AddOn> list, AddOn addOn, int index, boolean selected, boolean hasFocus) {
+                                this.append(String.valueOf(addOn.getTitle()), SimpleTextAttributes.REGULAR_ATTRIBUTES);
+
+                                if (addOn.getDescription() != null) {
+                                    this.append("  " + addOn.getDescription(), SimpleTextAttributes.GRAYED_ATTRIBUTES);
+                                }
                             }
                         })
                         .setNamerForFiltering(addOn -> addOn.getTitle() + " " + addOn.getDescription())
+                        .setFilterAlwaysVisible(true)
                         .setItemChosenCallback(addOn -> {
                             if (addOn.getTitle() != null) {
                                 DdevRunner.getInstance().installAddOn(project, addOn.getTitle());

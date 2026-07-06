@@ -70,6 +70,7 @@ public final class DdevRestoreSnapshotAction extends DdevRunningAction {
                             }
                         })
                         .setNamerForFiltering(Snapshot::getName)
+                        .setFilterAlwaysVisible(true)
                         .setItemChosenCallback(snapshot -> {
                             if (snapshot.getName() != null) {
                                 DdevRunner.getInstance().restoreSnapshot(project, snapshot.getName());
