@@ -55,6 +55,8 @@ public final class DdevSettingsConfigurable implements Configurable {
         modified |= this.ddevSettingsComponent.getAutoConfigureDataSource() != settings.autoConfigureDataSource;
         modified |= this.ddevSettingsComponent.getAutoConfigurePhpInterpreter() != settings.autoConfigurePhpInterpreter;
         modified |= this.ddevSettingsComponent.getAutoConfigureNodeJsInterpreter() != settings.autoConfigureNodeJsInterpreter;
+        modified |= this.ddevSettingsComponent.getCreateSnapshotOnStop() != settings.createSnapshotOnStop;
+        modified |= this.ddevSettingsComponent.getOmitSnapshotOnDelete() != settings.omitSnapshotOnDelete;
 
         return modified;
     }
@@ -74,6 +76,8 @@ public final class DdevSettingsConfigurable implements Configurable {
         settings.autoConfigureDataSource = this.ddevSettingsComponent.getAutoConfigureDataSource();
         settings.autoConfigurePhpInterpreter = this.ddevSettingsComponent.getAutoConfigurePhpInterpreter();
         settings.autoConfigureNodeJsInterpreter = this.ddevSettingsComponent.getAutoConfigureNodeJsInterpreter();
+        settings.createSnapshotOnStop = this.ddevSettingsComponent.getCreateSnapshotOnStop();
+        settings.omitSnapshotOnDelete = this.ddevSettingsComponent.getOmitSnapshotOnDelete();
 
         StateWatcher.getInstance(this.project).stopWatching();
         ApplicationManager.getApplication().executeOnPooledThread(() -> DdevStateManager.getInstance(this.project).reinitialize());
@@ -105,6 +109,8 @@ public final class DdevSettingsConfigurable implements Configurable {
         this.ddevSettingsComponent.setAutoConfigureDataSource(settings.autoConfigureDataSource);
         this.ddevSettingsComponent.setAutoConfigurePhpInterpreter(settings.autoConfigurePhpInterpreter);
         this.ddevSettingsComponent.setAutoConfigureNodeJsInterpreter(settings.autoConfigureNodeJsInterpreter);
+        this.ddevSettingsComponent.setCreateSnapshotOnStop(settings.createSnapshotOnStop);
+        this.ddevSettingsComponent.setOmitSnapshotOnDelete(settings.omitSnapshotOnDelete);
     }
 
     @Override

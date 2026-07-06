@@ -17,6 +17,8 @@ public final class DdevSettingsState implements PersistentStateComponent<DdevSet
     public boolean autoConfigureDataSource;
     public boolean autoConfigurePhpInterpreter;
     public boolean autoConfigureNodeJsInterpreter;
+    public boolean createSnapshotOnStop;
+    public boolean omitSnapshotOnDelete;
 
     public DdevSettingsState() {
         // Set default values for new installations
@@ -26,6 +28,8 @@ public final class DdevSettingsState implements PersistentStateComponent<DdevSet
         this.autoConfigureDataSource = true;
         this.autoConfigurePhpInterpreter = true;
         this.autoConfigureNodeJsInterpreter = true;
+        this.createSnapshotOnStop = false;
+        this.omitSnapshotOnDelete = false;
     }
 
     public static @NotNull DdevSettingsState getInstance(Project project) {
