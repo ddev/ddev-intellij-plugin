@@ -19,6 +19,7 @@ import org.jetbrains.plugins.terminal.AbstractTerminalRunner;
 import org.jetbrains.plugins.terminal.ShellStartupOptions;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -28,13 +29,22 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class DdevTerminalRunner extends AbstractTerminalRunner<PtyProcess> {
     private static final Logger LOG = Logger.getInstance(DdevTerminalRunner.class);
 
+    private final @NotNull List<String> ddevArguments;
+    private final @NotNull @NlsContexts.TabTitle String tabTitle;
+
     public DdevTerminalRunner(@NotNull Project project) {
+        this(project, List.of("ssh"), "DDEV Web Container");
+    }
+
+    public DdevTerminalRunner(@NotNull Project project, @NotNull List<String> ddevArguments, @NotNull @NlsContexts.TabTitle String tabTitle) {
         super(project);
+        this.ddevArguments = ddevArguments;
+        this.tabTitle = tabTitle;
     }
 
     @Override
     public @NotNull TtyConnector createTtyConnector(@NotNull ShellStartupOptions startupOptions) throws ExecutionException {
-        final PtyProcess process = this.createDdevSshProcess();
+        final PtyProcess process = this.createDdevProcess();
 
         return new PtyProcessTtyConnector(process, StandardCharsets.UTF_8) {
             @Override
@@ -54,14 +64,18 @@ public final class DdevTerminalRunner extends AbstractTerminalRunner<PtyProcess>
         };
     }
 
-    private @NotNull PtyProcess createDdevSshProcess() throws ExecutionException {
+    private @NotNull PtyProcess createDdevProcess() throws ExecutionException {
         State ddevState = DdevStateManager.getInstance(this.myProject).getState();
 
         if (!ddevState.isAvailable()) {
             throw new ExecutionException("DDEV not installed", null);
         }
 
-        final PtyCommandLine commandLine = new PtyCommandLine(List.of(Objects.requireNonNull(ddevState.getDdevBinary()), "ssh"))
+        final List<String> command = new ArrayList<>();
+        command.add(Objects.requireNonNull(ddevState.getDdevBinary()));
+        command.addAll(this.ddevArguments);
+
+        final PtyCommandLine commandLine = new PtyCommandLine(command)
                 .withConsoleMode(false);
 
         commandLine.setWorkDirectory(getProject().getBasePath());
@@ -82,7 +96,7 @@ public final class DdevTerminalRunner extends AbstractTerminalRunner<PtyProcess>
 
     @Override
     public @NlsContexts.TabTitle String getDefaultTabTitle() {
-        return "DDEV Web Container";
+        return this.tabTitle;
     }
 
     @Override

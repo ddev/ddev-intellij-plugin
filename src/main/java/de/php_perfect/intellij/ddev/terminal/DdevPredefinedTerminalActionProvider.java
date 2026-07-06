@@ -19,6 +19,9 @@ public final class DdevPredefinedTerminalActionProvider implements OpenPredefine
             return List.of();
         }
 
-        return List.of(ActionManager.getInstance().getAction("DdevIntegration.Terminal"));
+        return List.of(
+                ActionManager.getInstance().getAction("DdevIntegration.Terminal"),
+                ActionManager.getInstance().getAction("DdevIntegration.DatabaseTerminal")
+        );
     }
 }

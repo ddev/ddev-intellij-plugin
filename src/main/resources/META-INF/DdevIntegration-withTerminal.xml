@@ -12,5 +12,8 @@
     <actions resource-bundle="messages.DdevIntegrationBundle">
         <action id="DdevIntegration.Terminal" class="de.php_perfect.intellij.ddev.actions.DdevPredefinedTerminalAction"
                 icon="de.php_perfect.intellij.ddev.icons.DdevIntegrationIcons.DdevLogoColor"/>
+        <action id="DdevIntegration.DatabaseTerminal"
+                class="de.php_perfect.intellij.ddev.actions.DdevDatabaseTerminalAction"
+                icon="de.php_perfect.intellij.ddev.icons.DdevIntegrationIcons.DdevLogoColor"/>
     </actions>
 </idea-plugin>
