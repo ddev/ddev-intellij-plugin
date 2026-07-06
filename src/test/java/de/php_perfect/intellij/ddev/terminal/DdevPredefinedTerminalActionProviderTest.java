@@ -36,8 +36,11 @@ final class DdevPredefinedTerminalActionProviderTest extends BasePlatformTestCas
     void configuredProjectOffersDdevTerminal() {
         DdevStateStub.install(getProject(), getTestRootDisposable(), true, true, null);
 
+        final ActionManager actionManager = ActionManager.getInstance();
+
         Assertions.assertEquals(
-                List.of(ActionManager.getInstance().getAction("DdevIntegration.Terminal")),
+                List.of(actionManager.getAction("DdevIntegration.Terminal"),
+                        actionManager.getAction("DdevIntegration.DatabaseTerminal")),
                 new DdevPredefinedTerminalActionProvider().listOpenPredefinedTerminalActions(getProject()));
     }
 

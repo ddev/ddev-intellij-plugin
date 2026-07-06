@@ -19,6 +19,7 @@ import de.php_perfect.intellij.ddev.state.State;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -28,8 +29,17 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class DdevTerminalRunner extends PlatformTerminalRunner {
     private static final Logger LOG = Logger.getInstance(DdevTerminalRunner.class);
 
+    private final @NotNull List<String> ddevArguments;
+    private final @NotNull @NlsContexts.TabTitle String tabTitle;
+
     public DdevTerminalRunner(@NotNull Project project) {
+        this(project, List.of("ssh"), "DDEV Web Container");
+    }
+
+    public DdevTerminalRunner(@NotNull Project project, @NotNull List<String> ddevArguments, @NotNull @NlsContexts.TabTitle String tabTitle) {
         super(project);
+        this.ddevArguments = ddevArguments;
+        this.tabTitle = tabTitle;
     }
 
     @Override
@@ -45,7 +55,11 @@ public final class DdevTerminalRunner extends PlatformTerminalRunner {
             throw new ExecutionException("DDEV not installed", null);
         }
 
-        final PtyCommandLine commandLine = new PtyCommandLine(List.of(Objects.requireNonNull(ddevState.getDdevBinary()), "ssh"))
+        final List<String> command = new ArrayList<>();
+        command.add(Objects.requireNonNull(ddevState.getDdevBinary()));
+        command.addAll(this.ddevArguments);
+
+        final PtyCommandLine commandLine = new PtyCommandLine(command)
                 .withConsoleMode(false);
 
         commandLine.setWorkDirectory(getProject().getBasePath());
@@ -66,7 +80,7 @@ public final class DdevTerminalRunner extends PlatformTerminalRunner {
 
     @Override
     public @NlsContexts.TabTitle String getDefaultTabTitle() {
-        return "DDEV Web Container";
+        return this.tabTitle;
     }
 
     @Override
