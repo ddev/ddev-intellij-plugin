@@ -9,7 +9,12 @@
     <p>Features:</p>
     <ul>
         <li>Run DDEV Actions</li>
+        <li>Manage All DDEV Projects in a Tool Window</li>
         <li>Quick access DDEV Services</li>
+        <li>Manage Database Snapshots</li>
+        <li>Import and Export Databases</li>
+        <li>Enable and Disable Xdebug</li>
+        <li>Install and Remove DDEV Add-Ons</li>
         <li>Check for DDEV Updates</li>
         <li>Auto Configure PHP Remote Interpreter</li>
         <li>Auto Configure Node.js Remote Interpreter</li>
