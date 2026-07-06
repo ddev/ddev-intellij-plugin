@@ -24,6 +24,10 @@ public interface DdevNotifier {
 
     void notifyDockerNotAvailable(final @NotNull String context);
 
+    void notifyAddOnListFailed();
+
+    void notifySnapshotListFailed();
+
     static DdevNotifier getInstance(@NotNull Project project) {
         return project.getService(DdevNotifier.class);
     }

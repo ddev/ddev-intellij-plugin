@@ -147,4 +147,28 @@ public final class DdevNotifierImpl implements DdevNotifier {
                 .addAction(new ReloadPluginAction())
                 .notify(this.project), ModalityState.nonModal());
     }
+
+    @Override
+    public void notifyAddOnListFailed() {
+        ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
+                .getNotificationGroup(NON_STICKY)
+                .createNotification(
+                        DdevIntegrationBundle.message("notification.AddOnListFailed.title"),
+                        DdevIntegrationBundle.message("notification.AddOnListFailed.text"),
+                        NotificationType.WARNING
+                )
+                .notify(this.project), ModalityState.nonModal());
+    }
+
+    @Override
+    public void notifySnapshotListFailed() {
+        ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
+                .getNotificationGroup(NON_STICKY)
+                .createNotification(
+                        DdevIntegrationBundle.message("notification.SnapshotListFailed.title"),
+                        DdevIntegrationBundle.message("notification.SnapshotListFailed.text"),
+                        NotificationType.WARNING
+                )
+                .notify(this.project), ModalityState.nonModal());
+    }
 }

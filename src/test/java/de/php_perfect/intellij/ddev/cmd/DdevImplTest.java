@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 
 final class DdevImplTest extends BasePlatformTestCase {
     @Override
@@ -62,6 +63,75 @@ final class DdevImplTest extends BasePlatformTestCase {
         mockProcessExecutor.addProcessOutput("ddev version --json-output", processOutput);
 
         Assertions.assertEquals(expected, new DdevImpl().detailedVersions("ddev", getProject()));
+    }
+
+    @Test
+    void listAddOns() throws CommandFailedException, IOException {
+        final List<AddOn> expected = List.of(
+                new AddOn("ddev/ddev-redis", "Redis service for DDEV", "official", "v2.1.0"),
+                new AddOn("2ndkauboy/ddev-elasticvue", "Elasticvue service for DDEV", "contrib", "1.1.0")
+        );
+
+        ProcessOutput processOutput = new ProcessOutput(Files.readString(Path.of("src/test/resources/ddev_addon_list.json")), "", 0, false, false);
+
+        MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+        mockProcessExecutor.addProcessOutput("ddev add-on list --all --json-output", processOutput);
+
+        Assertions.assertEquals(expected, new DdevImpl().listAddOns("ddev", getProject()));
+    }
+
+    @Test
+    void listInstalledAddOns() throws CommandFailedException, IOException {
+        final List<InstalledAddOn> expected = List.of(
+                new InstalledAddOn("adminer", "ddev/ddev-adminer", "v1.3.1")
+        );
+
+        ProcessOutput processOutput = new ProcessOutput(Files.readString(Path.of("src/test/resources/ddev_addon_list_installed.json")), "", 0, false, false);
+
+        MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+        mockProcessExecutor.addProcessOutput("ddev add-on list --installed --json-output", processOutput);
+
+        Assertions.assertEquals(expected, new DdevImpl().listInstalledAddOns("ddev", getProject()));
+    }
+
+    @Test
+    void listProjects() throws CommandFailedException, IOException {
+        final List<DdevProject> expected = List.of(
+                new DdevProject("alpha", "/home/user/Projects/alpha", "~/Projects/alpha", Description.Status.RUNNING, "running", "laravel", "https://alpha.ddev.site"),
+                new DdevProject("beta", "/home/user/Projects/beta", "~/Projects/beta", Description.Status.STOPPED, "stopped", "drupal11", "https://beta.ddev.site")
+        );
+
+        ProcessOutput processOutput = new ProcessOutput(Files.readString(Path.of("src/test/resources/ddev_list.json")), "", 0, false, false);
+
+        MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+        mockProcessExecutor.addProcessOutput("ddev list --json-output", processOutput);
+
+        Assertions.assertEquals(expected, new DdevImpl().listProjects("ddev", getProject()));
+    }
+
+    @Test
+    void listSnapshots() throws CommandFailedException, IOException {
+        final List<Snapshot> expected = List.of(
+                new Snapshot("claude-test-snap", "2026-07-06T08:15:32.93905135+02:00"),
+                new Snapshot("older-snap", "2026-07-01T10:00:00.00000000+02:00")
+        );
+
+        ProcessOutput processOutput = new ProcessOutput(Files.readString(Path.of("src/test/resources/ddev_snapshot_list.json")), "", 0, false, false);
+
+        MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+        mockProcessExecutor.addProcessOutput("ddev snapshot --list --json-output", processOutput);
+
+        Assertions.assertEquals(expected, new DdevImpl().listSnapshots("ddev", getProject()));
+    }
+
+    @Test
+    void listSnapshotsEmpty() throws CommandFailedException, IOException {
+        ProcessOutput processOutput = new ProcessOutput(Files.readString(Path.of("src/test/resources/ddev_snapshot_list_empty.json")), "", 0, false, false);
+
+        MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+        mockProcessExecutor.addProcessOutput("ddev snapshot --list --json-output", processOutput);
+
+        Assertions.assertEquals(List.of(), new DdevImpl().listSnapshots("ddev", getProject()));
     }
 
     @Test
