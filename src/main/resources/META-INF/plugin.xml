@@ -101,6 +101,10 @@
 
         <postStartupActivity implementation="de.php_perfect.intellij.ddev.InitPluginActivity"/>
 
+        <toolWindow id="DDEV" anchor="left"
+                    factoryClass="de.php_perfect.intellij.ddev.toolwindow.DdevProjectsToolWindowFactory"
+                    icon="de.php_perfect.intellij.ddev.icons.DdevIntegrationIcons.DdevLogoMono"/>
+
         <statusBarWidgetFactory order="before light.edit.large.file.encoding.widget"
                                 implementation="de.php_perfect.intellij.ddev.status_bar.DdevStatusBarWidgetFactoryImpl"
                                 id="DdevStatusBarWidget"/>
