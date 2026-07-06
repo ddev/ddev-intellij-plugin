@@ -149,6 +149,17 @@
                 <override-text place="MainMenu"/>
                 <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
             </action>
+            <separator/>
+            <action id="DdevIntegration.Run.EnableXdebug" icon="AllIcons.Actions.StartDebugger"
+                    class="de.php_perfect.intellij.ddev.actions.DdevEnableXdebugAction">
+                <override-text place="MainMenu"/>
+                <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
+            </action>
+            <action id="DdevIntegration.Run.DisableXdebug" icon="AllIcons.Debugger.MuteBreakpoints"
+                    class="de.php_perfect.intellij.ddev.actions.DdevDisableXdebugAction">
+                <override-text place="MainMenu"/>
+                <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
+            </action>
         </group>
         <group id="DdevIntegration.Services" class="de.php_perfect.intellij.ddev.actions.ServicesActionGroup"/>
         <action id="DdevIntegration.CheckVersion" class="de.php_perfect.intellij.ddev.actions.CheckVersionAction"/>
