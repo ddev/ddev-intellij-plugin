@@ -12,6 +12,10 @@ import de.php_perfect.intellij.ddev.notification.DdevNotifier;
 import de.php_perfect.intellij.ddev.settings.DdevSettingsState;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -53,7 +57,7 @@ public final class DdevStateManagerImpl implements DdevStateManager {
 
         this.checkChanged(() -> {
             this.resetState();
-            this.checkIsInstalled(!reinitialize);
+            this.checkIsInstalled();
             this.checkVersion();
             this.checkConfiguration();
             this.checkDescription();
@@ -139,19 +143,38 @@ public final class DdevStateManagerImpl implements DdevStateManager {
         }
     }
 
-    private void checkIsInstalled(boolean autodetect) {
+    private void checkIsInstalled() {
         DdevSettingsState configurable = DdevSettingsState.getInstance(this.project);
+        String ddevBinary = configurable.ddevBinary;
 
-        if (autodetect && configurable.ddevBinary.isEmpty()) {
-            String detectedDdevBinary = BinaryLocator.getInstance().findInPath(this.project);
-
-            if (detectedDdevBinary != null) {
-                configurable.ddevBinary = detectedDdevBinary;
-                DdevNotifier.getInstance(this.project).notifyDdevDetected(detectedDdevBinary);
-            }
+        if (!ddevBinary.isEmpty() && isBinaryMissing(ddevBinary)) {
+            // The configured override no longer exists, e.g. DDEV was uninstalled or moved into WSL
+            // (https://github.com/ddev/ddev-intellij-plugin/issues/250). Fall back to PATH detection
+            // instead of failing every subsequent command execution with an error.
+            LOG.warn(String.format("Configured ddev binary %s no longer exists, falling back to PATH detection", ddevBinary));
+            ddevBinary = "";
         }
 
-        this.state.setDdevBinary(configurable.ddevBinary);
+        if (ddevBinary.isEmpty()) {
+            // The binary setting is only an override; by default ddev is looked up on the PATH.
+            ddevBinary = Objects.requireNonNullElse(BinaryLocator.getInstance().findInPath(this.project), "");
+        }
+
+        this.state.setDdevBinary(ddevBinary);
+    }
+
+    private static boolean isBinaryMissing(@NotNull String binaryPath) {
+        final Path path;
+
+        try {
+            path = Paths.get(binaryPath);
+        } catch (InvalidPathException ignored) {
+            return false;
+        }
+
+        // Plain command names and non-native paths (e.g. Linux paths while running on Windows) are resolved
+        // by the process launcher; only absolute native paths can be verified here.
+        return path.isAbsolute() && !Files.exists(path);
     }
 
     private void checkVersion() {

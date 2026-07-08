@@ -29,7 +29,8 @@ public class BinaryLocatorImpl implements BinaryLocator {
 
             return processOutput.getStdout().strip();
         } catch (ExecutionException exception) {
-            LOG.error(exception);
+            // Not finding ddev on the PATH is an expected condition, not a reportable error.
+            LOG.warn(exception);
             return null;
         }
     }

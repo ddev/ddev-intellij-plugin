@@ -139,19 +139,6 @@ public final class DdevNotifierImpl implements DdevNotifier {
     }
 
     @Override
-    public void notifyDdevDetected(final @NotNull String binary) {
-        ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
-                .getNotificationGroup(NON_STICKY)
-                .createNotification(
-                        DdevIntegrationBundle.message("notification.ddevDetected.title"),
-                        DdevIntegrationBundle.message("notification.ddevDetected.text", binary),
-                        NotificationType.INFORMATION
-                )
-                .addAction(new ChangeSettingsAction())
-                .notify(this.project), ModalityState.nonModal());
-    }
-
-    @Override
     public void notifyDockerNotAvailable(final @NotNull String context) {
         ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
                 .getNotificationGroup(STICKY)

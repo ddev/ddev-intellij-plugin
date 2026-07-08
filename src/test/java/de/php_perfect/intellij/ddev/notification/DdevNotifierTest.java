@@ -114,22 +114,6 @@ final class DdevNotifierTest extends BasePlatformTestCase {
     }
 
     @Test
-    void notifyDdevDetected() {
-        Project project = getProject();
-
-        NotificationsManager notificationManager = NotificationsManager.getNotificationsManager();
-        Notification[] notifications = notificationManager.getNotificationsOfType(Notification.class, project);
-        assertEmpty(notifications);
-
-        new DdevNotifierImpl(project).notifyDdevDetected("/some/path/ddev");
-
-        this.waitForEventQueue();
-
-        notifications = notificationManager.getNotificationsOfType(Notification.class, project);
-        assertSize(1, notifications);
-    }
-
-    @Test
     void notifyShareUrl() {
         Project project = getProject();
 
