@@ -22,6 +22,7 @@
         <li>Integrated DDEV Terminal</li>
         <li>And much more coming soon!</li>
     </ul>
+    <p>Works great with Drupal, WordPress, TYPO3, Laravel, Symfony, Magento, Craft CMS, Shopware, Backdrop, Joomla and any other PHP or Node.js project running on DDEV.</p>
     ]]></description>
     <change-notes/>
 
