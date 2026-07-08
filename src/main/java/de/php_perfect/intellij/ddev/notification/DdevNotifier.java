@@ -28,6 +28,8 @@ public interface DdevNotifier {
 
     void notifyShareUrl(@NotNull String url);
 
+    void notifyShareFailed(@NotNull String errorCode);
+
     static DdevNotifier getInstance(@NotNull Project project) {
         return project.getService(DdevNotifier.class);
     }

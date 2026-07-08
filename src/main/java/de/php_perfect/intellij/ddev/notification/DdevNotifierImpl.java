@@ -182,6 +182,24 @@ public final class DdevNotifierImpl implements DdevNotifier {
     }
 
     @Override
+    public void notifyShareFailed(final @NotNull String errorCode) {
+        ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
+                .getNotificationGroup(STICKY)
+                .createNotification(
+                        DdevIntegrationBundle.message("notification.ShareFailed.title"),
+                        DdevIntegrationBundle.message("notification.ShareFailed.text", errorCode),
+                        NotificationType.WARNING
+                )
+                .addAction(NotificationAction.createSimple(
+                        DdevIntegrationBundle.message("notification.ShareFailed.getToken"),
+                        () -> BrowserUtil.browse("https://dashboard.ngrok.com/get-started/your-authtoken")))
+                .addAction(NotificationAction.createSimple(
+                        DdevIntegrationBundle.message("notification.ShareFailed.docs"),
+                        () -> BrowserUtil.browse("https://ddev.readthedocs.io/en/stable/users/topics/sharing/")))
+                .notify(this.project), ModalityState.nonModal());
+    }
+
+    @Override
     public void notifySnapshotListFailed() {
         ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
                 .getNotificationGroup(NON_STICKY)

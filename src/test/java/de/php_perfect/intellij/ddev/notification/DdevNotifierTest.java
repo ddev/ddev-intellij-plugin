@@ -130,6 +130,22 @@ final class DdevNotifierTest extends BasePlatformTestCase {
     }
 
     @Test
+    void notifyShareFailed() {
+        Project project = getProject();
+
+        NotificationsManager notificationManager = NotificationsManager.getNotificationsManager();
+        Notification[] notifications = notificationManager.getNotificationsOfType(Notification.class, project);
+        assertEmpty(notifications);
+
+        new DdevNotifierImpl(project).notifyShareFailed("ERR_NGROK_4018");
+
+        this.waitForEventQueue();
+
+        notifications = notificationManager.getNotificationsOfType(Notification.class, project);
+        assertSize(1, notifications);
+    }
+
+    @Test
     void notifyErrorReportSent() {
         Project project = getProject();
 

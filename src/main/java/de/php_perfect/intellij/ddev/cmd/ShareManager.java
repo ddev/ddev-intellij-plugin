@@ -20,6 +20,7 @@ import java.util.regex.Pattern;
 @Service(Service.Level.PROJECT)
 public final class ShareManager {
     private static final @NotNull Pattern SHARE_URL_PATTERN = Pattern.compile("https://[A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)*\\.ngrok(?:-free)?\\.(?:io|app|dev)");
+    private static final @NotNull Pattern SHARE_ERROR_PATTERN = Pattern.compile("ERR_NGROK_\\d+");
     private static final int MAX_BUFFER_LENGTH = 65_536;
 
     private final @NotNull Project project;
@@ -59,7 +60,8 @@ public final class ShareManager {
 
     /**
      * Scans the {@code ddev share} output for the public ngrok URL, which is otherwise easy to miss
-     * in the run console (https://github.com/ddev/ddev-intellij-plugin/issues/8).
+     * in the run console, and for ngrok errors such as a missing authtoken
+     * (https://github.com/ddev/ddev-intellij-plugin/issues/8).
      */
     private final class ShareUrlNotifyingListener implements ProcessListener {
         private final @NotNull StringBuilder buffer = new StringBuilder();
@@ -73,11 +75,19 @@ public final class ShareManager {
 
             this.buffer.append(event.getText());
 
-            final Matcher matcher = SHARE_URL_PATTERN.matcher(this.buffer);
+            final Matcher urlMatcher = SHARE_URL_PATTERN.matcher(this.buffer);
 
-            if (matcher.find()) {
+            if (urlMatcher.find()) {
                 this.notified = true;
-                DdevNotifier.getInstance(ShareManager.this.project).notifyShareUrl(matcher.group());
+                DdevNotifier.getInstance(ShareManager.this.project).notifyShareUrl(urlMatcher.group());
+                return;
+            }
+
+            final Matcher errorMatcher = SHARE_ERROR_PATTERN.matcher(this.buffer);
+
+            if (errorMatcher.find()) {
+                this.notified = true;
+                DdevNotifier.getInstance(ShareManager.this.project).notifyShareFailed(errorMatcher.group());
             }
         }
     }
