@@ -40,7 +40,8 @@ final class DdevPredefinedTerminalActionProviderTest extends BasePlatformTestCas
 
         Assertions.assertEquals(
                 List.of(actionManager.getAction("DdevIntegration.Terminal"),
-                        actionManager.getAction("DdevIntegration.DatabaseTerminal")),
+                        actionManager.getAction("DdevIntegration.DatabaseTerminal"),
+                        actionManager.getAction("DdevIntegration.ServiceTerminal")),
                 new DdevPredefinedTerminalActionProvider().listOpenPredefinedTerminalActions(getProject()));
     }
 
