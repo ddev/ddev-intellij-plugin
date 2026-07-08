@@ -1,14 +1,19 @@
 package de.php_perfect.intellij.ddev.notification;
 
+import com.intellij.ide.BrowserUtil;
+import com.intellij.notification.NotificationAction;
 import com.intellij.notification.NotificationGroupManager;
 import com.intellij.notification.NotificationType;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
+import com.intellij.openapi.ide.CopyPasteManager;
 import com.intellij.openapi.project.Project;
 import de.php_perfect.intellij.ddev.DdevIntegrationBundle;
 import de.php_perfect.intellij.ddev.actions.*;
 import org.jetbrains.annotations.NotNull;
+
+import java.awt.datatransfer.StringSelection;
 
 public final class DdevNotifierImpl implements DdevNotifier {
     public static final String STICKY = "DdevIntegration.Sticky";
@@ -157,6 +162,24 @@ public final class DdevNotifierImpl implements DdevNotifier {
                         DdevIntegrationBundle.message("notification.AddOnListFailed.text"),
                         NotificationType.WARNING
                 )
+                .notify(this.project), ModalityState.nonModal());
+    }
+
+    @Override
+    public void notifyShareUrl(final @NotNull String url) {
+        ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
+                .getNotificationGroup(STICKY)
+                .createNotification(
+                        DdevIntegrationBundle.message("notification.ShareUrl.title"),
+                        DdevIntegrationBundle.message("notification.ShareUrl.text", url),
+                        NotificationType.INFORMATION
+                )
+                .addAction(NotificationAction.createSimple(
+                        DdevIntegrationBundle.message("notification.ShareUrl.open"),
+                        () -> BrowserUtil.browse(url)))
+                .addAction(NotificationAction.createSimple(
+                        DdevIntegrationBundle.message("notification.ShareUrl.copy"),
+                        () -> CopyPasteManager.getInstance().setContents(new StringSelection(url))))
                 .notify(this.project), ModalityState.nonModal());
     }
 
