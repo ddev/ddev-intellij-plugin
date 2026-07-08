@@ -15,5 +15,8 @@
         <action id="DdevIntegration.DatabaseTerminal"
                 class="de.php_perfect.intellij.ddev.actions.DdevDatabaseTerminalAction"
                 icon="de.php_perfect.intellij.ddev.icons.DdevIntegrationIcons.DdevLogoColor"/>
+        <action id="DdevIntegration.ServiceTerminal"
+                class="de.php_perfect.intellij.ddev.actions.DdevServiceTerminalAction"
+                icon="de.php_perfect.intellij.ddev.icons.DdevIntegrationIcons.DdevLogoColor"/>
     </actions>
 </idea-plugin>
