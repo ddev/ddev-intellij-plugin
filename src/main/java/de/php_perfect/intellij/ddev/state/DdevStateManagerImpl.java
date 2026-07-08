@@ -68,7 +68,7 @@ public final class DdevStateManagerImpl implements DdevStateManager {
 
         this.checkChanged(() -> {
             this.resetState();
-            this.checkIsInstalled(!reinitialize);
+            this.checkIsInstalled();
             this.checkVersion();
             this.checkConfiguration();
             this.checkDescription();
@@ -158,35 +158,33 @@ public final class DdevStateManagerImpl implements DdevStateManager {
         }
     }
 
-    private void checkIsInstalled(boolean autodetect) {
+    private void checkIsInstalled() {
         DdevSettingsState configurable = DdevSettingsState.getInstance(this.project);
+        String ddevBinary = configurable.ddevBinary;
 
-        if (!configurable.ddevBinary.isEmpty() && isBinaryMissing(configurable.ddevBinary)) {
-            LOG.warn(String.format("Configured ddev binary %s no longer exists, looking it up on the PATH", configurable.ddevBinary));
-            this.detectBinary();
-        } else if (autodetect && configurable.ddevBinary.isEmpty()) {
-            this.detectBinary();
+        if (!ddevBinary.isEmpty() && isBinaryMissing(ddevBinary)) {
+            LOG.warn(String.format("Configured ddev binary %s no longer exists, looking it up on the PATH", ddevBinary));
+            ddevBinary = "";
         }
 
-        this.state.setDdevBinary(configurable.ddevBinary);
+        // The setting only overrides the ddev binary found on PATH.
+        if (ddevBinary.isEmpty()) {
+            ddevBinary = Objects.requireNonNullElse(BinaryLocator.getInstance().findInPath(this.project), "");
+        }
+
+        this.state.setDdevBinary(ddevBinary);
     }
 
-    /**
-     * Replaces the configured binary with the one found on the PATH.
-     *
-     * @return whether a binary different from the configured one was found
-     */
-    private boolean detectBinary() {
-        final DdevSettingsState configurable = DdevSettingsState.getInstance(this.project);
-        final String detectedDdevBinary = BinaryLocator.getInstance().findInPath(this.project);
+    // Switches to the PATH binary without saving it to settings.
+    private boolean fallBackToPath() {
+        final String pathBinary = BinaryLocator.getInstance().findInPath(this.project);
 
-        if (detectedDdevBinary == null || detectedDdevBinary.isEmpty() || detectedDdevBinary.equals(configurable.ddevBinary)) {
+        if (pathBinary == null || pathBinary.isEmpty() || pathBinary.equals(this.state.getDdevBinary())) {
             return false;
         }
 
-        configurable.ddevBinary = detectedDdevBinary;
-        this.state.setDdevBinary(detectedDdevBinary);
-        DdevNotifier.getInstance(this.project).notifyDdevDetected(detectedDdevBinary);
+        LOG.warn(String.format("ddev binary %s could not be started, using %s from the PATH", this.state.getDdevBinary(), pathBinary));
+        this.state.setDdevBinary(pathBinary);
 
         return true;
     }
@@ -216,7 +214,7 @@ public final class DdevStateManagerImpl implements DdevStateManager {
             this.state.setDdevVersion(Ddev.getInstance().version(Objects.requireNonNull(this.state.getDdevBinary()), this.project));
             this.isVersionFailureReported.set(false);
         } catch (CommandFailedException exception) {
-            if (isProcessNotCreated(exception) && this.detectBinary()) {
+            if (isProcessNotCreated(exception) && this.fallBackToPath()) {
                 this.checkVersion();
                 return;
             }

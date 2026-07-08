@@ -20,8 +20,6 @@ public interface DdevNotifier {
 
     void notifyErrorReportSent(@NotNull String id);
 
-    void notifyDdevDetected(@NotNull String binary);
-
     void notifyDockerNotAvailable(final @NotNull String context);
 
     void notifyDdevCommandFailed(@NotNull String command, @NotNull String reason);

@@ -133,7 +133,7 @@ final class DdevStateManagerTest extends BasePlatformTestCase {
     }
 
     @Test
-    void testInitializeReplacesMissingConfiguredBinary() {
+    void testInitializeFallsBackWhenConfiguredBinaryIsMissing() {
         String expectedWhich = "which";
         if (SystemInfo.isWindows) {
             expectedWhich = "where";
@@ -154,7 +154,7 @@ final class DdevStateManagerTest extends BasePlatformTestCase {
             ddevStateManager.initialize();
 
             Assertions.assertEquals("/foo/bar/bin/ddev", ddevStateManager.getState().getDdevBinary());
-            Assertions.assertEquals("/foo/bar/bin/ddev", settings.ddevBinary);
+            Assertions.assertEquals(missingBinary, settings.ddevBinary);
             Assertions.assertEquals(new Version("v1.19.0"), ddevStateManager.getState().getDdevVersion());
         } finally {
             settings.ddevBinary = "";
@@ -235,7 +235,7 @@ final class DdevStateManagerTest extends BasePlatformTestCase {
             ddevStateManager.initialize();
 
             Assertions.assertEquals("/foo/bar/bin/ddev", ddevStateManager.getState().getDdevBinary());
-            Assertions.assertEquals("/foo/bar/bin/ddev", settings.ddevBinary);
+            Assertions.assertEquals("ddev-unstartable", settings.ddevBinary);
             Assertions.assertEquals(new Version("v1.19.0"), ddevStateManager.getState().getDdevVersion());
         } finally {
             settings.ddevBinary = "";
