@@ -25,6 +25,14 @@ public final class ServerConfigManagerImpl implements ServerConfigManager {
     public void configure(final @NotNull ServerConfig serverConfig) {
         final int hash = serverConfig.hashCode();
         final String fqdn = serverConfig.uri().getHost();
+
+        if (fqdn == null || fqdn.isBlank()) {
+            // Happens when DDEV_PRIMARY_URL has no hostname, e.g. with a disabled router (https://github.com/ddev/ddev/issues/7221).
+            // A PhpServer without a name/host would be invalid, so leave any existing configuration untouched.
+            LOG.warn(String.format("Skipping PHP server configuration because the primary URL %s has no hostname", serverConfig.uri()));
+            return;
+        }
+
         final ManagedConfigurationIndex managedConfigurationIndex = ManagedConfigurationIndex.getInstance(this.project);
         final IndexEntry indexEntry = managedConfigurationIndex.get(ServerConfig.class);
         final List<PhpServer> servers = PhpServersWorkspaceStateComponent.getInstance(project).getServers();
