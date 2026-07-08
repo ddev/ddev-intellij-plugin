@@ -39,16 +39,27 @@ public final class DdevNotifierImpl implements DdevNotifier {
 
     @Override
     public void notifyNewVersionAvailable(final @NotNull String currentVersion, final @NotNull String latestVersion) {
-        ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
-                .getNotificationGroup(NON_STICKY)
-                .createNotification(
-                        DdevIntegrationBundle.message("notification.NewVersionAvailable.title"),
-                        DdevIntegrationBundle.message("notification.NewVersionAvailable.text", currentVersion, latestVersion),
-                        NotificationType.INFORMATION
-                )
-                .addAction(new InstallationInstructionsAction())
-                .addAction(new DisableCheckForUpdatesAction())
-                .notify(this.project), ModalityState.nonModal());
+        // Check outside the EDT whether DDEV is managed by Homebrew and can be updated directly.
+        final boolean updatableViaHomebrew = UpdateDdevAction.isAvailable();
+
+        ApplicationManager.getApplication().invokeLater(() -> {
+            final var notification = NotificationGroupManager.getInstance()
+                    .getNotificationGroup(NON_STICKY)
+                    .createNotification(
+                            DdevIntegrationBundle.message("notification.NewVersionAvailable.title"),
+                            DdevIntegrationBundle.message("notification.NewVersionAvailable.text", currentVersion, latestVersion),
+                            NotificationType.INFORMATION
+                    );
+
+            if (updatableViaHomebrew) {
+                notification.addAction(new UpdateDdevAction());
+            }
+
+            notification
+                    .addAction(new InstallationInstructionsAction())
+                    .addAction(new DisableCheckForUpdatesAction())
+                    .notify(this.project);
+        }, ModalityState.nonModal());
     }
 
     @Override
