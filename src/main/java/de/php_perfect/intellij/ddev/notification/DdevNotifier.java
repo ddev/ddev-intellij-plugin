@@ -30,6 +30,8 @@ public interface DdevNotifier {
 
     void notifySnapshotListFailed();
 
+    void notifyShareUrl(@NotNull String url);
+
     static DdevNotifier getInstance(@NotNull Project project) {
         return project.getService(DdevNotifier.class);
     }
