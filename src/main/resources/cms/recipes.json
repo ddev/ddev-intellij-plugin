@@ -28,14 +28,13 @@
     "steps": [
       {"title": "Start DDEV", "arguments": ["start", "--skip-confirmation"]},
       {"title": "Download WordPress", "arguments": ["wp", "core", "download"]},
-      {"title": "Configure WordPress", "arguments": ["wp", "config", "create", "--dbname=db", "--dbuser=db", "--dbpass=db", "--dbhost=db", "--skip-check"]},
-      {"title": "Install WordPress", "arguments": ["wp", "core", "install", "--url=${PRIMARY_URL}", "--title=${PROJECT_NAME}", "--admin_user=${USERNAME}", "--admin_password=${PASSWORD}", "--admin_email=${EMAIL}"]},
+      {"title": "Install WordPress", "arguments": ["wp", "core", "install", "--url=${PRIMARY_URL}", "--title=${PROJECT_NAME}", "--admin_user=${USERNAME}", "--admin_password=${PASSWORD}", "--admin_email=${EMAIL}"], "sensitive": true},
       {"title": "Configure WordPress permalinks", "arguments": ["wp", "rewrite", "structure", "/%postname%/"]},
       {"title": "Configure one-time WordPress login", "writeFiles": [{"path": "wp-content/mu-plugins/ddev-intellij-login.php", "resource": "/cms/templates/wordpress-auto-login.php"}]}
     ],
     "requiresCredentials": true,
     "automaticProjectType": true,
-    "launch": {"path": "/", "query": "ddev_intellij_login=${USERNAME_URLENCODED}"}
+    "launch": {"path": "/", "query": "ddev_intellij_login=${USERNAME_URLENCODED}&ddev_intellij_token=${LOGIN_TOKEN_URLENCODED}"}
   },
   {
     "id": "laravel",
@@ -58,7 +57,7 @@
       {"title": "Start DDEV", "arguments": ["start", "--skip-confirmation"]},
       {"title": "Install Drupal", "arguments": ["composer", "create-project", "drupal/recommended-project:^9"]},
       {"title": "Install Drush", "arguments": ["composer", "require", "drush/drush"]},
-      {"title": "Configure Drupal", "arguments": ["drush", "site:install", "--account-name=${USERNAME}", "--account-pass=${PASSWORD}", "--site-name=${PROJECT_NAME}", "-y"]}
+      {"title": "Configure Drupal", "arguments": ["./vendor/bin/drush", "site:install", "--account-name=${USERNAME}", "--account-pass=${PASSWORD}", "--site-name=${PROJECT_NAME}", "-y"], "sensitive": true}
     ],
     "requiresCredentials": true,
     "automaticProjectType": true
@@ -72,7 +71,7 @@
       {"title": "Start DDEV", "arguments": ["start", "--skip-confirmation"]},
       {"title": "Install Drupal", "arguments": ["composer", "create-project", "drupal/recommended-project:^10"]},
       {"title": "Install Drush", "arguments": ["composer", "require", "drush/drush"]},
-      {"title": "Configure Drupal", "arguments": ["drush", "site:install", "--account-name=${USERNAME}", "--account-pass=${PASSWORD}", "--site-name=${PROJECT_NAME}", "-y"]}
+      {"title": "Configure Drupal", "arguments": ["./vendor/bin/drush", "site:install", "--account-name=${USERNAME}", "--account-pass=${PASSWORD}", "--site-name=${PROJECT_NAME}", "-y"], "sensitive": true}
     ],
     "requiresCredentials": true,
     "automaticProjectType": true
@@ -86,7 +85,7 @@
       {"title": "Start DDEV", "arguments": ["start", "--skip-confirmation"]},
       {"title": "Install Drupal", "arguments": ["composer", "create-project", "drupal/recommended-project:^11"]},
       {"title": "Install Drush", "arguments": ["composer", "require", "drush/drush"]},
-      {"title": "Configure Drupal", "arguments": ["drush", "site:install", "--account-name=${USERNAME}", "--account-pass=${PASSWORD}", "--site-name=${PROJECT_NAME}", "-y"]}
+      {"title": "Configure Drupal", "arguments": ["./vendor/bin/drush", "site:install", "--account-name=${USERNAME}", "--account-pass=${PASSWORD}", "--site-name=${PROJECT_NAME}", "-y"], "sensitive": true}
     ],
     "requiresCredentials": true,
     "automaticProjectType": true
@@ -100,7 +99,7 @@
       {"title": "Start DDEV", "arguments": ["start", "--skip-confirmation"]},
       {"title": "Install Drupal", "arguments": ["composer", "create-project", "drupal/recommended-project"]},
       {"title": "Install Drush", "arguments": ["composer", "require", "drush/drush"]},
-      {"title": "Configure Drupal", "arguments": ["drush", "site:install", "--account-name=${USERNAME}", "--account-pass=${PASSWORD}", "--site-name=${PROJECT_NAME}", "-y"]}
+      {"title": "Configure Drupal", "arguments": ["./vendor/bin/drush", "site:install", "--account-name=${USERNAME}", "--account-pass=${PASSWORD}", "--site-name=${PROJECT_NAME}", "-y"], "sensitive": true}
     ],
     "requiresCredentials": true,
     "automaticProjectType": true
@@ -127,7 +126,7 @@
       {"title": "Install Bee CLI", "arguments": ["add-on", "get", "backdrop-ops/ddev-backdrop-bee"]},
       {"title": "Restart DDEV with Bee", "arguments": ["restart", "--skip-confirmation"]},
       {"title": "Download Backdrop", "arguments": ["bee", "download-core"]},
-      {"title": "Install Backdrop", "arguments": ["bee", "si", "--username=${USERNAME}", "--password=${PASSWORD}", "--db-name=db", "--db-user=db", "--db-pass=db", "--db-host=db", "--auto"]}
+      {"title": "Install Backdrop", "arguments": ["bee", "si", "--username=${USERNAME}", "--password=${PASSWORD}", "--db-name=db", "--db-user=db", "--db-pass=db", "--db-host=db", "--auto"], "sensitive": true}
     ],
     "requiresCredentials": true,
     "automaticProjectType": true
@@ -164,7 +163,7 @@
     "steps": [
       {"title": "Start DDEV", "arguments": ["start", "--skip-confirmation"]},
       {"title": "Install Craft CMS", "arguments": ["composer", "create-project", "--no-scripts", "craftcms/craft"]},
-      {"title": "Configure Craft CMS", "arguments": ["craft", "install", "--email=${EMAIL}", "--username=${USERNAME}", "--password=${PASSWORD}", "--site-name=${PROJECT_NAME}", "--language=en-US"]}
+      {"title": "Configure Craft CMS", "arguments": ["php", "craft", "install", "--email=${EMAIL}", "--username=${USERNAME}", "--password=${PASSWORD}", "--site-name=${PROJECT_NAME}", "--language=en-US"], "sensitive": true}
     ],
     "requiresCredentials": true,
     "automaticProjectType": true,
@@ -201,18 +200,19 @@
     "configArguments": ["--project-type=magento2", "--docroot=pub", "--upload-dirs=media", "--disable-settings-management"],
     "steps": [
       {"title": "Start DDEV", "arguments": ["start", "--skip-confirmation"]},
+      {"title": "Check Magento Composer public key", "arguments": ["composer", "--quiet", "config", "--global", "--auth", "http-basic.repo.magento.com.username"], "failureHelp": "Configure Adobe Marketplace credentials in DDEV's global homeadditions/.composer/auth.json, then retry."},
+      {"title": "Check Magento Composer private key", "arguments": ["composer", "--quiet", "config", "--global", "--auth", "http-basic.repo.magento.com.password"], "failureHelp": "Configure both Adobe Marketplace keys in DDEV's global homeadditions/.composer/auth.json, then retry."},
       {"title": "Install OpenSearch", "arguments": ["add-on", "get", "ddev/ddev-opensearch"]},
       {"title": "Restart DDEV with OpenSearch", "arguments": ["restart", "--skip-confirmation"]},
       {"title": "Install Magento", "arguments": ["composer", "create-project", "--repository", "https://repo.magento.com/", "magento/project-community-edition"]},
       {"title": "Reset Magento environment", "arguments": ["exec", "rm", "-f", "app/etc/env.php"]},
-      {"title": "Configure Magento", "arguments": ["magento", "setup:install", "--base-url=${PRIMARY_URL}/", "--cleanup-database", "--db-host=db", "--db-name=db", "--db-user=db", "--db-password=db", "--opensearch-host=opensearch", "--search-engine=opensearch", "--opensearch-port=9200", "--admin-firstname=Magento", "--admin-lastname=User", "--admin-email=${EMAIL}", "--admin-user=${USERNAME}", "--admin-password=${PASSWORD}", "--language=en_US"]},
+      {"title": "Configure Magento", "arguments": ["bin/magento", "setup:install", "--base-url=${PRIMARY_URL}/", "--cleanup-database", "--db-host=db", "--db-name=db", "--db-user=db", "--db-password=db", "--opensearch-host=opensearch", "--search-engine=opensearch", "--opensearch-port=9200", "--admin-firstname=Magento", "--admin-lastname=User", "--admin-email=${EMAIL}", "--admin-user=${USERNAME}", "--admin-password=${PASSWORD}", "--language=en_US"], "sensitive": true},
       {"title": "Enable Magento developer mode", "arguments": ["magento", "deploy:mode:set", "developer"]},
       {"title": "Disable Magento two-factor modules", "arguments": ["magento", "module:disable", "Magento_TwoFactorAuth", "Magento_AdminAdobeImsTwoFactorAuth"]},
       {"title": "Enable Magento settings management", "arguments": ["config", "--disable-settings-management=false"]},
       {"title": "Configure Magento admin path", "arguments": ["magento", "setup:config:set", "--backend-frontname=admin_ddev", "--no-interaction"]}
     ],
     "requiresCredentials": true,
-    "automaticProjectType": true,
     "launch": {"path": "/admin_ddev"}
   },
   {
@@ -223,7 +223,7 @@
     "steps": [
       {"title": "Start DDEV", "arguments": ["start", "--skip-confirmation"]},
       {"title": "Install Moodle", "arguments": ["composer", "create-project", "moodle/moodle"]},
-      {"title": "Configure Moodle", "arguments": ["exec", "php", "public/admin/cli/install.php", "--non-interactive", "--agree-license", "--wwwroot=${PRIMARY_URL}", "--dbtype=mariadb", "--dbhost=db", "--dbname=db", "--dbuser=db", "--dbpass=db", "--fullname=${PROJECT_NAME}", "--shortname=${PROJECT_NAME}", "--adminuser=${USERNAME}", "--adminpass=${PASSWORD}", "--adminemail=${EMAIL}"]}
+      {"title": "Configure Moodle", "arguments": ["php", "public/admin/cli/install.php", "--non-interactive", "--agree-license", "--wwwroot=${PRIMARY_URL}", "--dbtype=mariadb", "--dbhost=db", "--dbname=db", "--dbuser=db", "--dbpass=db", "--fullname=${PROJECT_NAME}", "--shortname=${PROJECT_NAME}", "--adminuser=${USERNAME}", "--adminpass=${PASSWORD}", "--adminemail=${EMAIL}"], "sensitive": true}
     ],
     "requiresCredentials": true,
     "launch": {"path": "/login"}
@@ -265,7 +265,7 @@
     "steps": [
       {"title": "Start DDEV", "arguments": ["start", "--skip-confirmation"]},
       {"title": "Install Statamic", "arguments": ["composer", "create-project", "--prefer-dist", "statamic/statamic"]},
-      {"title": "Create Statamic administrator", "arguments": ["php", "please", "make:user", "${EMAIL}", "--password=${PASSWORD}", "--super", "--no-interaction"]}
+      {"title": "Create Statamic administrator", "arguments": ["php", "please", "make:user", "${EMAIL}", "--password=${PASSWORD}", "--super", "--no-interaction"], "sensitive": true}
     ],
     "requiresCredentials": true
   },
@@ -290,7 +290,7 @@
     "steps": [
       {"title": "Start DDEV", "arguments": ["start", "--skip-confirmation"]},
       {"title": "Install TYPO3", "arguments": ["composer", "create-project", "typo3/cms-base-distribution:^14"]},
-      {"title": "Configure TYPO3", "arguments": ["typo3", "setup", "--admin-user-password=${PASSWORD}", "--driver=mysqli", "--create-site=${PRIMARY_URL}", "--server-type=other", "--dbname=db", "--username=db", "--password=db", "--port=3306", "--host=db", "--admin-username=${USERNAME}", "--admin-email=${EMAIL}", "--project-name=${PROJECT_NAME}", "--force"]}
+      {"title": "Configure TYPO3", "arguments": ["vendor/bin/typo3", "setup", "--admin-user-password=${PASSWORD}", "--driver=mysqli", "--create-site=${PRIMARY_URL}", "--server-type=other", "--dbname=db", "--username=db", "--password=db", "--port=3306", "--host=db", "--admin-username=${USERNAME}", "--admin-email=${EMAIL}", "--project-name=${PROJECT_NAME}", "--force"], "sensitive": true}
     ],
     "requiresCredentials": true,
     "automaticProjectType": true

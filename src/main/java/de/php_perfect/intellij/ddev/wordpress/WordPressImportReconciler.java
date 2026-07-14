@@ -9,6 +9,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import de.php_perfect.intellij.ddev.DdevIntegrationBundle;
 import de.php_perfect.intellij.ddev.cmd.CommandFailedException;
+import de.php_perfect.intellij.ddev.cmd.CommandLineRedactor;
 import de.php_perfect.intellij.ddev.cmd.Ddev;
 import de.php_perfect.intellij.ddev.cmd.Description;
 import de.php_perfect.intellij.ddev.cmd.ProcessExecutor;
@@ -216,7 +217,7 @@ public final class WordPressImportReconciler {
         final ProcessOutput output = ProcessExecutor.getInstance().executeCommandLine(
                 commandLine, COMMAND_TIMEOUT, false);
         if (output.isTimeout() || output.getExitCode() != 0) {
-            throw new CommandFailedException("Command failed: " + commandLine.getCommandLineString());
+            throw new CommandFailedException("Command failed: " + CommandLineRedactor.describe(commandLine));
         }
         return output.getStdout();
     }

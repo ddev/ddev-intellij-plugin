@@ -125,17 +125,21 @@ public final class DdevImpl implements Ddev {
             final ProcessOutput processOutput = ProcessExecutor.getInstance().executeCommandLine(commandLine, VERSION_COMMAND_TIMEOUT, false);
 
             if (processOutput.isTimeout()) {
-                throw new CommandFailedException("Command timed out after " + (VERSION_COMMAND_TIMEOUT / 1000) + " seconds: " + commandLine.getCommandLineString() + " in " + commandLine.getWorkDirectory().getPath());
+                throw new CommandFailedException("Command timed out after " + (VERSION_COMMAND_TIMEOUT / 1000)
+                        + " seconds: " + CommandLineRedactor.describe(commandLine) + " in "
+                        + commandLine.getWorkDirectory().getPath());
             }
 
             if (processOutput.getExitCode() != 0) {
-                throw new CommandFailedException("Command '" + commandLine.getCommandLineString() + "' returned non zero exit code " + processOutput,
+                throw new CommandFailedException("Command '" + CommandLineRedactor.describe(commandLine)
+                        + "' returned non zero exit code " + processOutput,
                         DdevErrorOutput.extractMessage(processOutput.getStderr()));
             }
 
             return processOutput.getStdout();
         } catch (ExecutionException exception) {
-            throw new CommandFailedException("Failed to execute " + commandLine.getCommandLineString(), exception);
+            throw new CommandFailedException("Failed to execute " + CommandLineRedactor.describe(commandLine),
+                    exception);
         }
     }
 
@@ -167,21 +171,22 @@ public final class DdevImpl implements Ddev {
                     .executeCommandLine(commandLine, timeout, false);
             if (processOutput.isTimeout()) {
                 throw new CommandFailedException("Command timed out after " + (timeout / 1000)
-                        + " seconds: " + commandLine.getCommandLineString() + " in "
+                        + " seconds: " + CommandLineRedactor.describe(commandLine) + " in "
                         + commandLine.getWorkDirectory().getPath());
             }
             if (processOutput.getExitCode() != 0) {
-                throw new CommandFailedException("Command '" + commandLine.getCommandLineString() + "' returned non zero exit code " + processOutput,
+                throw new CommandFailedException("Command '" + CommandLineRedactor.describe(commandLine)
+                        + "' returned non zero exit code " + processOutput,
                         DdevErrorOutput.extractMessage(processOutput.getStderr()));
             }
-
             if (processOutput.getStdout().isBlank()) {
-                throw new CommandFailedException("Command '" + commandLine.getCommandLineString() + "' returned no output",
-                        DdevErrorOutput.extractMessage(processOutput.getStderr()));
+                throw new CommandFailedException("Command '" + CommandLineRedactor.describe(commandLine)
+                        + "' returned no output", DdevErrorOutput.extractMessage(processOutput.getStderr()));
             }
             return processOutput.getStdout();
         } catch (ExecutionException exception) {
-            throw new CommandFailedException("Failed to execute " + commandLine.getCommandLineString(), exception);
+            throw new CommandFailedException("Failed to execute " + CommandLineRedactor.describe(commandLine),
+                    exception);
         }
     }
 

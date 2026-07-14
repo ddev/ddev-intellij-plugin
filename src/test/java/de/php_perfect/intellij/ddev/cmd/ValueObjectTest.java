@@ -45,7 +45,7 @@ final class ValueObjectTest {
                 new DatabaseInfo(DatabaseInfo.Type.MYSQL, "8.0", 3306, "db", "db", "user", "root", 32768),
                 new DatabaseInfo(DatabaseInfo.Type.POSTGRESQL, "8.0", 3306, "db", "db", "user", "secret", 32768)
         ));
-        Assertions.assertEquals("DatabaseInfo{type=MYSQL, version='8.0', port=3306, name='db', host='db', username='user', password='secret', publishedPort=32768}", databaseInfo.toString());
+        Assertions.assertEquals("DatabaseInfo{type=MYSQL, version='8.0', port=3306, name='db', host='db', username='user', password='<redacted>', publishedPort=32768}", databaseInfo.toString());
     }
 
     @Test

@@ -46,4 +46,21 @@ final class CmsProjectInstallerTest {
                 new CmsInstallationRecipe.WriteFile("../outside", "no")))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void generatesIndependentHighEntropyLoginTokens() {
+        final CmsProjectInstaller.Credentials first = CmsProjectInstaller.Credentials.create(
+                "admin", "password", "admin@example.com");
+        final CmsProjectInstaller.Credentials second = CmsProjectInstaller.Credentials.create(
+                "admin", "password", "admin@example.com");
+
+        assertThat(first.loginToken()).hasSize(64).matches("[0-9a-f]{64}");
+        assertThat(second.loginToken()).hasSize(64).isNotEqualTo(first.loginToken());
+    }
+
+    @Test
+    void quotesSecretsForProtectedContainerStandardInput() {
+        assertThat(CmsProjectInstaller.shellQuote("p$ ss'word"))
+                .isEqualTo("'p$ ss'\\''word'");
+    }
 }

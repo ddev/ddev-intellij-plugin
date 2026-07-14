@@ -16,6 +16,15 @@ public interface Runner {
     void runOnSuccess(@NotNull GeneralCommandLine commandLine, @NotNull String title,
                       @Nullable Runnable afterSuccessfulCompletion);
 
+    void runWithOutcome(@NotNull GeneralCommandLine commandLine, @NotNull String title,
+                        @Nullable Runnable afterSuccessfulCompletion,
+                        @Nullable Runnable afterFailedCompletion);
+
+    void runWithOutcome(@NotNull GeneralCommandLine commandLine, @NotNull String title,
+                        byte @Nullable [] standardInput,
+                        @Nullable Runnable afterSuccessfulCompletion,
+                        @Nullable Runnable afterFailedCompletion);
+
     void run(@NotNull GeneralCommandLine commandLine, @NotNull String title, @Nullable Runnable afterCompletion, @Nullable Consumer<ProcessHandler> processHandlerConsumer);
 
     static Runner getInstance(@NotNull Project project) {

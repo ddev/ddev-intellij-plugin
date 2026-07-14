@@ -33,7 +33,7 @@ final class DataSourceConfigTest {
     @Test
     void toStringListsFields() {
         Assertions.assertEquals(
-                "DataSourceConfig{name='DDEV', description='desc', type=MYSQL, version='8.0', host='127.0.0.1', port=3306, database='db', username='user', password='pass'}",
+                "DataSourceConfig{name='DDEV', description='desc', type=MYSQL, version='8.0', host='127.0.0.1', port=3306, database='db', username='user', password='<redacted>'}",
                 this.config.toString()
         );
     }

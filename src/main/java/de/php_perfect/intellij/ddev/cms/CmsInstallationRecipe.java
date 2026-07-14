@@ -27,13 +27,11 @@ public record CmsInstallationRecipe(
     public static final String PASSWORD = "${PASSWORD}";
     public static final String EMAIL = "${EMAIL}";
     public static final String USERNAME_URLENCODED = "${USERNAME_URLENCODED}";
+    public static final String LOGIN_TOKEN = "${LOGIN_TOKEN}";
+    public static final String LOGIN_TOKEN_URLENCODED = "${LOGIN_TOKEN_URLENCODED}";
 
     private static final Map<String, CmsInstallationRecipe> RECIPES =
             CmsInstallationRecipeLoader.load("/cms/recipes.json");
-
-    public static @Nullable CmsInstallationRecipe forProjectType(@NotNull String projectType) {
-        return RECIPES.get(projectType);
-    }
 
     public static @Nullable CmsInstallationRecipe byId(@NotNull String id) {
         return RECIPES.get(id);
@@ -50,7 +48,8 @@ public record CmsInstallationRecipe(
         return RECIPES.values().stream().sorted(Comparator.comparing(CmsInstallationRecipe::displayName)).toList();
     }
 
-    public @NotNull String firstLaunchUrl(@NotNull String primaryUrl, @NotNull String username) {
+    public @NotNull String firstLaunchUrl(@NotNull String primaryUrl, @NotNull String username,
+                                          @NotNull String loginToken) {
         if (this.launch.equals(Launch.DEFAULT)) {
             return primaryUrl;
         }
@@ -59,7 +58,9 @@ public record CmsInstallationRecipe(
             final String path = this.launch.path() == null ? primary.getPath() : this.launch.path();
             final String query = this.launch.query() == null ? primary.getRawQuery()
                     : this.launch.query().replace(USERNAME_URLENCODED,
-                    URLEncoder.encode(username, StandardCharsets.UTF_8));
+                            URLEncoder.encode(username, StandardCharsets.UTF_8))
+                    .replace(LOGIN_TOKEN_URLENCODED,
+                            URLEncoder.encode(loginToken, StandardCharsets.UTF_8));
             final URI launchUri = new URI(primary.getScheme(), primary.getUserInfo(), primary.getHost(),
                     this.launch.port() == null ? primary.getPort() : this.launch.port(),
                     path, null, null);
@@ -85,11 +86,13 @@ public record CmsInstallationRecipe(
                 .replace(PROJECT_NAME, context.projectName())
                 .replace(USERNAME, context.username())
                 .replace(PASSWORD, context.password())
-                .replace(EMAIL, context.email());
+                .replace(EMAIL, context.email())
+                .replace(LOGIN_TOKEN, context.loginToken());
     }
 
     public record Step(@NotNull String title, @NotNull List<String> arguments,
-                       @NotNull List<FileAction> fileActions) {
+                       @NotNull List<FileAction> fileActions, @Nullable String failureHelp,
+                       boolean sensitive) {
     }
 
     public sealed interface FileAction permits WriteFile, MoveContents {
@@ -102,7 +105,8 @@ public record CmsInstallationRecipe(
     }
 
     public record Context(@NotNull String projectName, @NotNull String primaryUrl,
-                          @NotNull String username, @NotNull String password, @NotNull String email) {
+                          @NotNull String username, @NotNull String password, @NotNull String email,
+                          @NotNull String loginToken) {
     }
 
     public record Launch(@Nullable String path, @Nullable Integer port, @Nullable String query) {

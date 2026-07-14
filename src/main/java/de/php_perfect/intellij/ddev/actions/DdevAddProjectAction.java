@@ -208,7 +208,8 @@ public final class DdevAddProjectAction extends DdevRunAction {
                 try {
                     final Description description = Ddev.getInstance().describeProject(binary, project, projectName);
                     if (description.getPrimaryUrl() != null) {
-                        this.url = recipe.firstLaunchUrl(description.getPrimaryUrl(), credentials.username());
+                        this.url = recipe.firstLaunchUrl(description.getPrimaryUrl(), credentials.username(),
+                                credentials.loginToken());
                     }
                 } catch (CommandFailedException ignored) {
                     this.url = null;
@@ -265,7 +266,7 @@ public final class DdevAddProjectAction extends DdevRunAction {
             return null;
         }
 
-        return new CmsProjectInstaller.Credentials(username.trim(), password, email.trim());
+        return CmsProjectInstaller.Credentials.create(username.trim(), password, email.trim());
     }
 
     private static boolean isEmptyDirectory(@NotNull String directory) {

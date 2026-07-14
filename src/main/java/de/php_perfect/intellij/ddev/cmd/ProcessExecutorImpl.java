@@ -26,7 +26,8 @@ public class ProcessExecutorImpl implements ProcessExecutor {
                 ProcessOutput output = processHandler.runProcess(timeout);
                 outputReference.set(output);
 
-                LOG.debug("command: " + processHandler.getCommandLine() + " returned: " + output);
+                LOG.debug("command: " + CommandLineRedactor.describe(patchedCommandLine)
+                        + " exited with code " + output.getExitCode());
             } catch (ExecutionException e) {
                 exceptionReference.set(e);
             }

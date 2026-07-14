@@ -41,7 +41,7 @@ public record DatabaseInfo(
                 ", name='" + name + '\'' +
                 ", host='" + host + '\'' +
                 ", username='" + username + '\'' +
-                ", password='" + password + '\'' +
+                ", password='<redacted>'" +
                 ", publishedPort=" + publishedPort +
                 '}';
     }
