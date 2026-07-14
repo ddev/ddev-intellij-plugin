@@ -19,6 +19,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Consumer;
+import java.io.IOException;
+import java.io.OutputStream;
 
 public final class RunnerImpl implements Runner, Disposable {
     private static final Logger LOG = Logger.getInstance(RunnerImpl.class);
@@ -42,22 +44,52 @@ public final class RunnerImpl implements Runner, Disposable {
     @Override
     public void runOnSuccess(@NotNull GeneralCommandLine commandLine, @NotNull String title,
                              @Nullable Runnable afterSuccessfulCompletion) {
-        this.runInternal(commandLine, title, afterSuccessfulCompletion, null, true);
+        this.runInternal(commandLine, title, null, afterSuccessfulCompletion, null, true, null);
+    }
+
+    @Override
+    public void runWithOutcome(@NotNull GeneralCommandLine commandLine, @NotNull String title,
+                               @Nullable Runnable afterSuccessfulCompletion,
+                               @Nullable Runnable afterFailedCompletion) {
+        this.runWithOutcome(commandLine, title, null, afterSuccessfulCompletion, afterFailedCompletion);
+    }
+
+    @Override
+    public void runWithOutcome(@NotNull GeneralCommandLine commandLine, @NotNull String title,
+                               byte @Nullable [] standardInput,
+                               @Nullable Runnable afterSuccessfulCompletion,
+                               @Nullable Runnable afterFailedCompletion) {
+        this.runInternal(commandLine, title, standardInput, afterSuccessfulCompletion, null, true,
+                afterFailedCompletion);
     }
 
     @Override
     public void run(@NotNull GeneralCommandLine commandLine, @NotNull String title, @Nullable Runnable afterCompletion, @Nullable Consumer<ProcessHandler> processHandlerConsumer) {
-        this.runInternal(commandLine, title, afterCompletion, processHandlerConsumer, false);
+        this.runInternal(commandLine, title, null, afterCompletion, processHandlerConsumer, false, null);
     }
 
     private void runInternal(@NotNull GeneralCommandLine commandLine, @NotNull String title,
+                             byte @Nullable [] standardInput,
                              @Nullable Runnable afterCompletion,
                              @Nullable Consumer<ProcessHandler> processHandlerConsumer,
-                             boolean onlyAfterSuccessfulCompletion) {
+                             boolean onlyAfterSuccessfulCompletion,
+                             @Nullable Runnable afterFailedCompletion) {
         // Create process handler on background thread to avoid EDT violations
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 final ProcessHandler processHandler = this.createProcessHandler(commandLine);
+
+                if (standardInput != null) {
+                    final OutputStream input = processHandler.getProcessInput();
+                    if (input == null) {
+                        throw new ExecutionException("Process does not accept standard input");
+                    }
+                    try (input) {
+                        input.write(standardInput);
+                    } catch (IOException exception) {
+                        throw new ExecutionException("Could not write process standard input", exception);
+                    }
+                }
 
                 if (processHandlerConsumer != null) {
                     processHandlerConsumer.accept(processHandler);
@@ -65,9 +97,14 @@ public final class RunnerImpl implements Runner, Disposable {
 
                 // Switch back to EDT for UI operations
                 ApplicationManager.getApplication().invokeLater(() -> {
-                    final Runnable completionCallback = afterCompletion == null ? null : () -> {
+                    final Runnable completionCallback = afterCompletion == null && afterFailedCompletion == null
+                            ? null : () -> {
                         if (!onlyAfterSuccessfulCompletion || Integer.valueOf(0).equals(processHandler.getExitCode())) {
-                            afterCompletion.run();
+                            if (afterCompletion != null) {
+                                afterCompletion.run();
+                            }
+                        } else if (afterFailedCompletion != null) {
+                            afterFailedCompletion.run();
                         }
                     };
                     final RunContentExecutor runContentExecutor = new RunContentExecutor(this.project, processHandler)
@@ -79,7 +116,10 @@ public final class RunnerImpl implements Runner, Disposable {
                     runContentExecutor.run();
                 }, ModalityState.nonModal());
             } catch (ExecutionException exception) {
-                LOG.warn("An error occurred running " + commandLine.getCommandLineString(), exception);
+                LOG.warn("An error occurred running " + CommandLineRedactor.describe(commandLine), exception);
+                if (afterFailedCompletion != null) {
+                    ApplicationManager.getApplication().invokeLater(afterFailedCompletion, ModalityState.nonModal());
+                }
             }
         });
     }

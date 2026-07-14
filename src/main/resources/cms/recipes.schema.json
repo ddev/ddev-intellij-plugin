@@ -47,7 +47,9 @@
         "moveContents": {
           "type": "array",
           "items": {"type": "string", "minLength": 1}
-        }
+        },
+        "failureHelp": {"type": "string", "minLength": 1},
+        "sensitive": {"type": "boolean", "default": false}
       },
       "anyOf": [
         {"required": ["arguments"]},

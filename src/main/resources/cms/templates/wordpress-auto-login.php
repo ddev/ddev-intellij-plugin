@@ -4,10 +4,17 @@ add_action( 'init', static function (): void {
     if ( empty( $_SERVER['IS_DDEV_PROJECT'] ) || is_user_logged_in() ) {
         return;
     }
+    if ( time() > filemtime( __FILE__ ) + HOUR_IN_SECONDS ) {
+        unlink( __FILE__ );
+        return;
+    }
     $login = isset( $_GET['ddev_intellij_login'] )
         ? sanitize_user( wp_unslash( $_GET['ddev_intellij_login'] ) )
         : '';
-    if ( '' === $login ) {
+    $token = isset( $_GET['ddev_intellij_token'] )
+        ? sanitize_text_field( wp_unslash( $_GET['ddev_intellij_token'] ) )
+        : '';
+    if ( '' === $login || ! hash_equals( '${LOGIN_TOKEN}', $token ) ) {
         return;
     }
     $user = get_user_by( 'login', $login );

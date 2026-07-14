@@ -16,6 +16,8 @@ val pluginVersion = environment("GIT_TAG_NAME").orElse("0.0.1-dev").get()
 group = properties("pluginGroup").get()
 version = pluginVersion
 
+val schemaTest = sourceSets.create("schemaTest")
+
 repositories {
     mavenCentral()
     intellijPlatform {
@@ -34,6 +36,7 @@ dependencies {
     val junitPlatformVersion = "6.1.1"
     val mockitoVersion = "5.23.0"
     val assertjVersion = "3.27.7"
+    val jsonSchemaValidatorVersion = "2.0.1"
     val pluginVerifierVersion = "1.408"
 
     // Implementation dependencies
@@ -46,6 +49,8 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
     testImplementation("org.mockito:mockito-core:$mockitoVersion")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
+    add(schemaTest.implementationConfigurationName,
+        "com.networknt:json-schema-validator:$jsonSchemaValidatorVersion")
 
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-params:$junitVersion")
@@ -96,6 +101,26 @@ dependencies {
             "intellij.grid.core.plugin"
         )
     }
+}
+
+val validateCmsRecipes = tasks.register<JavaExec>("validateCmsRecipes") {
+    group = "verification"
+    description = "Validates the CMS recipe catalog against its JSON Schema in an isolated JVM."
+    dependsOn(schemaTest.classesTaskName)
+    classpath = schemaTest.runtimeClasspath
+    mainClass.set("de.php_perfect.intellij.ddev.cms.RecipeSchemaValidationMain")
+    args(
+        layout.projectDirectory.file("src/main/resources/cms/recipes.schema.json").asFile.absolutePath,
+        layout.projectDirectory.file("src/main/resources/cms/recipes.json").asFile.absolutePath
+    )
+}
+
+tasks.named("check") {
+    dependsOn(validateCmsRecipes)
+}
+
+tasks.named("buildPlugin") {
+    dependsOn(validateCmsRecipes)
 }
 
 java {

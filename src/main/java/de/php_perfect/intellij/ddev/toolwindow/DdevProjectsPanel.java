@@ -26,7 +26,6 @@ import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileWrapper;
 import com.intellij.openapi.vfs.LocalFileSystem;
-import com.intellij.ui.ColoredTreeCellRenderer;
 import com.intellij.ui.ColoredListCellRenderer;
 import com.intellij.ui.PopupHandler;
 import com.intellij.ui.ScrollPaneFactory;
@@ -44,7 +43,6 @@ import de.php_perfect.intellij.ddev.cmd.DatabaseInfo;
 import de.php_perfect.intellij.ddev.cmd.DdevProject;
 import de.php_perfect.intellij.ddev.cmd.DdevRunner;
 import de.php_perfect.intellij.ddev.cmd.Description;
-import de.php_perfect.intellij.ddev.cmd.Service;
 import de.php_perfect.intellij.ddev.cmd.Snapshot;
 import de.php_perfect.intellij.ddev.cmd.InstalledAddOn;
 import de.php_perfect.intellij.ddev.cmd.SnapshotFileManager;
@@ -78,6 +76,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.function.Function;
 
+import static de.php_perfect.intellij.ddev.toolwindow.DdevProjectsTree.*;
+
 public final class DdevProjectsPanel extends SimpleToolWindowPanel {
     private final transient @NotNull Project ideProject;
     private final @NotNull DefaultMutableTreeNode root = new DefaultMutableTreeNode();
@@ -95,7 +95,7 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
         this.tree.setRootVisible(false);
         this.tree.setShowsRootHandles(true);
         this.tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-        this.tree.setCellRenderer(new ProjectsTreeRenderer());
+        this.tree.setCellRenderer(new DdevProjectsTree.Renderer(ideProject));
         this.tree.getEmptyText().setText(DdevIntegrationBundle.message("toolWindow.projects.empty"));
 
         this.tree.addMouseListener(new MouseAdapter() {
@@ -136,13 +136,13 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
         });
 
         final DefaultActionGroup toolbarGroup = new DefaultActionGroup(
-                new RefreshAction(),
+                new DdevLifecycleActions.Refresh(this),
                 Objects.requireNonNull(ActionManager.getInstance().getAction("DdevIntegration.Run.AddProject")),
-                new ToggleCurrentProjectOnlyAction(),
+                new DdevLifecycleActions.ToggleCurrentProjectOnly(this),
                 Separator.getInstance(),
-                new StartAction(),
-                new StopAction(),
-                new RestartAction(),
+                new DdevLifecycleActions.Start(this),
+                new DdevLifecycleActions.Stop(this),
+                new DdevLifecycleActions.Restart(this),
                 Separator.getInstance(),
                 new OpenBrowserAction(),
                 Objects.requireNonNull(ActionManager.getInstance().getAction("DdevIntegration.Run.PowerOff"))
@@ -154,28 +154,28 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
         this.setContent(ScrollPaneFactory.createScrollPane(this.tree));
 
         final DefaultActionGroup contextMenu = new DefaultActionGroup(
-                new StartAction(),
-                new StopAction(),
-                new RestartAction(),
-                new StopOthersAction(),
+                new DdevLifecycleActions.Start(this),
+                new DdevLifecycleActions.Stop(this),
+                new DdevLifecycleActions.Restart(this),
+                new DdevLifecycleActions.StopOthers(this),
                 Separator.getInstance(),
                 new CreateSnapshotAction(),
                 new RestoreSnapshotAction(),
                 new DeleteSelectedSnapshotAction(),
                 new ClearSelectedSnapshotsAction(),
                 Separator.getInstance(),
-                new ChangeConfigAction(
+                new DdevConfigurationActions.Change(this,
                         DdevIntegrationBundle.message("action.DdevIntegration.Run.ChangePhpVersion.MainMenu.text"),
                         DdevIntegrationBundle.message("changePhpVersion.popupTitle"),
                         "--php-version=", DdevConfigOptions::phpVersions),
-                new ChangeNodejsConfigAction(),
-                new ChangeConfigAction(
+                new DdevConfigurationActions.ChangeNodejs(this),
+                new DdevConfigurationActions.Change(this,
                         DdevIntegrationBundle.message("action.DdevIntegration.Run.ChangeWebserverType.MainMenu.text"),
                         DdevIntegrationBundle.message("changeWebserverType.popupTitle"),
                         "--webserver-type=", DdevConfigOptions::webserverTypes),
-                new ChangeDatabaseConfigAction(),
-                new OpenSelectedPhpConfigAction(),
-                new OpenSelectedWebserverConfigAction(),
+                new DdevConfigurationActions.ChangeDatabase(this),
+                new DdevConfigurationActions.OpenPhp(this),
+                new DdevConfigurationActions.OpenWebserver(this),
                 Separator.getInstance(),
                 new InstallSelectedAddOnAction(),
                 new RemoveSelectedAddOnAction(),
@@ -325,11 +325,11 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
         }.queue();
     }
 
-    private void refreshLater() {
+    void refreshLater() {
         ApplicationManager.getApplication().invokeLater(this::refresh);
     }
 
-    private void openLocalFile(@NotNull Path path) {
+    void openLocalFile(@NotNull Path path) {
         final VirtualFile file = LocalFileSystem.getInstance().refreshAndFindFileByNioFile(path);
 
         if (file != null) {
@@ -347,7 +347,7 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
         return (DefaultMutableTreeNode) selectionPath.getLastPathComponent();
     }
 
-    private @Nullable DdevProject getSelectedProject() {
+    @Nullable DdevProject getSelectedProject() {
         final DefaultMutableTreeNode node = this.getSelectedNode();
         return node != null && node.getUserObject() instanceof DdevProject ddevProject ? ddevProject : null;
     }
@@ -388,229 +388,29 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
         return DdevStateManager.getInstance(this.ideProject).getState().getDdevBinary();
     }
 
-    // --- Tree item models ---
-
-    private static final class UrlItem {
-        private final @NotNull String url;
-
-        private UrlItem(@NotNull String url) {
-            this.url = url;
-        }
+    @NotNull Project project() {
+        return this.ideProject;
     }
 
-    private static final class PathItem {
-        private final @NotNull String displayPath;
-        private final @Nullable String fullPath;
-
-        private PathItem(@NotNull String displayPath, @Nullable String fullPath) {
-            this.displayPath = displayPath;
-            this.fullPath = fullPath;
-        }
+    boolean isShowingCurrentProjectOnly() {
+        return this.showCurrentProjectOnly;
     }
 
-    private static final class ServicesGroup {
-        private final @NotNull String projectName;
-        private boolean loaded;
-
-        private ServicesGroup(@NotNull String projectName) {
-            this.projectName = projectName;
-        }
-    }
-
-    private static final class ServiceItem {
-        private final @NotNull String name;
-        private final @NotNull Service service;
-
-        private ServiceItem(@NotNull String name, @NotNull Service service) {
-            this.name = name;
-            this.service = service;
-        }
-
-        private @Nullable String getUrl() {
-            return this.service.getPreferredUrl();
-        }
-    }
-
-    private static final class LoadingItem {
-    }
-
-    private final class ProjectsTreeRenderer extends ColoredTreeCellRenderer {
-        @Override
-        public void customizeCellRenderer(@NotNull JTree jTree, Object value, boolean selected, boolean expanded, boolean leaf, int row, boolean hasFocus) {
-            final Object userObject = ((DefaultMutableTreeNode) value).getUserObject();
-
-            if (userObject instanceof DdevProject ddevProject) {
-                this.setIcon(DdevIntegrationIcons.DdevLogoMono);
-                final String projectName = ddevProject.getName() != null
-                        ? DdevProjectNameFormatter.format(ddevProject.getName(),
-                        DdevSettingsState.getInstance(DdevProjectsPanel.this.ideProject).projectNameFormat)
-                        : "?";
-                this.append(projectName, SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES);
-
-                if (ddevProject.getStatusDesc() != null) {
-                    this.append("  " + ddevProject.getStatusDesc(), ddevProject.isRunning()
-                            ? new SimpleTextAttributes(SimpleTextAttributes.STYLE_PLAIN, com.intellij.ui.JBColor.namedColor("Label.successForeground", new com.intellij.ui.JBColor(0x368746, 0x50A661)))
-                            : SimpleTextAttributes.GRAYED_ATTRIBUTES);
-                }
-
-                if (ddevProject.getType() != null) {
-                    this.append("  [" + ddevProject.getType() + "]", SimpleTextAttributes.GRAYED_ATTRIBUTES);
-                }
-            } else if (userObject instanceof UrlItem urlItem) {
-                this.setIcon(AllIcons.General.Web);
-                this.append(urlItem.url, SimpleTextAttributes.LINK_ATTRIBUTES);
-            } else if (userObject instanceof PathItem pathItem) {
-                this.setIcon(AllIcons.Nodes.Folder);
-                this.append(pathItem.displayPath, SimpleTextAttributes.REGULAR_ATTRIBUTES);
-            } else if (userObject instanceof ServicesGroup) {
-                this.setIcon(AllIcons.Nodes.PpLib);
-                this.append(DdevIntegrationBundle.message("toolWindow.projects.node.services"), SimpleTextAttributes.REGULAR_ATTRIBUTES);
-            } else if (userObject instanceof ServiceItem serviceItem) {
-                this.setIcon(AllIcons.Nodes.Plugin);
-                this.append(serviceItem.name, SimpleTextAttributes.REGULAR_ATTRIBUTES);
-
-                if (serviceItem.getUrl() != null) {
-                    this.append("  " + serviceItem.getUrl(), SimpleTextAttributes.GRAYED_ATTRIBUTES);
-                }
-            } else if (userObject instanceof LoadingItem) {
-                this.append(DdevIntegrationBundle.message("toolWindow.projects.node.loading"), SimpleTextAttributes.GRAYED_ATTRIBUTES);
-            }
-        }
+    void setShowingCurrentProjectOnly(boolean state) {
+        this.showCurrentProjectOnly = state;
+        DdevSettingsState.getInstance(this.ideProject).showCurrentProjectOnly = state;
+        this.rebuildTree(this.lastLoadedProjects);
     }
 
     // --- Actions ---
 
-    private abstract class SelectionAwareAction extends DumbAwareAction {
+    private abstract class SelectionAwareAction extends DdevProjectAction {
         SelectionAwareAction(@NotNull String text, @Nullable Icon icon) {
-            super(text, null, icon);
-        }
-
-        @Override
-        public void update(@NotNull AnActionEvent e) {
-            e.getPresentation().setEnabledAndVisible(this.isEnabledFor(DdevProjectsPanel.this.getSelectedProject()));
-        }
-
-        @Override
-        public @NotNull ActionUpdateThread getActionUpdateThread() {
-            return ActionUpdateThread.EDT;
-        }
-
-        protected boolean isEnabledFor(@Nullable DdevProject selected) {
-            return selected != null && selected.getName() != null;
-        }
-
-        @Override
-        public final void actionPerformed(@NotNull AnActionEvent e) {
-            final DdevProject selected = DdevProjectsPanel.this.getSelectedProject();
-
-            if (selected != null && selected.getName() != null) {
-                this.perform(selected);
-            }
-        }
-
-        protected abstract void perform(@NotNull DdevProject selected);
-    }
-
-    private final class ToggleCurrentProjectOnlyAction extends com.intellij.openapi.actionSystem.ToggleAction implements com.intellij.openapi.project.DumbAware {
-        ToggleCurrentProjectOnlyAction() {
-            super(DdevIntegrationBundle.message("toolWindow.projects.action.toggleCurrentOnly"), null, AllIcons.General.Filter);
-        }
-
-        @Override
-        public boolean isSelected(@NotNull AnActionEvent e) {
-            return DdevProjectsPanel.this.showCurrentProjectOnly;
-        }
-
-        @Override
-        public void setSelected(@NotNull AnActionEvent e, boolean state) {
-            DdevProjectsPanel.this.showCurrentProjectOnly = state;
-            DdevSettingsState.getInstance(DdevProjectsPanel.this.ideProject).showCurrentProjectOnly = state;
-            DdevProjectsPanel.this.rebuildTree(DdevProjectsPanel.this.lastLoadedProjects);
-        }
-
-        @Override
-        public @NotNull ActionUpdateThread getActionUpdateThread() {
-            return ActionUpdateThread.EDT;
+            super(DdevProjectsPanel.this, text, icon);
         }
     }
 
-    private final class RefreshAction extends DumbAwareAction {
-        RefreshAction() {
-            super(DdevIntegrationBundle.message("toolWindow.projects.action.refresh"), null, AllIcons.Actions.Refresh);
-        }
-
-        @Override
-        public void actionPerformed(@NotNull AnActionEvent e) {
-            DdevProjectsPanel.this.refresh();
-        }
-    }
-
-    private final class StartAction extends SelectionAwareAction {
-        StartAction() {
-            super(DdevIntegrationBundle.message("toolWindow.projects.action.start"), AllIcons.Actions.Execute);
-        }
-
-        @Override
-        protected boolean isEnabledFor(@Nullable DdevProject selected) {
-            return super.isEnabledFor(selected) && !selected.isRunning();
-        }
-
-        @Override
-        protected void perform(@NotNull DdevProject selected) {
-            DdevRunner.getInstance().startProject(DdevProjectsPanel.this.ideProject, Objects.requireNonNull(selected.getName()), DdevProjectsPanel.this::refreshLater);
-        }
-    }
-
-    private final class StopAction extends SelectionAwareAction {
-        StopAction() {
-            super(DdevIntegrationBundle.message("toolWindow.projects.action.stop"), AllIcons.Actions.Pause);
-        }
-
-        @Override
-        protected boolean isEnabledFor(@Nullable DdevProject selected) {
-            return super.isEnabledFor(selected) && selected.isRunning();
-        }
-
-        @Override
-        protected void perform(@NotNull DdevProject selected) {
-            DdevRunner.getInstance().stopProject(DdevProjectsPanel.this.ideProject, Objects.requireNonNull(selected.getName()), DdevProjectsPanel.this::refreshLater);
-        }
-    }
-
-    private final class RestartAction extends SelectionAwareAction {
-        RestartAction() {
-            super(DdevIntegrationBundle.message("toolWindow.projects.action.restart"), AllIcons.Actions.Refresh);
-        }
-
-        @Override
-        protected boolean isEnabledFor(@Nullable DdevProject selected) {
-            return super.isEnabledFor(selected) && selected.isRunning();
-        }
-
-        @Override
-        protected void perform(@NotNull DdevProject selected) {
-            DdevRunner.getInstance().restartProject(DdevProjectsPanel.this.ideProject, Objects.requireNonNull(selected.getName()), DdevProjectsPanel.this::refreshLater);
-        }
-    }
-
-    private final class StopOthersAction extends SelectionAwareAction {
-        StopOthersAction() {
-            super(DdevIntegrationBundle.message("toolWindow.projects.action.stopOthers"), AllIcons.Actions.Suspend);
-        }
-
-        @Override
-        protected boolean isEnabledFor(@Nullable DdevProject selected) {
-            return super.isEnabledFor(selected) && DdevProjectsPanel.this.collectOtherRunning(selected).stream().findAny().isPresent();
-        }
-
-        @Override
-        protected void perform(@NotNull DdevProject selected) {
-            final List<String> otherRunning = DdevProjectsPanel.this.collectOtherRunning(selected);
-            DdevRunner.getInstance().stopProjects(DdevProjectsPanel.this.ideProject, otherRunning, DdevProjectsPanel.this::refreshLater);
-        }
-    }
-
-    private @NotNull List<String> collectOtherRunning(@NotNull DdevProject selected) {
+    @NotNull List<String> collectOtherRunning(@NotNull DdevProject selected) {
         final java.util.ArrayList<String> result = new java.util.ArrayList<>();
 
         for (int i = 0; i < this.root.getChildCount(); i++) {
@@ -623,169 +423,6 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
         }
 
         return result;
-    }
-
-    private class ChangeConfigAction extends SelectionAwareAction {
-        private final @NotNull String popupTitle;
-        private final @NotNull String argumentPrefix;
-        private final @NotNull Function<DdevConfigOptions, List<String>> choices;
-
-        ChangeConfigAction(@NotNull String text, @NotNull String popupTitle, @NotNull String argumentPrefix,
-                           @NotNull Function<DdevConfigOptions, List<String>> choices) {
-            super(text, AllIcons.Actions.Edit);
-            this.popupTitle = popupTitle;
-            this.argumentPrefix = argumentPrefix;
-            this.choices = choices;
-        }
-
-        @Override
-        protected boolean isEnabledFor(@Nullable DdevProject selected) {
-            return super.isEnabledFor(selected) && selected.getAppRoot() != null;
-        }
-
-        @Override
-        protected void perform(@NotNull DdevProject selected) {
-            new Task.Backgroundable(DdevProjectsPanel.this.ideProject,
-                    DdevIntegrationBundle.message("configOptions.loading"), true) {
-                private DdevConfigOptions options;
-
-                @Override
-                public void run(@NotNull ProgressIndicator indicator) {
-                    this.options = DdevConfigOptionsLoader.getInstance().load(indicator);
-                }
-
-                @Override
-                public void onSuccess() {
-                    final List<String> values = ChangeConfigAction.this.choices.apply(this.options);
-
-                    if (values.isEmpty()) {
-                        return;
-                    }
-
-                    JBPopupFactory.getInstance()
-                            .createPopupChooserBuilder(values)
-                            .setTitle(ChangeConfigAction.this.popupTitle)
-                            .setNamerForFiltering(value -> value)
-                            .setFilterAlwaysVisible(true)
-                            .setItemChosenCallback(value -> ChangeConfigAction.this.apply(selected, value))
-                            .createPopup()
-                            .showCenteredInCurrentWindow(DdevProjectsPanel.this.ideProject);
-                }
-            }.queue();
-        }
-
-        protected void apply(@NotNull DdevProject selected, @NotNull String value) {
-            DdevRunner.getInstance().updateConfig(
-                    DdevProjectsPanel.this.ideProject,
-                    selected.getAppRoot(),
-                    DdevProjectsPanel.this::refreshLater,
-                    this.argumentPrefix + value
-            );
-        }
-    }
-
-    private final class ChangeNodejsConfigAction extends ChangeConfigAction {
-        private static final String CUSTOM = DdevIntegrationBundle.message("changeNodejsVersion.custom");
-
-        ChangeNodejsConfigAction() {
-            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.ChangeNodejsVersion.MainMenu.text"),
-                    DdevIntegrationBundle.message("changeNodejsVersion.title"), "--nodejs-version=",
-                    options -> {
-                        final java.util.ArrayList<String> values = new java.util.ArrayList<>(options.nodejsVersions());
-                        values.add(CUSTOM);
-                        return values;
-                    });
-        }
-
-        @Override
-        protected void apply(@NotNull DdevProject selected, @NotNull String value) {
-            if (!CUSTOM.equals(value)) {
-                super.apply(selected, value);
-                return;
-            }
-
-            final String customVersion = Messages.showInputDialog(
-                    DdevProjectsPanel.this.ideProject,
-                    DdevIntegrationBundle.message("changeNodejsVersion.message"),
-                    DdevIntegrationBundle.message("changeNodejsVersion.title"),
-                    null
-            );
-
-            if (customVersion != null && !customVersion.isBlank()) {
-                super.apply(selected, customVersion.trim());
-            }
-        }
-    }
-
-    private final class ChangeDatabaseConfigAction extends ChangeConfigAction {
-        ChangeDatabaseConfigAction() {
-            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.ChangeDatabaseVersion.MainMenu.text"),
-                    DdevIntegrationBundle.message("changeDatabase.popupTitle"), "--database=",
-                    DdevConfigOptions::databases);
-        }
-
-        @Override
-        protected void apply(@NotNull DdevProject selected, @NotNull String value) {
-            final boolean confirmed = MessageDialogBuilder.yesNo(
-                    DdevIntegrationBundle.message("changeDatabase.confirm.title"),
-                    DdevIntegrationBundle.message("changeDatabase.confirm.message", value)
-            ).ask(DdevProjectsPanel.this.ideProject);
-
-            if (confirmed) {
-                super.apply(selected, value);
-            }
-        }
-    }
-
-    private final class OpenSelectedPhpConfigAction extends SelectionAwareAction {
-        OpenSelectedPhpConfigAction() {
-            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.EditPhpConfig.MainMenu.text"),
-                    AllIcons.Actions.EditSource);
-        }
-
-        @Override
-        protected boolean isEnabledFor(@Nullable DdevProject selected) {
-            return super.isEnabledFor(selected) && selected.getAppRoot() != null;
-        }
-
-        @Override
-        protected void perform(@NotNull DdevProject selected) {
-            ApplicationManager.getApplication().executeOnPooledThread(() -> {
-                try {
-                    final Path file = DdevConfigFiles.ensureCustomPhpIni(Path.of(
-                            Objects.requireNonNull(selected.getAppRoot())));
-                    ApplicationManager.getApplication().invokeLater(() -> DdevProjectsPanel.this.openLocalFile(file));
-                } catch (java.io.IOException ignored) {
-                    // The project may have disappeared between list refresh and selection.
-                }
-            });
-        }
-    }
-
-    private final class OpenSelectedWebserverConfigAction extends SelectionAwareAction {
-        OpenSelectedWebserverConfigAction() {
-            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.EditWebserverConfig.MainMenu.text"),
-                    AllIcons.Actions.EditSource);
-        }
-
-        @Override
-        protected boolean isEnabledFor(@Nullable DdevProject selected) {
-            return super.isEnabledFor(selected) && selected.getAppRoot() != null;
-        }
-
-        @Override
-        protected void perform(@NotNull DdevProject selected) {
-            final Path file = DdevConfigFiles.findWebserverConfig(Path.of(
-                    Objects.requireNonNull(selected.getAppRoot())));
-
-            if (file == null) {
-                Messages.showInfoMessage(DdevProjectsPanel.this.ideProject,
-                        DdevIntegrationBundle.message("editWebserverConfig.missing.message"),
-                        DdevIntegrationBundle.message("editWebserverConfig.missing.title"));
-            } else {
-                DdevProjectsPanel.this.openLocalFile(file);
-            }
-        }
     }
 
     private final class InstallSelectedAddOnAction extends SelectionAwareAction {

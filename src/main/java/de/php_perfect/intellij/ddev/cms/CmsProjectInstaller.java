@@ -1,6 +1,7 @@
 package de.php_perfect.intellij.ddev.cms;
 
 import com.intellij.execution.configurations.PtyCommandLine;
+import com.intellij.execution.configurations.GeneralCommandLine;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
@@ -16,6 +17,8 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.SecureRandom;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
 
@@ -43,7 +46,7 @@ public final class CmsProjectInstaller {
         final CmsInstallationRecipe.Step step = recipe.steps().get(index);
         final CmsInstallationRecipe.Context context = new CmsInstallationRecipe.Context(
                 projectName, primaryUrl != null ? primaryUrl : "", credentials.username(),
-                credentials.password(), credentials.email());
+                credentials.password(), credentials.email(), credentials.loginToken());
         final List<String> arguments = recipe.resolveArguments(step, context);
         final List<CmsInstallationRecipe.FileAction> fileActions = recipe.resolveFileActions(step, context);
 
@@ -55,14 +58,24 @@ public final class CmsProjectInstaller {
 
         final String binary = Objects.requireNonNull(
                 DdevStateManager.getInstance(project).getState().getDdevBinary());
-        final PtyCommandLine commandLine = new PtyCommandLine();
+        final GeneralCommandLine commandLine = step.sensitive() ? new GeneralCommandLine() : new PtyCommandLine();
         commandLine.setExePath(binary);
-        commandLine.addParameters(arguments);
+        final byte[] standardInput;
+        if (step.sensitive()) {
+            commandLine.addParameters("exec", "bash", "-s");
+            standardInput = ("set -euo pipefail\nexec " + arguments.stream()
+                    .map(CmsProjectInstaller::shellQuote)
+                    .collect(java.util.stream.Collectors.joining(" ")) + "\n")
+                    .getBytes(StandardCharsets.UTF_8);
+        } else {
+            commandLine.addParameters(arguments);
+            standardInput = null;
+        }
         commandLine.setWorkDirectory(workingDirectory);
         commandLine.setCharset(StandardCharsets.UTF_8);
         commandLine.withEnvironment("DDEV_NONINTERACTIVE", "true");
 
-        Runner.getInstance(project).runOnSuccess(commandLine, step.title(), () -> {
+        Runner.getInstance(project).runWithOutcome(commandLine, step.title(), standardInput, () -> {
             if (fileActions.isEmpty()) {
                 continueAfterStep(project, workingDirectory, projectName, recipe, credentials, index, primaryUrl,
                         afterCompletion);
@@ -70,7 +83,12 @@ public final class CmsProjectInstaller {
                 applyFileActions(project, workingDirectory, projectName, recipe, credentials, index, primaryUrl,
                         afterCompletion, fileActions);
             }
-        });
+        }, () -> showStepFailure(project, step, () -> runStep(project, workingDirectory, projectName, recipe,
+                credentials, index, primaryUrl, afterCompletion)));
+    }
+
+    static @NotNull String shellQuote(@NotNull String value) {
+        return "'" + value.replace("'", "'\\''") + "'";
     }
 
     private static void applyFileActions(@NotNull Project project, @NotNull String workingDirectory,
@@ -93,8 +111,28 @@ public final class CmsProjectInstaller {
                         workingDirectory, projectName, recipe, credentials, index, primaryUrl, afterCompletion));
             } catch (Exception exception) {
                 ApplicationManager.getApplication().invokeLater(() -> Messages.showErrorDialog(project,
-                        DdevIntegrationBundle.message("cms.install.files.failed", exception.getMessage()),
+                        DdevIntegrationBundle.message("cms.install.files.failed", exception.getMessage()) + "\n\n"
+                                + DdevIntegrationBundle.message("cms.install.partialState"),
                         DdevIntegrationBundle.message("cms.install.failed.title")));
+            }
+        });
+    }
+
+    private static void showStepFailure(@NotNull Project project, @NotNull CmsInstallationRecipe.Step step,
+                                        @NotNull Runnable retry) {
+        ApplicationManager.getApplication().invokeLater(() -> {
+            String message = DdevIntegrationBundle.message("cms.install.step.failed", step.title());
+            if (step.failureHelp() != null && !step.failureHelp().isBlank()) {
+                message += "\n\n" + step.failureHelp();
+            }
+            message += "\n\n" + DdevIntegrationBundle.message("cms.install.partialState");
+            final int choice = Messages.showDialog(project, message,
+                    DdevIntegrationBundle.message("cms.install.failed.title"),
+                    new String[]{DdevIntegrationBundle.message("cms.install.retry"),
+                            DdevIntegrationBundle.message("cms.install.stop")},
+                    0, Messages.getErrorIcon());
+            if (choice == 0) {
+                retry.run();
             }
         });
     }
@@ -171,7 +209,16 @@ public final class CmsProjectInstaller {
         });
     }
 
-    public record Credentials(@NotNull String username, @NotNull String password, @NotNull String email) {
-        public static final Credentials NONE = new Credentials("", "", "");
+    public record Credentials(@NotNull String username, @NotNull String password, @NotNull String email,
+                              @NotNull String loginToken) {
+        private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+        public static final Credentials NONE = new Credentials("", "", "", "");
+
+        public static @NotNull Credentials create(@NotNull String username, @NotNull String password,
+                                                   @NotNull String email) {
+            final byte[] token = new byte[32];
+            SECURE_RANDOM.nextBytes(token);
+            return new Credentials(username, password, email, HexFormat.of().formatHex(token));
+        }
     }
 }

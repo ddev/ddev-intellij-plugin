@@ -27,6 +27,8 @@ final class CmsInstallationRecipeLoader {
             CmsInstallationRecipe.PROJECT_NAME,
             CmsInstallationRecipe.USERNAME,
             CmsInstallationRecipe.USERNAME_URLENCODED,
+            CmsInstallationRecipe.LOGIN_TOKEN,
+            CmsInstallationRecipe.LOGIN_TOKEN_URLENCODED,
             CmsInstallationRecipe.PASSWORD,
             CmsInstallationRecipe.EMAIL
     );
@@ -110,11 +112,16 @@ final class CmsInstallationRecipeLoader {
         }
         final List<String> arguments = List.copyOf(list(definition.arguments()));
         validateStrings(arguments, "step arguments", recipeId);
+        if (!definition.sensitive() && arguments.stream().anyMatch(argument ->
+                argument.contains(CmsInstallationRecipe.PASSWORD))) {
+            throw new IllegalStateException("Password-bearing step must use protected standard input in CMS recipe "
+                    + recipeId + ": " + definition.title());
+        }
         if (arguments.isEmpty() && actions.isEmpty()) {
             throw new IllegalStateException("Empty step in CMS recipe " + recipeId + ": " + definition.title());
         }
         return new CmsInstallationRecipe.Step(definition.title(), arguments,
-                List.copyOf(actions));
+                List.copyOf(actions), definition.failureHelp(), definition.sensitive());
     }
 
     private static @NotNull String readText(@NotNull String path) {
@@ -177,7 +184,8 @@ final class CmsInstallationRecipeLoader {
 
     private record StepDefinition(@Nullable String title, @Nullable List<String> arguments,
                                   @Nullable List<WriteDefinition> writeFiles,
-                                  @Nullable List<String> moveContents) {
+                                  @Nullable List<String> moveContents, @Nullable String failureHelp,
+                                  boolean sensitive) {
     }
 
     private record WriteDefinition(@Nullable String path, @Nullable String resource) {

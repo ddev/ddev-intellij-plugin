@@ -38,7 +38,7 @@ public record DataSourceConfig(@NotNull String name, @NotNull String description
                 ", port=" + port +
                 ", database='" + database + '\'' +
                 ", username='" + username + '\'' +
-                ", password='" + password + '\'' +
+                ", password='<redacted>'" +
                 '}';
     }
 }
