@@ -47,7 +47,7 @@ final class DdevConfigOptionsTest {
 
     @Test
     void fallbackTracksNewDdevOptions() {
-        final DdevConfigOptions options = DdevConfigOptions.fallback();
+        final DdevConfigOptions options = DdevConfigOptionsLoader.loadBundledFallback();
 
         assertThat(options.phpVersions()).contains("8.5");
         assertThat(options.nodejsVersions()).contains("26");
