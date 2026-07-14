@@ -29,6 +29,14 @@ public class Service {
         return httpsUrl;
     }
 
+    public @Nullable String getPreferredUrl() {
+        if (this.httpsUrl != null && !this.httpsUrl.isBlank()) {
+            return this.httpsUrl;
+        }
+
+        return this.httpUrl != null && !this.httpUrl.isBlank() ? this.httpUrl : null;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

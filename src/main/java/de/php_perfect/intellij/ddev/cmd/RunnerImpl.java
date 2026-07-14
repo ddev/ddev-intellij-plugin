@@ -40,7 +40,20 @@ public final class RunnerImpl implements Runner, Disposable {
     }
 
     @Override
+    public void runOnSuccess(@NotNull GeneralCommandLine commandLine, @NotNull String title,
+                             @Nullable Runnable afterSuccessfulCompletion) {
+        this.runInternal(commandLine, title, afterSuccessfulCompletion, null, true);
+    }
+
+    @Override
     public void run(@NotNull GeneralCommandLine commandLine, @NotNull String title, @Nullable Runnable afterCompletion, @Nullable Consumer<ProcessHandler> processHandlerConsumer) {
+        this.runInternal(commandLine, title, afterCompletion, processHandlerConsumer, false);
+    }
+
+    private void runInternal(@NotNull GeneralCommandLine commandLine, @NotNull String title,
+                             @Nullable Runnable afterCompletion,
+                             @Nullable Consumer<ProcessHandler> processHandlerConsumer,
+                             boolean onlyAfterSuccessfulCompletion) {
         // Create process handler on background thread to avoid EDT violations
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
@@ -52,10 +65,15 @@ public final class RunnerImpl implements Runner, Disposable {
 
                 // Switch back to EDT for UI operations
                 ApplicationManager.getApplication().invokeLater(() -> {
+                    final Runnable completionCallback = afterCompletion == null ? null : () -> {
+                        if (!onlyAfterSuccessfulCompletion || Integer.valueOf(0).equals(processHandler.getExitCode())) {
+                            afterCompletion.run();
+                        }
+                    };
                     final RunContentExecutor runContentExecutor = new RunContentExecutor(this.project, processHandler)
                             .withTitle(title)
                             .withActivateToolWindow(true)
-                            .withAfterCompletion(afterCompletion)
+                            .withAfterCompletion(completionCallback)
                             .withStop(processHandler::destroyProcess, () -> !processHandler.isProcessTerminated());
                     Disposer.register(this, runContentExecutor);
                     runContentExecutor.run();

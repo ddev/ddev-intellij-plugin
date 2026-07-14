@@ -117,7 +117,6 @@
 
         <statistics.gotItTooltipAllowlist prefix="ddev.features"/>
 
-        <terminal.shellCommandHandler implementation="de.php_perfect.intellij.ddev.cmd.DdevShellCommandHandlerImpl"/>
     </extensions>
 
     <actions resource-bundle="messages.DdevIntegrationBundle">
@@ -259,6 +258,24 @@
                 <override-text place="MainMenu"/>
                 <override-text place="EditorPopup" use-text-of-place="MainMenu"/>
             </action>
+            <separator/>
+            <group id="DdevIntegration.WordPress" popup="true">
+                <action id="DdevIntegration.WordPress.EnableDebug"
+                        class="de.php_perfect.intellij.ddev.actions.DdevWordPressEnableDebugAction"/>
+                <action id="DdevIntegration.WordPress.EnableSilentDebug"
+                        class="de.php_perfect.intellij.ddev.actions.DdevWordPressEnableSilentDebugAction"/>
+                <action id="DdevIntegration.WordPress.DisableDebug"
+                        class="de.php_perfect.intellij.ddev.actions.DdevWordPressDisableDebugAction"/>
+                <action id="DdevIntegration.WordPress.DisableSilentDebug"
+                        class="de.php_perfect.intellij.ddev.actions.DdevWordPressDisableSilentDebugAction"/>
+                <separator/>
+                <action id="DdevIntegration.WordPress.OpenConfig"
+                        class="de.php_perfect.intellij.ddev.actions.DdevOpenWordPressConfigAction"/>
+                <action id="DdevIntegration.WordPress.OpenDdevConfig"
+                        class="de.php_perfect.intellij.ddev.actions.DdevOpenWordPressDdevConfigAction"/>
+                <action id="DdevIntegration.WordPress.OpenDebugLog"
+                        class="de.php_perfect.intellij.ddev.actions.DdevOpenWordPressDebugLogAction"/>
+            </group>
             <separator/>
             <action id="DdevIntegration.Run.MutagenReset" icon="AllIcons.Actions.ForceRefresh"
                     class="de.php_perfect.intellij.ddev.actions.DdevMutagenResetAction">

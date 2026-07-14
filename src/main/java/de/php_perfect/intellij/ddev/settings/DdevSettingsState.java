@@ -19,6 +19,13 @@ public final class DdevSettingsState implements PersistentStateComponent<DdevSet
     public boolean autoConfigureNodeJsInterpreter;
     public boolean createSnapshotOnStop;
     public boolean omitSnapshotOnDelete;
+    public boolean deleteDdevFolderOnDelete;
+    public boolean automaticallyInstallCms;
+    public @NotNull String wordpressTablePrefixImportPolicy;
+    public @NotNull String wordpressUrlImportPolicy;
+    public @NotNull String projectNameFormat;
+    public boolean expandServicesInProjectsToolWindow;
+    public boolean showCurrentProjectOnly;
 
     public DdevSettingsState() {
         // Set default values for new installations
@@ -30,6 +37,13 @@ public final class DdevSettingsState implements PersistentStateComponent<DdevSet
         this.autoConfigureNodeJsInterpreter = true;
         this.createSnapshotOnStop = false;
         this.omitSnapshotOnDelete = false;
+        this.deleteDdevFolderOnDelete = false;
+        this.automaticallyInstallCms = false;
+        this.wordpressTablePrefixImportPolicy = "Ask";
+        this.wordpressUrlImportPolicy = "Ask";
+        this.projectNameFormat = de.php_perfect.intellij.ddev.toolwindow.DdevProjectNameFormatter.DEFAULT;
+        this.expandServicesInProjectsToolWindow = true;
+        this.showCurrentProjectOnly = false;
     }
 
     public static @NotNull DdevSettingsState getInstance(Project project) {
@@ -44,5 +58,13 @@ public final class DdevSettingsState implements PersistentStateComponent<DdevSet
     @Override
     public void loadState(@NotNull DdevSettingsState state) {
         XmlSerializerUtil.copyBean(state, this);
+        this.wordpressTablePrefixImportPolicy =
+                de.php_perfect.intellij.ddev.wordpress.WordPressImportPolicy
+                        .fromValue(this.wordpressTablePrefixImportPolicy).value();
+        this.wordpressUrlImportPolicy = de.php_perfect.intellij.ddev.wordpress.WordPressImportPolicy
+                .fromValue(this.wordpressUrlImportPolicy).value();
+        if (this.projectNameFormat == null || this.projectNameFormat.isBlank()) {
+            this.projectNameFormat = de.php_perfect.intellij.ddev.toolwindow.DdevProjectNameFormatter.DEFAULT;
+        }
     }
 }

@@ -80,7 +80,22 @@ final class DdevRunnerImplTest extends BasePlatformTestCase {
 
     @Test
     void delete() throws InterruptedException {
-        this.assertRunsAndRefreshesDescription(ddevRunner -> ddevRunner.delete(getProject()), "ddev delete", "DDEV Delete");
+        final ArgumentCaptor<GeneralCommandLine> commandLine = ArgumentCaptor.forClass(GeneralCommandLine.class);
+        final ArgumentCaptor<Runnable> afterSuccess = ArgumentCaptor.forClass(Runnable.class);
+        final CountDownLatch updated = new CountDownLatch(1);
+        Mockito.doAnswer(invocation -> {
+            updated.countDown();
+            return null;
+        }).when(this.stateManager).updateDescription();
+
+        new DdevRunnerImpl().delete(getProject());
+
+        Mockito.verify(this.runner).runOnSuccess(commandLine.capture(), Mockito.eq("DDEV Delete"), afterSuccess.capture());
+        Assertions.assertEquals("ddev delete --yes", commandLine.getValue().getCommandLineString());
+
+        afterSuccess.getValue().run();
+
+        Assertions.assertTrue(updated.await(10, TimeUnit.SECONDS));
     }
 
     @Test

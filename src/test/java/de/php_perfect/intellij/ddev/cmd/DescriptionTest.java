@@ -49,6 +49,16 @@ final class DescriptionTest {
     }
 
     @Test
+    void mapsHttpOnlyMailpitUrlToTheSyntheticService() {
+        final Description description = Description.builder()
+                .name("example")
+                .mailpitHttpUrl("http://example.ddev.site:8025")
+                .build();
+
+        Assertions.assertEquals(new Service("ddev-example-mailpit", null, "http://example.ddev.site:8025"), description.getServices().get("mailpit"));
+    }
+
+    @Test
     void servicesWithoutMailersAreEmpty() {
         Assertions.assertTrue(Description.builder().build().getServices().isEmpty());
     }

@@ -11,6 +11,7 @@ import de.php_perfect.intellij.ddev.cmd.AddOn;
 import de.php_perfect.intellij.ddev.cmd.CommandFailedException;
 import de.php_perfect.intellij.ddev.cmd.Ddev;
 import de.php_perfect.intellij.ddev.cmd.DdevRunner;
+import de.php_perfect.intellij.ddev.cmd.InstalledAddOn;
 import de.php_perfect.intellij.ddev.notification.DdevNotifier;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import de.php_perfect.intellij.ddev.state.State;
@@ -19,6 +20,9 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class DdevInstallAddOnAction extends DdevRunAction {
     @Override
@@ -36,7 +40,14 @@ public final class DdevInstallAddOnAction extends DdevRunAction {
             @Override
             public void run(@NotNull ProgressIndicator indicator) {
                 try {
-                    this.addOns = Ddev.getInstance().listAddOns(binary, project);
+                    final Set<String> installedRepositories = Ddev.getInstance().listInstalledAddOns(binary, project).stream()
+                            .map(InstalledAddOn::getRepository)
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toSet());
+                    this.addOns = Ddev.getInstance().listAddOns(binary, project).stream()
+                            .filter(addOn -> addOn.getTitle() != null)
+                            .filter(addOn -> !installedRepositories.contains(addOn.getTitle()))
+                            .toList();
                 } catch (CommandFailedException exception) {
                     DdevNotifier.getInstance(project).notifyAddOnListFailed();
                 }

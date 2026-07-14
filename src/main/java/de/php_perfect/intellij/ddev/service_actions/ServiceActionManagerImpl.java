@@ -85,10 +85,7 @@ public final class ServiceActionManagerImpl implements ServiceActionManager, Dis
     }
 
     private @Nullable URI extractServiceUri(Service service) throws URISyntaxException {
-        String address = service.getHttpsUrl();
-        if (address == null) {
-            address = service.getHttpUrl();
-        }
+        final String address = service.getPreferredUrl();
 
         if (address != null) {
             return new URI(address).normalize();

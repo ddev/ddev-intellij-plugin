@@ -17,6 +17,7 @@ import de.php_perfect.intellij.ddev.cmd.wsl.WslAware;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import de.php_perfect.intellij.ddev.state.State;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -31,15 +32,22 @@ public final class DdevTerminalRunner extends PlatformTerminalRunner {
 
     private final @NotNull List<String> ddevArguments;
     private final @NotNull @NlsContexts.TabTitle String tabTitle;
+    private final @Nullable String workingDirectory;
 
     public DdevTerminalRunner(@NotNull Project project) {
-        this(project, List.of("ssh"), "DDEV Web Container");
+        this(project, List.of("ssh"), "DDEV Web Container", null);
     }
 
     public DdevTerminalRunner(@NotNull Project project, @NotNull List<String> ddevArguments, @NotNull @NlsContexts.TabTitle String tabTitle) {
+        this(project, ddevArguments, tabTitle, null);
+    }
+
+    public DdevTerminalRunner(@NotNull Project project, @NotNull List<String> ddevArguments,
+                              @NotNull @NlsContexts.TabTitle String tabTitle, @Nullable String workingDirectory) {
         super(project);
         this.ddevArguments = ddevArguments;
         this.tabTitle = tabTitle;
+        this.workingDirectory = workingDirectory;
     }
 
     @Override
@@ -62,7 +70,7 @@ public final class DdevTerminalRunner extends PlatformTerminalRunner {
         final PtyCommandLine commandLine = new PtyCommandLine(command)
                 .withConsoleMode(false);
 
-        commandLine.setWorkDirectory(getProject().getBasePath());
+        commandLine.setWorkDirectory(this.workingDirectory != null ? this.workingDirectory : getProject().getBasePath());
 
         // Wrap WSL patching in progress indicator context to avoid "no ProgressIndicator" errors
         final AtomicReference<PtyCommandLine> patchedCommandLineRef = new AtomicReference<>();

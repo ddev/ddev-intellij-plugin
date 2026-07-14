@@ -6,6 +6,8 @@ import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.TestDialog;
+import com.intellij.openapi.ui.TestDialogManager;
 import com.intellij.testFramework.ServiceContainerUtil;
 import com.intellij.testFramework.TestActionEvent;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
@@ -15,6 +17,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -33,12 +36,17 @@ final class DdevRunActionTest extends BasePlatformTestCase {
         super.setUp();
         this.runner = Mockito.mock(DdevRunner.class);
         ServiceContainerUtil.replaceService(ApplicationManager.getApplication(), DdevRunner.class, this.runner, getTestRootDisposable());
+        TestDialogManager.setTestDialog(TestDialog.YES);
     }
 
     @Override
     @AfterEach
     protected void tearDown() throws Exception {
-        super.tearDown();
+        try {
+            TestDialogManager.setTestDialog(TestDialog.DEFAULT);
+        } finally {
+            super.tearDown();
+        }
     }
 
     static Stream<Arguments> runActions() {
@@ -65,6 +73,16 @@ final class DdevRunActionTest extends BasePlatformTestCase {
         action.actionPerformed(event(action, SimpleDataContext.getProjectContext(getProject())));
 
         command.accept(Mockito.verify(this.runner), getProject());
+    }
+
+    @Test
+    void declinedDeleteRunsNothing() {
+        TestDialogManager.setTestDialog(TestDialog.NO);
+        final DdevRunAction action = new DdevDeleteAction();
+
+        action.actionPerformed(event(action, SimpleDataContext.getProjectContext(getProject())));
+
+        Mockito.verifyNoInteractions(this.runner);
     }
 
     @ParameterizedTest

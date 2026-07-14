@@ -57,6 +57,13 @@ public final class DdevSettingsConfigurable implements Configurable {
         modified |= this.ddevSettingsComponent.getAutoConfigureNodeJsInterpreter() != settings.autoConfigureNodeJsInterpreter;
         modified |= this.ddevSettingsComponent.getCreateSnapshotOnStop() != settings.createSnapshotOnStop;
         modified |= this.ddevSettingsComponent.getOmitSnapshotOnDelete() != settings.omitSnapshotOnDelete;
+        modified |= this.ddevSettingsComponent.getDeleteDdevFolderOnDelete() != settings.deleteDdevFolderOnDelete;
+        modified |= this.ddevSettingsComponent.getAutomaticallyInstallCms() != settings.automaticallyInstallCms;
+        modified |= !this.ddevSettingsComponent.getWordpressTablePrefixImportPolicy()
+                .equals(settings.wordpressTablePrefixImportPolicy);
+        modified |= !this.ddevSettingsComponent.getWordpressUrlImportPolicy().equals(settings.wordpressUrlImportPolicy);
+        modified |= !this.ddevSettingsComponent.getProjectNameFormat().equals(settings.projectNameFormat);
+        modified |= this.ddevSettingsComponent.getExpandServicesInProjectsToolWindow() != settings.expandServicesInProjectsToolWindow;
 
         return modified;
     }
@@ -78,6 +85,12 @@ public final class DdevSettingsConfigurable implements Configurable {
         settings.autoConfigureNodeJsInterpreter = this.ddevSettingsComponent.getAutoConfigureNodeJsInterpreter();
         settings.createSnapshotOnStop = this.ddevSettingsComponent.getCreateSnapshotOnStop();
         settings.omitSnapshotOnDelete = this.ddevSettingsComponent.getOmitSnapshotOnDelete();
+        settings.deleteDdevFolderOnDelete = this.ddevSettingsComponent.getDeleteDdevFolderOnDelete();
+        settings.automaticallyInstallCms = this.ddevSettingsComponent.getAutomaticallyInstallCms();
+        settings.wordpressTablePrefixImportPolicy = this.ddevSettingsComponent.getWordpressTablePrefixImportPolicy();
+        settings.wordpressUrlImportPolicy = this.ddevSettingsComponent.getWordpressUrlImportPolicy();
+        settings.projectNameFormat = this.ddevSettingsComponent.getProjectNameFormat();
+        settings.expandServicesInProjectsToolWindow = this.ddevSettingsComponent.getExpandServicesInProjectsToolWindow();
 
         StateWatcher.getInstance(this.project).stopWatching();
         ApplicationManager.getApplication().executeOnPooledThread(() -> DdevStateManager.getInstance(this.project).reinitialize());
@@ -111,6 +124,12 @@ public final class DdevSettingsConfigurable implements Configurable {
         this.ddevSettingsComponent.setAutoConfigureNodeJsInterpreter(settings.autoConfigureNodeJsInterpreter);
         this.ddevSettingsComponent.setCreateSnapshotOnStop(settings.createSnapshotOnStop);
         this.ddevSettingsComponent.setOmitSnapshotOnDelete(settings.omitSnapshotOnDelete);
+        this.ddevSettingsComponent.setDeleteDdevFolderOnDelete(settings.deleteDdevFolderOnDelete);
+        this.ddevSettingsComponent.setAutomaticallyInstallCms(settings.automaticallyInstallCms);
+        this.ddevSettingsComponent.setWordpressTablePrefixImportPolicy(settings.wordpressTablePrefixImportPolicy);
+        this.ddevSettingsComponent.setWordpressUrlImportPolicy(settings.wordpressUrlImportPolicy);
+        this.ddevSettingsComponent.setProjectNameFormat(settings.projectNameFormat);
+        this.ddevSettingsComponent.setExpandServicesInProjectsToolWindow(settings.expandServicesInProjectsToolWindow);
     }
 
     @Override

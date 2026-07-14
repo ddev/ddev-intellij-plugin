@@ -9,9 +9,9 @@ import com.intellij.openapi.vfs.VirtualFile;
 import de.php_perfect.intellij.ddev.DdevIntegrationBundle;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import de.php_perfect.intellij.ddev.state.State;
+import de.php_perfect.intellij.ddev.cmd.DdevConfigFiles;
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -27,9 +27,7 @@ public final class DdevEditWebserverConfigAction extends DdevRunAction {
             return;
         }
 
-        final Path nginxConf = Path.of(basePath, ".ddev", "nginx_full", "nginx-site.conf");
-        final Path apacheConf = Path.of(basePath, ".ddev", "apache", "apache-site.conf");
-        final Path config = Files.exists(nginxConf) ? nginxConf : (Files.exists(apacheConf) ? apacheConf : null);
+        final Path config = DdevConfigFiles.findWebserverConfig(Path.of(basePath));
 
         if (config == null) {
             Messages.showInfoMessage(project,

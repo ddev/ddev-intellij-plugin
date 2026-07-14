@@ -172,7 +172,7 @@ public class Description {
         }
 
         if (this.getMailpitHttpsUrl() != null || this.getMailpitHttpUrl() != null) {
-            serviceMap.put("mailpit", new Service("ddev-" + this.getName() + "-mailpit", this.getMailpitHttpsUrl(), this.getMailpitHttpsUrl()));
+            serviceMap.put("mailpit", new Service("ddev-" + this.getName() + "-mailpit", this.getMailpitHttpsUrl(), this.getMailpitHttpUrl()));
         }
 
         return serviceMap;
