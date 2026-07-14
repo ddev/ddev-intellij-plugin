@@ -21,6 +21,8 @@ public interface DdevRunner {
 
     void share(@NotNull Project project);
 
+    void share(@NotNull Project project, @Nullable String workingDirectory);
+
     void stopShare(@NotNull Project project);
 
     void config(@NotNull Project project);
@@ -35,9 +37,14 @@ public interface DdevRunner {
 
     void clearSnapshots(@NotNull Project project);
 
+    void clearSnapshots(@NotNull Project project, @Nullable String workingDirectory, @Nullable Runnable afterCompletion);
+
     void importDatabase(@NotNull Project project, @NotNull String filePath);
 
     void importDatabase(@NotNull Project project, @Nullable String workingDirectory, @NotNull String filePath);
+
+    void importDatabase(@NotNull Project project, @NotNull String workingDirectory, @NotNull String filePath,
+                        @Nullable String projectName, @Nullable String projectType);
 
     void exportDatabase(@NotNull Project project, @NotNull String filePath);
 
@@ -45,15 +52,27 @@ public interface DdevRunner {
 
     void enableXdebug(@NotNull Project project);
 
+    void enableXdebug(@NotNull Project project, @Nullable String workingDirectory, @Nullable Runnable afterCompletion);
+
     void disableXdebug(@NotNull Project project);
 
+    void disableXdebug(@NotNull Project project, @Nullable String workingDirectory, @Nullable Runnable afterCompletion);
+
     void mutagenReset(@NotNull Project project);
+
+    void mutagenReset(@NotNull Project project, @Nullable String workingDirectory, @Nullable Runnable afterCompletion);
 
     void deleteImages(@NotNull Project project);
 
     void installAddOn(@NotNull Project project, @NotNull String addOnName);
 
+    void installAddOn(@NotNull Project project, @Nullable String workingDirectory, @NotNull String addOnName,
+                      @Nullable Runnable afterCompletion);
+
     void removeAddOn(@NotNull Project project, @NotNull String addOnName);
+
+    void removeAddOn(@NotNull Project project, @Nullable String workingDirectory, @NotNull String addOnName,
+                     @Nullable Runnable afterCompletion);
 
     void startProject(@NotNull Project project, @NotNull String projectName, @Nullable Runnable afterCompletion);
 
@@ -65,11 +84,18 @@ public interface DdevRunner {
 
     void deleteProject(@NotNull Project project, @NotNull String projectName, @Nullable Runnable afterCompletion);
 
-    void renameProject(@NotNull Project project, @Nullable String workingDirectory, @NotNull String newName, @Nullable Runnable afterCompletion);
+    void deleteProject(@NotNull Project project, @NotNull String projectName, @Nullable String workingDirectory,
+                       @Nullable Runnable afterCompletion);
+
+    void renameProject(@NotNull Project project, @Nullable String workingDirectory, @NotNull String currentName,
+                       @NotNull String newName, @Nullable Runnable afterCompletion);
 
     void createProject(@NotNull Project project, @NotNull String workingDirectory, @Nullable Runnable afterCompletion, @NotNull String... configArguments);
 
     void updateConfig(@NotNull Project project, @NotNull String... configArguments);
+
+    void updateConfig(@NotNull Project project, @Nullable String workingDirectory, @Nullable Runnable afterCompletion,
+                      @NotNull String... configArguments);
 
     static DdevRunner getInstance() {
         return ApplicationManager.getApplication().getService(DdevRunner.class);

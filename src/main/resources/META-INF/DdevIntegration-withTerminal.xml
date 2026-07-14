@@ -1,4 +1,10 @@
 <idea-plugin>
+    <extensions defaultExtensionNs="com.intellij">
+        <projectService serviceImplementation="de.php_perfect.intellij.ddev.terminal.DdevTerminalServiceImpl"
+                        serviceInterface="de.php_perfect.intellij.ddev.terminal.DdevTerminalService"/>
+        <terminal.shellCommandHandler implementation="de.php_perfect.intellij.ddev.cmd.DdevShellCommandHandlerImpl"/>
+    </extensions>
+
     <extensions defaultExtensionNs="org.jetbrains.plugins.terminal">
         <openPredefinedTerminalProvider
                 implementation="de.php_perfect.intellij.ddev.terminal.DdevPredefinedTerminalActionProvider"/>

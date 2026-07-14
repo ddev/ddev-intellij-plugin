@@ -200,6 +200,18 @@ public final class DdevNotifierImpl implements DdevNotifier {
     }
 
     @Override
+    public void notifyWordPressShareSetupFailed(@NotNull String detail) {
+        ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
+                .getNotificationGroup(STICKY)
+                .createNotification(
+                        DdevIntegrationBundle.message("notification.WordPressShareSetupFailed.title"),
+                        DdevIntegrationBundle.message("notification.WordPressShareSetupFailed.text", detail),
+                        NotificationType.WARNING
+                )
+                .notify(this.project), ModalityState.nonModal());
+    }
+
+    @Override
     public void notifySnapshotListFailed() {
         ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
                 .getNotificationGroup(NON_STICKY)

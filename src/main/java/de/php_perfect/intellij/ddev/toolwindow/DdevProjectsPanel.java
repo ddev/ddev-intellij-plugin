@@ -25,7 +25,9 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileWrapper;
+import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.ui.ColoredTreeCellRenderer;
+import com.intellij.ui.ColoredListCellRenderer;
 import com.intellij.ui.PopupHandler;
 import com.intellij.ui.ScrollPaneFactory;
 import com.intellij.ui.SimpleListCellRenderer;
@@ -33,17 +35,27 @@ import com.intellij.ui.SimpleTextAttributes;
 import com.intellij.ui.treeStructure.Tree;
 import de.php_perfect.intellij.ddev.DdevIntegrationBundle;
 import de.php_perfect.intellij.ddev.cmd.CommandFailedException;
+import de.php_perfect.intellij.ddev.cmd.AddOn;
 import de.php_perfect.intellij.ddev.cmd.Ddev;
+import de.php_perfect.intellij.ddev.cmd.DdevConfigOptions;
+import de.php_perfect.intellij.ddev.cmd.DdevConfigOptionsLoader;
+import de.php_perfect.intellij.ddev.cmd.DdevConfigFiles;
+import de.php_perfect.intellij.ddev.cmd.DatabaseInfo;
 import de.php_perfect.intellij.ddev.cmd.DdevProject;
 import de.php_perfect.intellij.ddev.cmd.DdevRunner;
 import de.php_perfect.intellij.ddev.cmd.Description;
 import de.php_perfect.intellij.ddev.cmd.Service;
 import de.php_perfect.intellij.ddev.cmd.Snapshot;
+import de.php_perfect.intellij.ddev.cmd.InstalledAddOn;
+import de.php_perfect.intellij.ddev.cmd.SnapshotFileManager;
+import de.php_perfect.intellij.ddev.cmd.ShareManager;
 import de.php_perfect.intellij.ddev.icons.DdevIntegrationIcons;
 import de.php_perfect.intellij.ddev.notification.DdevNotifier;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import de.php_perfect.intellij.ddev.state.State;
+import de.php_perfect.intellij.ddev.settings.DdevSettingsState;
 import de.php_perfect.intellij.ddev.util.DdevProjectOpener;
+import de.php_perfect.intellij.ddev.terminal.DdevTerminalService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,6 +74,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.function.Function;
 
 public final class DdevProjectsPanel extends SimpleToolWindowPanel {
     private final transient @NotNull Project ideProject;
@@ -74,6 +89,7 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
     public DdevProjectsPanel(@NotNull Project ideProject) {
         super(true, true);
         this.ideProject = ideProject;
+        this.showCurrentProjectOnly = DdevSettingsState.getInstance(ideProject).showCurrentProjectOnly;
 
         this.tree = new Tree(this.treeModel);
         this.tree.setRootVisible(false);
@@ -98,6 +114,18 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
 
                 if (node instanceof DefaultMutableTreeNode treeNode && treeNode.getUserObject() instanceof ServicesGroup servicesGroup) {
                     DdevProjectsPanel.this.loadServices(treeNode, servicesGroup);
+                } else if (node instanceof DefaultMutableTreeNode treeNode
+                        && treeNode.getUserObject() instanceof DdevProject
+                        && DdevSettingsState.getInstance(DdevProjectsPanel.this.ideProject).expandServicesInProjectsToolWindow) {
+                    for (int i = 0; i < treeNode.getChildCount(); i++) {
+                        final DefaultMutableTreeNode child = (DefaultMutableTreeNode) treeNode.getChildAt(i);
+
+                        if (child.getUserObject() instanceof ServicesGroup) {
+                            ApplicationManager.getApplication().invokeLater(() ->
+                                    DdevProjectsPanel.this.tree.expandPath(new TreePath(child.getPath())));
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -133,11 +161,38 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
                 Separator.getInstance(),
                 new CreateSnapshotAction(),
                 new RestoreSnapshotAction(),
+                new DeleteSelectedSnapshotAction(),
+                new ClearSelectedSnapshotsAction(),
+                Separator.getInstance(),
+                new ChangeConfigAction(
+                        DdevIntegrationBundle.message("action.DdevIntegration.Run.ChangePhpVersion.MainMenu.text"),
+                        DdevIntegrationBundle.message("changePhpVersion.popupTitle"),
+                        "--php-version=", DdevConfigOptions::phpVersions),
+                new ChangeNodejsConfigAction(),
+                new ChangeConfigAction(
+                        DdevIntegrationBundle.message("action.DdevIntegration.Run.ChangeWebserverType.MainMenu.text"),
+                        DdevIntegrationBundle.message("changeWebserverType.popupTitle"),
+                        "--webserver-type=", DdevConfigOptions::webserverTypes),
+                new ChangeDatabaseConfigAction(),
+                new OpenSelectedPhpConfigAction(),
+                new OpenSelectedWebserverConfigAction(),
+                Separator.getInstance(),
+                new InstallSelectedAddOnAction(),
+                new RemoveSelectedAddOnAction(),
+                Separator.getInstance(),
+                new EnableSelectedXdebugAction(),
+                new DisableSelectedXdebugAction(),
+                new ResetSelectedMutagenAction(),
+                Separator.getInstance(),
+                new ShareSelectedProjectAction(),
+                new StopSharingSelectedProjectAction(),
                 Separator.getInstance(),
                 new ImportDatabaseAction(),
                 new ExportDatabaseAction(),
                 Separator.getInstance(),
                 new OpenBrowserAction(),
+                new OpenSelectedTerminalAction(),
+                new OpenSelectedDatabaseTerminalAction(),
                 new OpenInCurrentWindowAction(),
                 new OpenInNewWindowAction(),
                 new RevealDirectoryAction(),
@@ -252,9 +307,11 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
                 servicesNode.removeAllChildren();
 
                 if (this.description != null) {
-                    for (final Map.Entry<String, Service> entry : this.description.getServices().entrySet()) {
-                        servicesNode.add(new DefaultMutableTreeNode(new ServiceItem(entry.getKey(), entry.getValue())));
-                    }
+                    this.description.getServices().entrySet().stream()
+                            .filter(entry -> !"web".equals(entry.getKey()) && !"db".equals(entry.getKey()))
+                            .sorted(Map.Entry.comparingByKey())
+                            .forEach(entry -> servicesNode.add(
+                                    new DefaultMutableTreeNode(new ServiceItem(entry.getKey(), entry.getValue()))));
                 }
 
                 if (servicesNode.getChildCount() == 0) {
@@ -272,6 +329,14 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
         ApplicationManager.getApplication().invokeLater(this::refresh);
     }
 
+    private void openLocalFile(@NotNull Path path) {
+        final VirtualFile file = LocalFileSystem.getInstance().refreshAndFindFileByNioFile(path);
+
+        if (file != null) {
+            com.intellij.openapi.fileEditor.FileEditorManager.getInstance(this.ideProject).openFile(file, true);
+        }
+    }
+
     private @Nullable DefaultMutableTreeNode getSelectedNode() {
         final TreePath selectionPath = this.tree.getSelectionPath();
 
@@ -283,6 +348,11 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
     }
 
     private @Nullable DdevProject getSelectedProject() {
+        final DefaultMutableTreeNode node = this.getSelectedNode();
+        return node != null && node.getUserObject() instanceof DdevProject ddevProject ? ddevProject : null;
+    }
+
+    private @Nullable DdevProject getOwningProject() {
         DefaultMutableTreeNode node = this.getSelectedNode();
 
         while (node != null) {
@@ -357,7 +427,7 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
         }
 
         private @Nullable String getUrl() {
-            return this.service.getHttpsUrl() != null ? this.service.getHttpsUrl() : this.service.getHttpUrl();
+            return this.service.getPreferredUrl();
         }
     }
 
@@ -371,7 +441,11 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
 
             if (userObject instanceof DdevProject ddevProject) {
                 this.setIcon(DdevIntegrationIcons.DdevLogoMono);
-                this.append(ddevProject.getName() != null ? ddevProject.getName() : "?", SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES);
+                final String projectName = ddevProject.getName() != null
+                        ? DdevProjectNameFormatter.format(ddevProject.getName(),
+                        DdevSettingsState.getInstance(DdevProjectsPanel.this.ideProject).projectNameFormat)
+                        : "?";
+                this.append(projectName, SimpleTextAttributes.REGULAR_BOLD_ATTRIBUTES);
 
                 if (ddevProject.getStatusDesc() != null) {
                     this.append("  " + ddevProject.getStatusDesc(), ddevProject.isRunning()
@@ -450,6 +524,7 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
         @Override
         public void setSelected(@NotNull AnActionEvent e, boolean state) {
             DdevProjectsPanel.this.showCurrentProjectOnly = state;
+            DdevSettingsState.getInstance(DdevProjectsPanel.this.ideProject).showCurrentProjectOnly = state;
             DdevProjectsPanel.this.rebuildTree(DdevProjectsPanel.this.lastLoadedProjects);
         }
 
@@ -550,6 +625,392 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
         return result;
     }
 
+    private class ChangeConfigAction extends SelectionAwareAction {
+        private final @NotNull String popupTitle;
+        private final @NotNull String argumentPrefix;
+        private final @NotNull Function<DdevConfigOptions, List<String>> choices;
+
+        ChangeConfigAction(@NotNull String text, @NotNull String popupTitle, @NotNull String argumentPrefix,
+                           @NotNull Function<DdevConfigOptions, List<String>> choices) {
+            super(text, AllIcons.Actions.Edit);
+            this.popupTitle = popupTitle;
+            this.argumentPrefix = argumentPrefix;
+            this.choices = choices;
+        }
+
+        @Override
+        protected boolean isEnabledFor(@Nullable DdevProject selected) {
+            return super.isEnabledFor(selected) && selected.getAppRoot() != null;
+        }
+
+        @Override
+        protected void perform(@NotNull DdevProject selected) {
+            new Task.Backgroundable(DdevProjectsPanel.this.ideProject,
+                    DdevIntegrationBundle.message("configOptions.loading"), true) {
+                private DdevConfigOptions options;
+
+                @Override
+                public void run(@NotNull ProgressIndicator indicator) {
+                    this.options = DdevConfigOptionsLoader.getInstance().load(indicator);
+                }
+
+                @Override
+                public void onSuccess() {
+                    final List<String> values = ChangeConfigAction.this.choices.apply(this.options);
+
+                    if (values.isEmpty()) {
+                        return;
+                    }
+
+                    JBPopupFactory.getInstance()
+                            .createPopupChooserBuilder(values)
+                            .setTitle(ChangeConfigAction.this.popupTitle)
+                            .setNamerForFiltering(value -> value)
+                            .setFilterAlwaysVisible(true)
+                            .setItemChosenCallback(value -> ChangeConfigAction.this.apply(selected, value))
+                            .createPopup()
+                            .showCenteredInCurrentWindow(DdevProjectsPanel.this.ideProject);
+                }
+            }.queue();
+        }
+
+        protected void apply(@NotNull DdevProject selected, @NotNull String value) {
+            DdevRunner.getInstance().updateConfig(
+                    DdevProjectsPanel.this.ideProject,
+                    selected.getAppRoot(),
+                    DdevProjectsPanel.this::refreshLater,
+                    this.argumentPrefix + value
+            );
+        }
+    }
+
+    private final class ChangeNodejsConfigAction extends ChangeConfigAction {
+        private static final String CUSTOM = DdevIntegrationBundle.message("changeNodejsVersion.custom");
+
+        ChangeNodejsConfigAction() {
+            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.ChangeNodejsVersion.MainMenu.text"),
+                    DdevIntegrationBundle.message("changeNodejsVersion.title"), "--nodejs-version=",
+                    options -> {
+                        final java.util.ArrayList<String> values = new java.util.ArrayList<>(options.nodejsVersions());
+                        values.add(CUSTOM);
+                        return values;
+                    });
+        }
+
+        @Override
+        protected void apply(@NotNull DdevProject selected, @NotNull String value) {
+            if (!CUSTOM.equals(value)) {
+                super.apply(selected, value);
+                return;
+            }
+
+            final String customVersion = Messages.showInputDialog(
+                    DdevProjectsPanel.this.ideProject,
+                    DdevIntegrationBundle.message("changeNodejsVersion.message"),
+                    DdevIntegrationBundle.message("changeNodejsVersion.title"),
+                    null
+            );
+
+            if (customVersion != null && !customVersion.isBlank()) {
+                super.apply(selected, customVersion.trim());
+            }
+        }
+    }
+
+    private final class ChangeDatabaseConfigAction extends ChangeConfigAction {
+        ChangeDatabaseConfigAction() {
+            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.ChangeDatabaseVersion.MainMenu.text"),
+                    DdevIntegrationBundle.message("changeDatabase.popupTitle"), "--database=",
+                    DdevConfigOptions::databases);
+        }
+
+        @Override
+        protected void apply(@NotNull DdevProject selected, @NotNull String value) {
+            final boolean confirmed = MessageDialogBuilder.yesNo(
+                    DdevIntegrationBundle.message("changeDatabase.confirm.title"),
+                    DdevIntegrationBundle.message("changeDatabase.confirm.message", value)
+            ).ask(DdevProjectsPanel.this.ideProject);
+
+            if (confirmed) {
+                super.apply(selected, value);
+            }
+        }
+    }
+
+    private final class OpenSelectedPhpConfigAction extends SelectionAwareAction {
+        OpenSelectedPhpConfigAction() {
+            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.EditPhpConfig.MainMenu.text"),
+                    AllIcons.Actions.EditSource);
+        }
+
+        @Override
+        protected boolean isEnabledFor(@Nullable DdevProject selected) {
+            return super.isEnabledFor(selected) && selected.getAppRoot() != null;
+        }
+
+        @Override
+        protected void perform(@NotNull DdevProject selected) {
+            ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                try {
+                    final Path file = DdevConfigFiles.ensureCustomPhpIni(Path.of(
+                            Objects.requireNonNull(selected.getAppRoot())));
+                    ApplicationManager.getApplication().invokeLater(() -> DdevProjectsPanel.this.openLocalFile(file));
+                } catch (java.io.IOException ignored) {
+                    // The project may have disappeared between list refresh and selection.
+                }
+            });
+        }
+    }
+
+    private final class OpenSelectedWebserverConfigAction extends SelectionAwareAction {
+        OpenSelectedWebserverConfigAction() {
+            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.EditWebserverConfig.MainMenu.text"),
+                    AllIcons.Actions.EditSource);
+        }
+
+        @Override
+        protected boolean isEnabledFor(@Nullable DdevProject selected) {
+            return super.isEnabledFor(selected) && selected.getAppRoot() != null;
+        }
+
+        @Override
+        protected void perform(@NotNull DdevProject selected) {
+            final Path file = DdevConfigFiles.findWebserverConfig(Path.of(
+                    Objects.requireNonNull(selected.getAppRoot())));
+
+            if (file == null) {
+                Messages.showInfoMessage(DdevProjectsPanel.this.ideProject,
+                        DdevIntegrationBundle.message("editWebserverConfig.missing.message"),
+                        DdevIntegrationBundle.message("editWebserverConfig.missing.title"));
+            } else {
+                DdevProjectsPanel.this.openLocalFile(file);
+            }
+        }
+    }
+
+    private final class InstallSelectedAddOnAction extends SelectionAwareAction {
+        InstallSelectedAddOnAction() {
+            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.InstallAddOn.MainMenu.text"),
+                    AllIcons.Actions.Install);
+        }
+
+        @Override
+        protected boolean isEnabledFor(@Nullable DdevProject selected) {
+            return super.isEnabledFor(selected) && selected.getAppRoot() != null;
+        }
+
+        @Override
+        protected void perform(@NotNull DdevProject selected) {
+            final String binary = DdevProjectsPanel.this.getBinary();
+
+            if (binary == null) {
+                return;
+            }
+
+            new Task.Backgroundable(DdevProjectsPanel.this.ideProject,
+                    DdevIntegrationBundle.message("addOn.loadingAvailable"), true) {
+                private List<AddOn> addOns;
+
+                @Override
+                public void run(@NotNull ProgressIndicator indicator) {
+                    try {
+                        final List<InstalledAddOn> installed = Ddev.getInstance().listInstalledAddOns(
+                                binary, DdevProjectsPanel.this.ideProject, selected.getAppRoot());
+                        final Set<String> installedRepositories = installed.stream()
+                                .map(InstalledAddOn::getRepository)
+                                .filter(Objects::nonNull)
+                                .collect(Collectors.toSet());
+                        this.addOns = Ddev.getInstance().listAddOns(binary, DdevProjectsPanel.this.ideProject).stream()
+                                .filter(addOn -> addOn.getTitle() != null)
+                                .filter(addOn -> !installedRepositories.contains(addOn.getTitle()))
+                                .toList();
+                    } catch (CommandFailedException exception) {
+                        DdevNotifier.getInstance(DdevProjectsPanel.this.ideProject).notifyAddOnListFailed();
+                    }
+                }
+
+                @Override
+                public void onSuccess() {
+                    if (this.addOns == null || this.addOns.isEmpty()) {
+                        return;
+                    }
+
+                    JBPopupFactory.getInstance()
+                            .createPopupChooserBuilder(this.addOns)
+                            .setTitle(DdevIntegrationBundle.message("addOn.install.popupTitle"))
+                            .setRenderer(new ColoredListCellRenderer<AddOn>() {
+                                @Override
+                                protected void customizeCellRenderer(@NotNull JList<? extends AddOn> list, AddOn addOn,
+                                                                     int index, boolean selected, boolean hasFocus) {
+                                    this.append(String.valueOf(addOn.getTitle()), SimpleTextAttributes.REGULAR_ATTRIBUTES);
+
+                                    if (addOn.getDescription() != null) {
+                                        this.append("  " + addOn.getDescription(), SimpleTextAttributes.GRAYED_ATTRIBUTES);
+                                    }
+                                }
+                            })
+                            .setNamerForFiltering(addOn -> addOn.getTitle() + " " + addOn.getDescription())
+                            .setFilterAlwaysVisible(true)
+                            .setItemChosenCallback(addOn -> DdevRunner.getInstance().installAddOn(
+                                    DdevProjectsPanel.this.ideProject, selected.getAppRoot(),
+                                    Objects.requireNonNull(addOn.getTitle()), DdevProjectsPanel.this::refreshLater))
+                            .createPopup()
+                            .showCenteredInCurrentWindow(DdevProjectsPanel.this.ideProject);
+                }
+            }.queue();
+        }
+    }
+
+    private final class RemoveSelectedAddOnAction extends SelectionAwareAction {
+        RemoveSelectedAddOnAction() {
+            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.RemoveAddOn.MainMenu.text"),
+                    AllIcons.Actions.Uninstall);
+        }
+
+        @Override
+        protected boolean isEnabledFor(@Nullable DdevProject selected) {
+            return super.isEnabledFor(selected) && selected.getAppRoot() != null;
+        }
+
+        @Override
+        protected void perform(@NotNull DdevProject selected) {
+            final String binary = DdevProjectsPanel.this.getBinary();
+
+            if (binary == null) {
+                return;
+            }
+
+            new Task.Backgroundable(DdevProjectsPanel.this.ideProject,
+                    DdevIntegrationBundle.message("addOn.loadingInstalled"), true) {
+                private List<InstalledAddOn> addOns;
+
+                @Override
+                public void run(@NotNull ProgressIndicator indicator) {
+                    try {
+                        this.addOns = Ddev.getInstance().listInstalledAddOns(
+                                binary, DdevProjectsPanel.this.ideProject, selected.getAppRoot());
+                    } catch (CommandFailedException exception) {
+                        DdevNotifier.getInstance(DdevProjectsPanel.this.ideProject).notifyAddOnListFailed();
+                    }
+                }
+
+                @Override
+                public void onSuccess() {
+                    if (this.addOns == null || this.addOns.isEmpty()) {
+                        return;
+                    }
+
+                    JBPopupFactory.getInstance()
+                            .createPopupChooserBuilder(this.addOns)
+                            .setTitle(DdevIntegrationBundle.message("addOn.remove.popupTitle"))
+                            .setRenderer(new SimpleListCellRenderer<InstalledAddOn>() {
+                                @Override
+                                public void customize(@NotNull JList<? extends InstalledAddOn> list, InstalledAddOn addOn,
+                                                      int index, boolean selected, boolean hasFocus) {
+                                    this.setText(addOn.getName() + " (" + addOn.getVersion() + ")");
+                                }
+                            })
+                            .setNamerForFiltering(addOn -> addOn.getName() + " " + addOn.getRepository())
+                            .setFilterAlwaysVisible(true)
+                            .setItemChosenCallback(addOn -> DdevRunner.getInstance().removeAddOn(
+                                    DdevProjectsPanel.this.ideProject, selected.getAppRoot(),
+                                    Objects.requireNonNull(addOn.getName()), DdevProjectsPanel.this::refreshLater))
+                            .createPopup()
+                            .showCenteredInCurrentWindow(DdevProjectsPanel.this.ideProject);
+                }
+            }.queue();
+        }
+    }
+
+    private final class EnableSelectedXdebugAction extends SelectionAwareAction {
+        EnableSelectedXdebugAction() {
+            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.EnableXdebug.MainMenu.text"),
+                    AllIcons.Actions.StartDebugger);
+        }
+
+        @Override
+        protected boolean isEnabledFor(@Nullable DdevProject selected) {
+            return super.isEnabledFor(selected) && selected.isRunning() && selected.getAppRoot() != null;
+        }
+
+        @Override
+        protected void perform(@NotNull DdevProject selected) {
+            DdevRunner.getInstance().enableXdebug(DdevProjectsPanel.this.ideProject, selected.getAppRoot(),
+                    DdevProjectsPanel.this::refreshLater);
+        }
+    }
+
+    private final class DisableSelectedXdebugAction extends SelectionAwareAction {
+        DisableSelectedXdebugAction() {
+            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.DisableXdebug.MainMenu.text"),
+                    AllIcons.Debugger.MuteBreakpoints);
+        }
+
+        @Override
+        protected boolean isEnabledFor(@Nullable DdevProject selected) {
+            return super.isEnabledFor(selected) && selected.isRunning() && selected.getAppRoot() != null;
+        }
+
+        @Override
+        protected void perform(@NotNull DdevProject selected) {
+            DdevRunner.getInstance().disableXdebug(DdevProjectsPanel.this.ideProject, selected.getAppRoot(),
+                    DdevProjectsPanel.this::refreshLater);
+        }
+    }
+
+    private final class ResetSelectedMutagenAction extends SelectionAwareAction {
+        ResetSelectedMutagenAction() {
+            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.MutagenReset.MainMenu.text"),
+                    AllIcons.Actions.ForceRefresh);
+        }
+
+        @Override
+        protected boolean isEnabledFor(@Nullable DdevProject selected) {
+            return super.isEnabledFor(selected) && selected.getAppRoot() != null;
+        }
+
+        @Override
+        protected void perform(@NotNull DdevProject selected) {
+            DdevRunner.getInstance().mutagenReset(DdevProjectsPanel.this.ideProject, selected.getAppRoot(),
+                    DdevProjectsPanel.this::refreshLater);
+        }
+    }
+
+    private final class ShareSelectedProjectAction extends SelectionAwareAction {
+        ShareSelectedProjectAction() {
+            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.Share.MainMenu.text"), AllIcons.Actions.Share);
+        }
+
+        @Override
+        protected boolean isEnabledFor(@Nullable DdevProject selected) {
+            return super.isEnabledFor(selected) && selected.isRunning() && selected.getAppRoot() != null
+                    && !ShareManager.getInstance(DdevProjectsPanel.this.ideProject).isSharing();
+        }
+
+        @Override
+        protected void perform(@NotNull DdevProject selected) {
+            DdevRunner.getInstance().share(DdevProjectsPanel.this.ideProject, selected.getAppRoot());
+        }
+    }
+
+    private final class StopSharingSelectedProjectAction extends SelectionAwareAction {
+        StopSharingSelectedProjectAction() {
+            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.ShareStop.MainMenu.text"),
+                    AllIcons.Actions.Cancel);
+        }
+
+        @Override
+        protected boolean isEnabledFor(@Nullable DdevProject selected) {
+            return super.isEnabledFor(selected) && selected.getAppRoot() != null
+                    && ShareManager.getInstance(DdevProjectsPanel.this.ideProject).isSharing(selected.getAppRoot());
+        }
+
+        @Override
+        protected void perform(@NotNull DdevProject selected) {
+            DdevRunner.getInstance().stopShare(DdevProjectsPanel.this.ideProject);
+        }
+    }
+
     private final class CreateSnapshotAction extends SelectionAwareAction {
         CreateSnapshotAction() {
             super(DdevIntegrationBundle.message("toolWindow.projects.action.createSnapshot"), AllIcons.Actions.MenuSaveall);
@@ -635,6 +1096,119 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
         }
     }
 
+    private final class DeleteSelectedSnapshotAction extends SelectionAwareAction {
+        DeleteSelectedSnapshotAction() {
+            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.DeleteSnapshot.MainMenu.text"),
+                    AllIcons.General.Delete);
+        }
+
+        @Override
+        protected boolean isEnabledFor(@Nullable DdevProject selected) {
+            return super.isEnabledFor(selected) && selected.getAppRoot() != null;
+        }
+
+        @Override
+        protected void perform(@NotNull DdevProject selected) {
+            final String binary = DdevProjectsPanel.this.getBinary();
+            final String appRoot = selected.getAppRoot();
+
+            if (binary == null || appRoot == null) {
+                return;
+            }
+
+            new Task.Backgroundable(DdevProjectsPanel.this.ideProject,
+                    DdevIntegrationBundle.message("snapshot.loading"), true) {
+                private List<Snapshot> snapshots;
+
+                @Override
+                public void run(@NotNull ProgressIndicator indicator) {
+                    try {
+                        this.snapshots = Ddev.getInstance().listSnapshots(
+                                binary, DdevProjectsPanel.this.ideProject, appRoot).stream()
+                                .sorted(Comparator.comparing(Snapshot::getCreated,
+                                        Comparator.nullsLast(Comparator.reverseOrder())))
+                                .toList();
+                    } catch (CommandFailedException exception) {
+                        DdevNotifier.getInstance(DdevProjectsPanel.this.ideProject).notifySnapshotListFailed();
+                    }
+                }
+
+                @Override
+                public void onSuccess() {
+                    if (this.snapshots == null || this.snapshots.isEmpty()) {
+                        Messages.showInfoMessage(DdevProjectsPanel.this.ideProject,
+                                DdevIntegrationBundle.message("snapshot.none.message"),
+                                DdevIntegrationBundle.message("snapshot.delete.popupTitle"));
+                        return;
+                    }
+
+                    JBPopupFactory.getInstance()
+                            .createPopupChooserBuilder(this.snapshots)
+                            .setTitle(DdevIntegrationBundle.message("snapshot.delete.popupTitle"))
+                            .setRenderer(new SimpleListCellRenderer<Snapshot>() {
+                                @Override
+                                public void customize(@NotNull JList<? extends Snapshot> list, Snapshot snapshot,
+                                                      int index, boolean selected, boolean hasFocus) {
+                                    this.setText(snapshot.getName());
+                                }
+                            })
+                            .setNamerForFiltering(Snapshot::getName)
+                            .setFilterAlwaysVisible(true)
+                            .setItemChosenCallback(snapshot -> confirmAndDelete(appRoot, snapshot))
+                            .createPopup()
+                            .showCenteredInCurrentWindow(DdevProjectsPanel.this.ideProject);
+                }
+            }.queue();
+        }
+
+        private void confirmAndDelete(@NotNull String appRoot, @NotNull Snapshot snapshot) {
+            final String name = snapshot.getName();
+
+            if (name == null || !MessageDialogBuilder.yesNo(
+                    DdevIntegrationBundle.message("snapshot.delete.confirm.title"),
+                    DdevIntegrationBundle.message("snapshot.delete.confirm.message", name)
+            ).ask(DdevProjectsPanel.this.ideProject)) {
+                return;
+            }
+
+            ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                try {
+                    SnapshotFileManager.deleteSnapshot(Path.of(appRoot), name);
+                } catch (java.io.IOException exception) {
+                    DdevNotifier.getInstance(DdevProjectsPanel.this.ideProject).notifySnapshotListFailed();
+                }
+
+                LocalFileSystem.getInstance().refreshAndFindFileByNioFile(
+                        Path.of(appRoot, ".ddev", "db_snapshots"));
+            });
+        }
+    }
+
+    private final class ClearSelectedSnapshotsAction extends SelectionAwareAction {
+        ClearSelectedSnapshotsAction() {
+            super(DdevIntegrationBundle.message("action.DdevIntegration.Run.ClearSnapshots.MainMenu.text"),
+                    AllIcons.Actions.GC);
+        }
+
+        @Override
+        protected boolean isEnabledFor(@Nullable DdevProject selected) {
+            return super.isEnabledFor(selected) && selected.getAppRoot() != null;
+        }
+
+        @Override
+        protected void perform(@NotNull DdevProject selected) {
+            final boolean confirmed = MessageDialogBuilder.yesNo(
+                    DdevIntegrationBundle.message("dialog.clearSnapshots.title"),
+                    DdevIntegrationBundle.message("dialog.clearSnapshots.message")
+            ).ask(DdevProjectsPanel.this.ideProject);
+
+            if (confirmed) {
+                DdevRunner.getInstance().clearSnapshots(
+                        DdevProjectsPanel.this.ideProject, selected.getAppRoot(), DdevProjectsPanel.this::refreshLater);
+            }
+        }
+    }
+
     private final class ImportDatabaseAction extends SelectionAwareAction {
         ImportDatabaseAction() {
             super(DdevIntegrationBundle.message("toolWindow.projects.action.importDatabase"), AllIcons.ToolbarDecorator.Import);
@@ -654,7 +1228,8 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
             final VirtualFile file = FileChooser.chooseFile(descriptor, DdevProjectsPanel.this.ideProject, null);
 
             if (file != null) {
-                DdevRunner.getInstance().importDatabase(DdevProjectsPanel.this.ideProject, selected.getAppRoot(), file.getPath());
+                DdevRunner.getInstance().importDatabase(DdevProjectsPanel.this.ideProject,
+                        selected.getAppRoot(), file.getPath(), selected.getName(), selected.getType());
             }
         }
     }
@@ -686,23 +1261,176 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
         }
     }
 
-    private final class OpenBrowserAction extends SelectionAwareAction {
+    private final class OpenBrowserAction extends DumbAwareAction {
         OpenBrowserAction() {
-            super(DdevIntegrationBundle.message("toolWindow.projects.action.openBrowser"), AllIcons.General.Web);
+            super(DdevIntegrationBundle.message("toolWindow.projects.action.openBrowser"), null, AllIcons.General.Web);
+        }
+
+        @Override
+        public void update(@NotNull AnActionEvent e) {
+            final DefaultMutableTreeNode node = DdevProjectsPanel.this.getSelectedNode();
+            final Object selected = node != null ? node.getUserObject() : null;
+            final String url = getUrl(selected);
+
+            e.getPresentation().setEnabledAndVisible(url != null);
+
+            if (selected instanceof ServiceItem serviceItem) {
+                e.getPresentation().setText(DdevIntegrationBundle.message(
+                        "toolWindow.projects.action.openService", serviceItem.name));
+            } else {
+                e.getPresentation().setText(DdevIntegrationBundle.message("toolWindow.projects.action.openBrowser"));
+            }
+        }
+
+        @Override
+        public void actionPerformed(@NotNull AnActionEvent e) {
+            DdevProjectsPanel.this.openSelectedUrl();
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.EDT;
+        }
+
+        private @Nullable String getUrl(@Nullable Object selected) {
+            if (selected instanceof UrlItem urlItem) {
+                return urlItem.url;
+            }
+
+            if (selected instanceof ServiceItem serviceItem) {
+                return serviceItem.getUrl();
+            }
+
+            return selected instanceof DdevProject ddevProject && ddevProject.isRunning()
+                    ? ddevProject.getPrimaryUrl()
+                    : null;
+        }
+    }
+
+    private final class OpenSelectedTerminalAction extends DumbAwareAction {
+        OpenSelectedTerminalAction() {
+            super(DdevIntegrationBundle.message("toolWindow.projects.action.openTerminal"), null,
+                    DdevIntegrationIcons.DdevLogoColor);
+        }
+
+        @Override
+        public void update(@NotNull AnActionEvent e) {
+            final DefaultMutableTreeNode node = DdevProjectsPanel.this.getSelectedNode();
+            final Object selected = node != null ? node.getUserObject() : null;
+            final DdevProject project = DdevProjectsPanel.this.getOwningProject();
+            final boolean service = selected instanceof ServiceItem serviceItem
+                    && !"mailpit".equals(serviceItem.name) && !"mailhog".equals(serviceItem.name);
+            final boolean available = project != null && project.isRunning() && project.getAppRoot() != null
+                    && DdevProjectsPanel.this.getTerminalService() != null
+                    && (selected instanceof DdevProject || service);
+            e.getPresentation().setEnabledAndVisible(available);
+
+            if (service) {
+                e.getPresentation().setText(DdevIntegrationBundle.message(
+                        "toolWindow.projects.action.openServiceTerminal", ((ServiceItem) selected).name));
+            } else {
+                e.getPresentation().setText(DdevIntegrationBundle.message("toolWindow.projects.action.openTerminal"));
+            }
+        }
+
+        @Override
+        public void actionPerformed(@NotNull AnActionEvent e) {
+            final DefaultMutableTreeNode node = DdevProjectsPanel.this.getSelectedNode();
+            final Object selected = node != null ? node.getUserObject() : null;
+            final DdevProject project = DdevProjectsPanel.this.getOwningProject();
+
+            if (project == null || project.getAppRoot() == null) {
+                return;
+            }
+
+            final List<String> arguments;
+            final String title;
+
+            if (selected instanceof ServiceItem serviceItem) {
+                arguments = List.of("ssh", "--service", serviceItem.name);
+                title = "DDEV " + serviceItem.name;
+            } else {
+                arguments = List.of("ssh");
+                title = "DDEV " + project.getName();
+            }
+
+            final DdevTerminalService terminalService = DdevProjectsPanel.this.getTerminalService();
+            if (terminalService != null) {
+                terminalService.open(arguments, title, project.getAppRoot());
+            }
+        }
+
+        @Override
+        public @NotNull ActionUpdateThread getActionUpdateThread() {
+            return ActionUpdateThread.EDT;
+        }
+    }
+
+    private final class OpenSelectedDatabaseTerminalAction extends SelectionAwareAction {
+        OpenSelectedDatabaseTerminalAction() {
+            super(DdevIntegrationBundle.message("toolWindow.projects.action.openDatabaseTerminal"),
+                    DdevIntegrationIcons.DdevLogoColor);
         }
 
         @Override
         protected boolean isEnabledFor(@Nullable DdevProject selected) {
-            return selected != null && selected.isRunning() && selected.getPrimaryUrl() != null;
+            return super.isEnabledFor(selected) && selected.isRunning() && selected.getAppRoot() != null
+                    && DdevProjectsPanel.this.getTerminalService() != null;
         }
 
         @Override
         protected void perform(@NotNull DdevProject selected) {
-            if (selected.getPrimaryUrl() != null) {
-                BrowserUtil.browse(selected.getPrimaryUrl());
+            final String binary = DdevProjectsPanel.this.getBinary();
+
+            if (binary == null) {
+                return;
             }
+
+            new Task.Backgroundable(DdevProjectsPanel.this.ideProject,
+                    DdevIntegrationBundle.message("toolWindow.projects.loadingServices",
+                            Objects.requireNonNull(selected.getName())), true) {
+                private DatabaseInfo databaseInfo;
+                private boolean failed;
+
+                @Override
+                public void run(@NotNull ProgressIndicator indicator) {
+                    try {
+                        this.databaseInfo = Ddev.getInstance().describeProject(binary,
+                                DdevProjectsPanel.this.ideProject, Objects.requireNonNull(selected.getName()))
+                                .getDatabaseInfo();
+                    } catch (CommandFailedException exception) {
+                        this.failed = true;
+                    }
+                }
+
+                @Override
+                public void onSuccess() {
+                    if (this.failed) {
+                        Messages.showErrorDialog(DdevProjectsPanel.this.ideProject,
+                                DdevIntegrationBundle.message("toolWindow.projects.loadFailed"),
+                                DdevIntegrationBundle.message("toolWindow.projects.action.openDatabaseTerminal"));
+                        return;
+                    }
+
+                    if (this.databaseInfo == null || selected.getAppRoot() == null) {
+                        return;
+                    }
+
+                    final String client = this.databaseInfo.type() == DatabaseInfo.Type.POSTGRESQL ? "psql" : "mysql";
+                    final String title = "DDEV Database - " + selected.getName();
+                    final DdevTerminalService terminalService = DdevProjectsPanel.this.getTerminalService();
+                    if (terminalService != null) {
+                        terminalService.open(List.of(client), title, selected.getAppRoot());
+                    }
+                }
+            }.queue();
         }
     }
+
+    private @Nullable DdevTerminalService getTerminalService() {
+        return this.ideProject.getService(DdevTerminalService.class);
+    }
+
 
     private final class OpenInCurrentWindowAction extends SelectionAwareAction {
         OpenInCurrentWindowAction() {
@@ -780,7 +1508,9 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
             );
 
             if (newName != null && !newName.isBlank() && !newName.equals(selected.getName())) {
-                DdevRunner.getInstance().renameProject(DdevProjectsPanel.this.ideProject, selected.getAppRoot(), newName.trim(), DdevProjectsPanel.this::refreshLater);
+                DdevRunner.getInstance().renameProject(DdevProjectsPanel.this.ideProject, selected.getAppRoot(),
+                        Objects.requireNonNull(selected.getName()), newName.trim(),
+                        DdevProjectsPanel.this::refreshLater);
             }
         }
     }
@@ -825,7 +1555,8 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
             ).ask(DdevProjectsPanel.this.ideProject);
 
             if (confirmed) {
-                DdevRunner.getInstance().deleteProject(DdevProjectsPanel.this.ideProject, Objects.requireNonNull(selected.getName()), DdevProjectsPanel.this::refreshLater);
+                DdevRunner.getInstance().deleteProject(DdevProjectsPanel.this.ideProject,
+                        Objects.requireNonNull(selected.getName()), selected.getAppRoot(), DdevProjectsPanel.this::refreshLater);
             }
         }
     }

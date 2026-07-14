@@ -30,6 +30,8 @@ public interface DdevNotifier {
 
     void notifyShareFailed(@NotNull String errorCode);
 
+    void notifyWordPressShareSetupFailed(@NotNull String detail);
+
     static DdevNotifier getInstance(@NotNull Project project) {
         return project.getService(DdevNotifier.class);
     }

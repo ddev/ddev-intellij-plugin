@@ -26,7 +26,7 @@ public final class DdevRenameProjectAction extends DdevRunAction {
         );
 
         if (newName != null && !newName.isBlank() && !newName.equals(currentName)) {
-            DdevRunner.getInstance().renameProject(project, null, newName.trim(), null);
+            DdevRunner.getInstance().renameProject(project, null, currentName, newName.trim(), null);
         }
     }
 

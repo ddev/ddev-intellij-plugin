@@ -21,6 +21,9 @@ public interface Ddev {
 
     @NotNull List<InstalledAddOn> listInstalledAddOns(@NotNull String binary, @NotNull Project project) throws CommandFailedException;
 
+    @NotNull List<InstalledAddOn> listInstalledAddOns(@NotNull String binary, @NotNull Project project,
+                                                      @Nullable String workingDirectory) throws CommandFailedException;
+
     @NotNull List<DdevProject> listProjects(@NotNull String binary, @NotNull Project project) throws CommandFailedException;
 
     @NotNull List<Snapshot> listSnapshots(@NotNull String binary, @NotNull Project project) throws CommandFailedException;

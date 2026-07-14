@@ -13,6 +13,7 @@ import de.php_perfect.intellij.ddev.DdevIntegrationBundle;
 import de.php_perfect.intellij.ddev.cmd.CommandFailedException;
 import de.php_perfect.intellij.ddev.cmd.Ddev;
 import de.php_perfect.intellij.ddev.cmd.Snapshot;
+import de.php_perfect.intellij.ddev.cmd.SnapshotFileManager;
 import de.php_perfect.intellij.ddev.notification.DdevNotifier;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import de.php_perfect.intellij.ddev.state.State;
@@ -21,13 +22,9 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 /**
  * Deletes a single database snapshot. DDEV has no CLI command for this,
@@ -106,33 +103,18 @@ public final class DdevDeleteSnapshotAction extends DdevRunAction {
             return;
         }
 
-        final Path snapshotDir = Path.of(java.util.Objects.requireNonNull(project.getBasePath()), ".ddev", "db_snapshots");
-        // Snapshot files are named "<name>-<dbtype>_<dbversion>.<ext>"; legacy snapshots were directories named "<name>".
-        final Pattern filePattern = Pattern.compile(Pattern.quote(name) + "-(mysql|mariadb|postgres)_.+");
+        final Path projectRoot = Path.of(java.util.Objects.requireNonNull(project.getBasePath()));
+        final Path snapshotDir = projectRoot.resolve(".ddev").resolve("db_snapshots");
 
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
-            try (DirectoryStream<Path> entries = Files.newDirectoryStream(snapshotDir)) {
-                for (final Path entry : entries) {
-                    final String fileName = entry.getFileName().toString();
-
-                    if (fileName.equals(name) || filePattern.matcher(fileName).matches()) {
-                        deleteRecursively(entry);
-                    }
-                }
+            try {
+                SnapshotFileManager.deleteSnapshot(projectRoot, name);
             } catch (IOException ignored) {
                 // Directory missing or not readable; nothing to delete.
             }
 
             LocalFileSystem.getInstance().refreshAndFindFileByNioFile(snapshotDir);
         });
-    }
-
-    private static void deleteRecursively(@NotNull Path path) throws IOException {
-        try (Stream<Path> paths = Files.walk(path)) {
-            for (final Path p : paths.sorted(Comparator.reverseOrder()).toList()) {
-                Files.delete(p);
-            }
-        }
     }
 
     @Override

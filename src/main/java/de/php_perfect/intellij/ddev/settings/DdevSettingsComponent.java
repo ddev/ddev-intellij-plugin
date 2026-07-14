@@ -3,6 +3,7 @@ package de.php_perfect.intellij.ddev.settings;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.ComboBox;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.components.JBCheckBox;
@@ -13,6 +14,7 @@ import com.intellij.util.ui.UIUtil;
 import de.php_perfect.intellij.ddev.DdevIntegrationBundle;
 import de.php_perfect.intellij.ddev.util.FeatureRequiredPlugins;
 import de.php_perfect.intellij.ddev.util.PluginChecker;
+import de.php_perfect.intellij.ddev.toolwindow.DdevProjectNameFormatter;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
@@ -29,7 +31,22 @@ public final class DdevSettingsComponent {
     private final @NotNull JBCheckBox autoConfigureNodeJsInterpreter = new JBCheckBox(DdevIntegrationBundle.message("settings.automaticConfiguration.nodeJsInterpreter"));
     private final @NotNull JBCheckBox createSnapshotOnStop = new JBCheckBox(DdevIntegrationBundle.message("settings.createSnapshotOnStop"));
     private final @NotNull JBCheckBox omitSnapshotOnDelete = new JBCheckBox(DdevIntegrationBundle.message("settings.omitSnapshotOnDelete"));
+    private final @NotNull JBCheckBox deleteDdevFolderOnDelete = new JBCheckBox(DdevIntegrationBundle.message("settings.deleteDdevFolderOnDelete"));
+    private final @NotNull JBCheckBox automaticallyInstallCms = new JBCheckBox(
+            DdevIntegrationBundle.message("settings.automaticallyInstallCms"));
+    private final @NotNull ComboBox<String> wordpressTablePrefixImportPolicy = new ComboBox<>(
+            new String[]{"Ask", "Always", "Never"});
+    private final @NotNull ComboBox<String> wordpressUrlImportPolicy = new ComboBox<>(
+            new String[]{"Ask", "Always", "Never"});
     private final @NotNull TextFieldWithBrowseButton ddevBinary = new TextFieldWithBrowseButton();
+    private final @NotNull ComboBox<String> projectNameFormat = new ComboBox<>(new String[]{
+            DdevProjectNameFormatter.DEFAULT,
+            DdevProjectNameFormatter.SPACES,
+            DdevProjectNameFormatter.SENTENCE_CASE,
+            DdevProjectNameFormatter.TITLE_CASE
+    });
+    private final @NotNull JBCheckBox expandServicesInProjectsToolWindow = new JBCheckBox(
+            DdevIntegrationBundle.message("settings.projects.expandServices"));
 
     public DdevSettingsComponent(Project project) {
         // Create panels with checkboxes and comments manually instead of using deprecated UI.PanelFactory
@@ -92,6 +109,29 @@ public final class DdevSettingsComponent {
         snapshotPanel.add(this.createSnapshotOnStop);
         snapshotPanel.add(Box.createVerticalStrut(5));
         snapshotPanel.add(this.omitSnapshotOnDelete);
+        snapshotPanel.add(Box.createVerticalStrut(5));
+        snapshotPanel.add(this.deleteDdevFolderOnDelete);
+
+        final JPanel projectsPanel = new JPanel();
+        projectsPanel.setBorder(IdeBorderFactory.createTitledBorder(
+                DdevIntegrationBundle.message("settings.projects"), true));
+        projectsPanel.setLayout(new BoxLayout(projectsPanel, BoxLayout.Y_AXIS));
+        projectsPanel.add(new JBLabel(DdevIntegrationBundle.message("settings.projects.nameFormat")));
+        projectsPanel.add(this.projectNameFormat);
+        projectsPanel.add(Box.createVerticalStrut(5));
+        projectsPanel.add(this.expandServicesInProjectsToolWindow);
+        projectsPanel.add(Box.createVerticalStrut(5));
+        projectsPanel.add(this.automaticallyInstallCms);
+
+        final JPanel wordpressPanel = new JPanel();
+        wordpressPanel.setBorder(IdeBorderFactory.createTitledBorder(
+                DdevIntegrationBundle.message("settings.wordpress"), true));
+        wordpressPanel.setLayout(new BoxLayout(wordpressPanel, BoxLayout.Y_AXIS));
+        wordpressPanel.add(new JBLabel(DdevIntegrationBundle.message("settings.wordpress.tablePrefixImportPolicy")));
+        wordpressPanel.add(this.wordpressTablePrefixImportPolicy);
+        wordpressPanel.add(Box.createVerticalStrut(5));
+        wordpressPanel.add(new JBLabel(DdevIntegrationBundle.message("settings.wordpress.urlImportPolicy")));
+        wordpressPanel.add(this.wordpressUrlImportPolicy);
 
         this.jPanel = FormBuilder.createFormBuilder()
                 .addLabeledComponent(new JBLabel(DdevIntegrationBundle.message("settings.ddevBinary")), this.ddevBinary, 1, false)
@@ -99,6 +139,8 @@ public final class DdevSettingsComponent {
                 .addComponent(watchDdevPanel, 1)
                 .addComponent(panel, 1)
                 .addComponent(snapshotPanel, 1)
+                .addComponent(projectsPanel, 1)
+                .addComponent(wordpressPanel, 1)
                 .addComponentFillVertically(new JPanel(), 0)
                 .getPanel();
     }
@@ -210,6 +252,57 @@ public final class DdevSettingsComponent {
 
     public void setOmitSnapshotOnDelete(boolean newStatus) {
         this.omitSnapshotOnDelete.setSelected(newStatus);
+    }
+
+    public boolean getDeleteDdevFolderOnDelete() {
+        return this.deleteDdevFolderOnDelete.isSelected();
+    }
+
+    public void setDeleteDdevFolderOnDelete(boolean newStatus) {
+        this.deleteDdevFolderOnDelete.setSelected(newStatus);
+    }
+
+    public boolean getAutomaticallyInstallCms() {
+        return this.automaticallyInstallCms.isSelected();
+    }
+
+    public void setAutomaticallyInstallCms(boolean automaticallyInstallCms) {
+        this.automaticallyInstallCms.setSelected(automaticallyInstallCms);
+    }
+
+    public @NotNull String getWordpressTablePrefixImportPolicy() {
+        final Object value = this.wordpressTablePrefixImportPolicy.getSelectedItem();
+        return value instanceof String string ? string : "Ask";
+    }
+
+    public void setWordpressTablePrefixImportPolicy(@NotNull String policy) {
+        this.wordpressTablePrefixImportPolicy.setSelectedItem(policy);
+    }
+
+    public @NotNull String getWordpressUrlImportPolicy() {
+        final Object value = this.wordpressUrlImportPolicy.getSelectedItem();
+        return value instanceof String string ? string : "Ask";
+    }
+
+    public void setWordpressUrlImportPolicy(@NotNull String policy) {
+        this.wordpressUrlImportPolicy.setSelectedItem(policy);
+    }
+
+    public @NotNull String getProjectNameFormat() {
+        final Object selected = this.projectNameFormat.getSelectedItem();
+        return selected instanceof String value ? value : DdevProjectNameFormatter.DEFAULT;
+    }
+
+    public void setProjectNameFormat(@NotNull String format) {
+        this.projectNameFormat.setSelectedItem(format);
+    }
+
+    public boolean getExpandServicesInProjectsToolWindow() {
+        return this.expandServicesInProjectsToolWindow.isSelected();
+    }
+
+    public void setExpandServicesInProjectsToolWindow(boolean expanded) {
+        this.expandServicesInProjectsToolWindow.setSelected(expanded);
     }
 
     public @NotNull String getDdevBinary() {

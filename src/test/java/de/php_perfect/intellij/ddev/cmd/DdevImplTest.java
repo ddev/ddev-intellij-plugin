@@ -75,9 +75,23 @@ final class DdevImplTest extends BasePlatformTestCase {
         ProcessOutput processOutput = new ProcessOutput(Files.readString(Path.of("src/test/resources/ddev_addon_list.json")), "", 0, false, false);
 
         MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
-        mockProcessExecutor.addProcessOutput("ddev add-on list --all --json-output", processOutput);
+        mockProcessExecutor.addProcessOutput("ddev add-on list --all --wrap-table --json-output", processOutput);
 
         Assertions.assertEquals(expected, new DdevImpl().listAddOns("ddev", getProject()));
+    }
+
+    @Test
+    void listAddOnsFromCurrentTableEnvelope() throws CommandFailedException {
+        final String output = "{\"level\":\"info\",\"msg\":\"│ ADD-ON │ DESCRIPTION │\\n"
+                + "│ ddev/ddev-redis │ Redis service for DDEV │\"}";
+        final MockProcessExecutor executor = (MockProcessExecutor) ApplicationManager.getApplication()
+                .getService(ProcessExecutor.class);
+        executor.addProcessOutput("ddev add-on list --all --wrap-table --json-output",
+                new ProcessOutput(output, "", 0, false, false));
+
+        Assertions.assertEquals(List.of(new AddOn(
+                "ddev/ddev-redis", "Redis service for DDEV", "official", null)),
+                new DdevImpl().listAddOns("ddev", getProject()));
     }
 
     @Test

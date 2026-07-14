@@ -119,18 +119,9 @@ intellijPlatform {
         })
 
         ideaVersion {
-            // Pin to the verified version line: this plugin implements non-stable Docker plugin
-            // APIs (connection configurators) whose surface changes between releases, so
-            // compatibility with a new IDE version must be verified before claiming it.
-            untilBuild = properties("platformVersion").map { version ->
-                if (version.matches(Regex("""\d{4}\.\d+"""))) {
-                    val (year, release) = version.split('.')
-                    "${year.takeLast(2)}$release.*"
-                } else {
-                    // EAP/snapshot coordinates start with the branch number, e.g. 262-EAP-SNAPSHOT
-                    "${version.takeWhile(Char::isDigit)}.*"
-                }
-            }
+            // 2026.2 is the minimum supported platform. Keep the upper bound open so later
+            // IDEs can install the plugin; each release is still checked by Plugin Verifier.
+            sinceBuild = "262"
         }
     }
 

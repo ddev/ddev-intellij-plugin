@@ -62,13 +62,30 @@ public final class DdevImpl implements Ddev {
     @Override
     public @NotNull List<AddOn> listAddOns(final @NotNull String binary, final @NotNull Project project) throws CommandFailedException {
         final Type type = TypeToken.getParameterized(List.class, AddOn.class).getType();
-        return execute(binary, List.of("add-on", "list", "--all"), type, project, ADD_ON_LIST_COMMAND_TIMEOUT);
+        final List<String> arguments = List.of("add-on", "list", "--all", "--wrap-table");
+        final String output = executeOutput(binary, arguments, project, ADD_ON_LIST_COMMAND_TIMEOUT, null);
+
+        try {
+            return JsonParser.getInstance().parse(output, type);
+        } catch (JsonParserException ignored) {
+            final List<AddOn> addOns = AddOnListParser.parse(output);
+            if (!addOns.isEmpty()) {
+                return addOns;
+            }
+            throw new CommandFailedException("DDEV did not return a usable add-on list");
+        }
     }
 
     @Override
     public @NotNull List<InstalledAddOn> listInstalledAddOns(final @NotNull String binary, final @NotNull Project project) throws CommandFailedException {
+        return this.listInstalledAddOns(binary, project, null);
+    }
+
+    @Override
+    public @NotNull List<InstalledAddOn> listInstalledAddOns(final @NotNull String binary, final @NotNull Project project,
+                                                             final @Nullable String workingDirectory) throws CommandFailedException {
         final Type type = TypeToken.getParameterized(List.class, InstalledAddOn.class).getType();
-        return execute(binary, List.of("add-on", "list", "--installed"), type, project, ADD_ON_LIST_COMMAND_TIMEOUT);
+        return execute(binary, List.of("add-on", "list", "--installed"), type, project, ADD_ON_LIST_COMMAND_TIMEOUT, workingDirectory);
     }
 
     @Override
@@ -124,25 +141,35 @@ public final class DdevImpl implements Ddev {
     }
 
     private @NotNull <T> T execute(final @NotNull String binary, final @NotNull List<String> actionArguments, final @NotNull Type type, final @NotNull Project project, int timeout, final @Nullable String workingDirectory) throws CommandFailedException {
-        final GeneralCommandLine commandLine = createDdevCommandLine(binary, actionArguments, project, true, workingDirectory);
-
-        ProcessOutput processOutput = null;
+        final String output = executeOutput(binary, actionArguments, project, timeout, workingDirectory);
         try {
-            processOutput = ProcessExecutor.getInstance().executeCommandLine(commandLine, timeout, false);
+            return JsonParser.getInstance().parse(output, type);
+        } catch (JsonParserException exception) {
+            throw new CommandFailedException("Failed to parse DDEV JSON output: " + output, exception);
+        }
+    }
 
+    private @NotNull String executeOutput(final @NotNull String binary,
+                                          final @NotNull List<String> actionArguments,
+                                          final @NotNull Project project, int timeout,
+                                          final @Nullable String workingDirectory) throws CommandFailedException {
+        final GeneralCommandLine commandLine = createDdevCommandLine(
+                binary, actionArguments, project, true, workingDirectory);
+        try {
+            final ProcessOutput processOutput = ProcessExecutor.getInstance()
+                    .executeCommandLine(commandLine, timeout, false);
             if (processOutput.isTimeout()) {
-                throw new CommandFailedException("Command timed out after " + (timeout / 1000) + " seconds: " + commandLine.getCommandLineString() + " in " + commandLine.getWorkDirectory().getPath());
+                throw new CommandFailedException("Command timed out after " + (timeout / 1000)
+                        + " seconds: " + commandLine.getCommandLineString() + " in "
+                        + commandLine.getWorkDirectory().getPath());
             }
-
             if (processOutput.getExitCode() != 0) {
-                throw new CommandFailedException("Command '" + commandLine.getCommandLineString() + "' returned non zero exit code " + processOutput);
+                throw new CommandFailedException("Command '" + commandLine.getCommandLineString()
+                        + "' returned non zero exit code " + processOutput);
             }
-
-            return JsonParser.getInstance().parse(processOutput.getStdout(), type);
+            return processOutput.getStdout();
         } catch (ExecutionException exception) {
             throw new CommandFailedException("Failed to execute " + commandLine.getCommandLineString(), exception);
-        } catch (JsonParserException exception) {
-            throw new CommandFailedException("Failed to parse output of command '" + commandLine.getCommandLineString() + "': " + processOutput.getStdout(), exception);
         }
     }
 

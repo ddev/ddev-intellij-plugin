@@ -13,6 +13,9 @@ public interface Runner {
 
     void run(@NotNull GeneralCommandLine commandLine, @NotNull String title, @Nullable Runnable afterCompletion);
 
+    void runOnSuccess(@NotNull GeneralCommandLine commandLine, @NotNull String title,
+                      @Nullable Runnable afterSuccessfulCompletion);
+
     void run(@NotNull GeneralCommandLine commandLine, @NotNull String title, @Nullable Runnable afterCompletion, @Nullable Consumer<ProcessHandler> processHandlerConsumer);
 
     static Runner getInstance(@NotNull Project project) {

@@ -7,10 +7,10 @@ import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import de.php_perfect.intellij.ddev.state.State;
+import de.php_perfect.intellij.ddev.cmd.DdevConfigFiles;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -18,16 +18,6 @@ import java.nio.file.Path;
  * creating it with a small template first if it does not exist yet.
  */
 public final class DdevEditPhpConfigAction extends DdevRunAction {
-    private static final String TEMPLATE = """
-            ; Custom PHP configuration for this DDEV project.
-            ; Settings in this file are applied to the web container.
-            ; Run "ddev restart" after changing this file.
-            ;
-            ; Example:
-            ; [PHP]
-            ; memory_limit = 512M
-            """;
-
     @Override
     protected void run(@NotNull Project project) {
         final String basePath = project.getBasePath();
@@ -36,14 +26,11 @@ public final class DdevEditPhpConfigAction extends DdevRunAction {
             return;
         }
 
-        final Path iniPath = Path.of(basePath, ".ddev", "php", "custom-php.ini");
-
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            final Path iniPath;
+
             try {
-                if (!Files.exists(iniPath)) {
-                    Files.createDirectories(iniPath.getParent());
-                    Files.writeString(iniPath, TEMPLATE);
-                }
+                iniPath = DdevConfigFiles.ensureCustomPhpIni(Path.of(basePath));
             } catch (IOException ignored) {
                 return;
             }
