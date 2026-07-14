@@ -37,21 +37,14 @@ public record DdevConfigOptions(
         return new DdevConfigOptions(projectTypes, phpVersions, nodejsVersions, webserverTypes, databases);
     }
 
-    static @NotNull DdevConfigOptions fallback() {
+    static @NotNull DdevConfigOptions parseSnapshot(@NotNull String json) {
+        final JsonObject snapshot = JsonParser.parseString(json).getAsJsonObject();
         return new DdevConfigOptions(
-                List.of("asterios", "backdrop", "cakephp", "codeigniter", "craftcms", "drupal", "drupal6",
-                        "drupal7", "drupal8", "drupal9", "drupal10", "drupal11", "drupal12", "generic",
-                        "joomla", "laravel", "magento", "magento2", "php", "shopware6", "silverstripe",
-                        "symfony", "typo3", "wordpress", "wp-bedrock"),
-                List.of("8.5", "8.4", "8.3", "8.2", "8.1", "8.0", "7.4", "7.3", "7.2", "7.1", "7.0", "5.6"),
-                List.of("26", "24", "22", "20", "18", "16", "14", "12", "10", "8", "6", "auto", "lts", "latest", "current", "engine", "nightly"),
-                List.of("nginx-fpm", "apache-fpm", "generic"),
-                List.of("mariadb:12.3", "mariadb:11.8", "mariadb:11.4", "mariadb:10.11", "mariadb:10.8",
-                        "mariadb:10.7", "mariadb:10.6", "mariadb:10.5", "mariadb:10.4", "mariadb:10.3",
-                        "mariadb:10.2", "mariadb:10.1", "mariadb:10.0", "mariadb:5.5", "mysql:8.4",
-                        "mysql:8.0", "mysql:5.7", "mysql:5.6", "mysql:5.5", "postgres:18", "postgres:17",
-                        "postgres:16", "postgres:15", "postgres:14", "postgres:13", "postgres:12",
-                        "postgres:11", "postgres:10", "postgres:9")
+                arrayValues(snapshot, "projectTypes"),
+                arrayValues(snapshot, "phpVersions"),
+                arrayValues(snapshot, "nodejsVersions"),
+                arrayValues(snapshot, "webserverTypes"),
+                arrayValues(snapshot, "databases")
         );
     }
 
@@ -112,6 +105,17 @@ public record DdevConfigOptions(
         }
 
         final JsonArray values = property.getAsJsonArray("enum");
+        final List<String> result = new ArrayList<>(values.size());
+
+        for (final JsonElement value : values) {
+            result.add(value.getAsString());
+        }
+
+        return result;
+    }
+
+    private static @NotNull List<String> arrayValues(@NotNull JsonObject object, @NotNull String name) {
+        final JsonArray values = object.getAsJsonArray(name);
         final List<String> result = new ArrayList<>(values.size());
 
         for (final JsonElement value : values) {

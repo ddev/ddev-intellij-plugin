@@ -9,12 +9,15 @@ import com.intellij.util.io.HttpRequests;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 /** Loads and caches the same upstream DDEV schema used by the VS Code extension. */
 @Service(Service.Level.APP)
 public final class DdevConfigOptionsLoader {
     private static final @NotNull String SCHEMA_URL =
             "https://raw.githubusercontent.com/ddev/ddev/main/pkg/ddevapp/schema.json";
+    private static final @NotNull String FALLBACK_RESOURCE = "/ddev/config-options.json";
     private static final @NotNull Logger LOG = Logger.getInstance(DdevConfigOptionsLoader.class);
 
     private volatile DdevConfigOptions cached;
@@ -37,7 +40,7 @@ public final class DdevConfigOptionsLoader {
             throw exception;
         } catch (IOException | RuntimeException exception) {
             LOG.warn("Unable to load the current DDEV configuration schema; using bundled choices", exception);
-            this.cached = DdevConfigOptions.fallback();
+            this.cached = loadBundledFallback();
         }
 
         return this.cached;
@@ -45,5 +48,16 @@ public final class DdevConfigOptionsLoader {
 
     public static @NotNull DdevConfigOptionsLoader getInstance() {
         return ApplicationManager.getApplication().getService(DdevConfigOptionsLoader.class);
+    }
+
+    static @NotNull DdevConfigOptions loadBundledFallback() {
+        try (InputStream stream = DdevConfigOptionsLoader.class.getResourceAsStream(FALLBACK_RESOURCE)) {
+            if (stream == null) {
+                throw new IllegalStateException("Missing bundled DDEV configuration options: " + FALLBACK_RESOURCE);
+            }
+            return DdevConfigOptions.parseSnapshot(new String(stream.readAllBytes(), StandardCharsets.UTF_8));
+        } catch (IOException exception) {
+            throw new IllegalStateException("Could not read bundled DDEV configuration options", exception);
+        }
     }
 }
