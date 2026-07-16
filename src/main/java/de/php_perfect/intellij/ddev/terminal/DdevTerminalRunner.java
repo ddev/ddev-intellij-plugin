@@ -33,7 +33,28 @@ public final class DdevTerminalRunner extends AbstractTerminalRunner<PtyProcess>
     }
 
     @Override
-    public @NotNull PtyProcess createProcess(@NotNull ShellStartupOptions startupOptions) throws ExecutionException {
+    public @NotNull TtyConnector createTtyConnector(@NotNull ShellStartupOptions startupOptions) throws ExecutionException {
+        final PtyProcess process = this.createDdevSshProcess();
+
+        return new PtyProcessTtyConnector(process, StandardCharsets.UTF_8) {
+            @Override
+            public void close() {
+                if (process instanceof UnixPtyProcess unixPtyProcess) {
+                    unixPtyProcess.hangup();
+                    AppExecutorUtil.getAppScheduledExecutorService().schedule(() -> {
+                        if (process.isAlive()) {
+                            LOG.info("Terminal hasn't been terminated by SIGHUP, performing default termination");
+                            process.destroy();
+                        }
+                    }, 1000, TimeUnit.MILLISECONDS);
+                } else {
+                    process.destroy();
+                }
+            }
+        };
+    }
+
+    private @NotNull PtyProcess createDdevSshProcess() throws ExecutionException {
         State ddevState = DdevStateManager.getInstance(this.myProject).getState();
 
         if (!ddevState.isAvailable()) {
@@ -57,26 +78,6 @@ public final class DdevTerminalRunner extends AbstractTerminalRunner<PtyProcess>
         } catch (com.intellij.execution.ExecutionException e) {
             throw new ExecutionException("Opening DDEV Terminal failed", e);
         }
-    }
-
-    @Override
-    public @NotNull TtyConnector createTtyConnector(@NotNull PtyProcess process) {
-        return new PtyProcessTtyConnector(process, StandardCharsets.UTF_8) {
-            @Override
-            public void close() {
-                if (process instanceof UnixPtyProcess unixPtyProcess) {
-                    unixPtyProcess.hangup();
-                    AppExecutorUtil.getAppScheduledExecutorService().schedule(() -> {
-                        if (process.isAlive()) {
-                            LOG.info("Terminal hasn't been terminated by SIGHUP, performing default termination");
-                            process.destroy();
-                        }
-                    }, 1000, TimeUnit.MILLISECONDS);
-                } else {
-                    process.destroy();
-                }
-            }
-        };
     }
 
     @Override
