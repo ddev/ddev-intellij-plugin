@@ -8,6 +8,20 @@ The formats is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 * Add support for 2026.2 by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/535
+* Upgrade the Gradle wrapper from 8.13 to 9.6.1 by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/535
+* Remove the SonarQube integration and SonarCloud workflow by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/535
+
+### Dependency Updates
+* Bump org.jetbrains.intellij.platform from 2.3.0 to 2.17.0 by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/535
+* Bump org.jetbrains.changelog from 2.4.0 to 2.5.0 by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/535
+* Bump Gson from 2.13.1 to 2.14.0 by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/535
+* Bump Sentry from 8.19.1 to 8.47.0 by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/535
+* Bump JUnit and JUnit Platform from 6.0.1 to 6.1.1 by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/535
+* Bump Mockito from 5.19.0 to 5.23.0 by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/535
+* Bump AssertJ from 3.27.4 to 3.27.7 by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/535
+* Bump IntelliJ Plugin Verifier from 1.388 to 1.408 by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/535
+
+Full Changelog: https://github.com/ddev/ddev-intellij-plugin/compare/1.2.8...1.2.9
 
 ## [1.2.8]
 
