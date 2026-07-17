@@ -1,5 +1,6 @@
 package de.php_perfect.intellij.ddev.cmd;
 
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.configurations.GeneralCommandLine;
 import org.jetbrains.annotations.NotNull;
@@ -14,7 +15,7 @@ public final class DockerImpl implements Docker {
                     5_000,
                     false
             ).getExitCode() == 0;
-        } catch (ExecutionException e) {
+        } catch (ExecutionException | UncheckedExecutionException e) {
             return false;
         }
     }
@@ -28,7 +29,7 @@ public final class DockerImpl implements Docker {
                     5_000,
                     false
             ).getStdout();
-        } catch (ExecutionException e) {
+        } catch (ExecutionException | UncheckedExecutionException e) {
             return "";
         }
     }
