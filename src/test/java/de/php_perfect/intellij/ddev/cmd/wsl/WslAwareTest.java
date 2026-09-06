@@ -11,6 +11,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+import java.nio.file.Path;
+
 final class WslAwareTest {
     private static final String WSL_PATH = "\\\\wsl$\\Ubuntu\\home\\user\\project";
 
@@ -53,6 +55,42 @@ final class WslAwareTest {
             wslPath.when(() -> WslPath.getDistributionByWindowsUncPath(Mockito.anyString())).thenReturn(distribution);
 
             Assertions.assertSame(commandLine, WslAware.patchCommandLine(commandLine));
+        }
+    }
+
+    @Test
+    void leavesHostCommandsWithoutAWorkingDirectoryAlone() {
+        final GeneralCommandLine commandLine = new GeneralCommandLine("brew", "upgrade", "ddev/ddev/ddev");
+
+        Assertions.assertSame(commandLine, WslAware.patchCommandLine(commandLine));
+        Assertions.assertNull(commandLine.getWorkDirectory());
+    }
+
+    @Test
+    void convertsSelectedProjectAndFilePathsUsingTheProjectsDistribution() throws ExecutionException {
+        final String base = "\\\\wsl.localhost\\Ubuntu\\home\\user\\current";
+        final String selected = "\\\\wsl.localhost\\Ubuntu\\home\\user\\other";
+        final WSLDistribution distribution = Mockito.mock(WSLDistribution.class);
+
+        try (MockedStatic<WslPath> wslPath = Mockito.mockStatic(WslPath.class)) {
+            wslPath.when(() -> WslPath.getDistributionByWindowsUncPath(base)).thenReturn(distribution);
+            wslPath.when(() -> WslPath.getDistributionByWindowsUncPath(selected)).thenReturn(distribution);
+            wslPath.when(() -> WslPath.parseWindowsUncPath(base))
+                    .thenReturn(new WslPath("\\\\wsl.localhost\\", "Ubuntu", "/home/user/current"));
+            Mockito.when(distribution.getWslPath(Path.of("C:/backups/db.sql"))).thenReturn("/mnt/c/backups/db.sql");
+            final GeneralCommandLine commandLine = new GeneralCommandLine("ddev", "export-db")
+                    .withWorkDirectory(WslAware.toHostPath("/home/user/other", base));
+            Mockito.when(distribution.patchCommandLine(Mockito.eq(commandLine), Mockito.isNull(), Mockito.any(WSLCommandLineOptions.class)))
+                    .thenReturn(commandLine);
+
+            Assertions.assertSame(commandLine, WslAware.patchCommandLine(commandLine));
+            Mockito.verify(distribution).patchCommandLine(Mockito.eq(commandLine), Mockito.isNull(), Mockito.any(WSLCommandLineOptions.class));
+            Assertions.assertEquals("/mnt/c/backups/db.sql", WslAware.toCommandPath("C:/backups/db.sql", selected));
+            Assertions.assertEquals("/home/user/other", WslAware.toHostPath("/home/user/other", "/home/user/current"));
+            Assertions.assertEquals(selected, WslAware.toHostPath(selected, base));
+            Assertions.assertEquals(base, WslAware.toHostPath("/home/user/current", base));
+            Assertions.assertEquals("\\\\wsl.localhost\\Ubuntu\\mnt\\c\\project", WslAware.toHostPath("/mnt/c/project", base));
+            Assertions.assertNull(WslAware.toHostPath(null, base));
         }
     }
 }

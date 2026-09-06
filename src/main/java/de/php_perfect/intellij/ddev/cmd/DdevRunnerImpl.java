@@ -11,6 +11,7 @@ import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
 import de.php_perfect.intellij.ddev.DdevConfigArgumentProvider;
 import de.php_perfect.intellij.ddev.DdevIntegrationBundle;
+import de.php_perfect.intellij.ddev.cmd.wsl.WslAware;
 import de.php_perfect.intellij.ddev.settings.DdevSettingsState;
 import de.php_perfect.intellij.ddev.state.DdevConfigLoader;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
@@ -178,7 +179,7 @@ public final class DdevRunnerImpl implements DdevRunner {
         final String title = DdevIntegrationBundle.message("ddev.run.importDatabase");
         final Runner runner = Runner.getInstance(project);
         runner.runOnSuccess(this.createCommandLine("import-db", project, workingDirectory)
-                .withParameters("--file=" + filePath), title, () -> {
+                .withParameters("--file=" + WslAware.toCommandPath(filePath, workingDirectory)), title, () -> {
             this.runAfterTargetCommand(project, workingDirectory, null);
 
             if ("wordpress".equals(projectType) && projectName != null) {
@@ -196,7 +197,8 @@ public final class DdevRunnerImpl implements DdevRunner {
     public void exportDatabase(@NotNull Project project, @Nullable String workingDirectory, @NotNull String filePath) {
         final String title = DdevIntegrationBundle.message("ddev.run.exportDatabase");
         final Runner runner = Runner.getInstance(project);
-        runner.run(this.createCommandLine("export-db", project, workingDirectory).withParameters("--file=" + filePath), title);
+        runner.run(this.createCommandLine("export-db", project, workingDirectory).withParameters("--file="
+                + WslAware.toCommandPath(filePath, workingDirectory != null ? workingDirectory : project.getBasePath())), title);
     }
 
     @Override

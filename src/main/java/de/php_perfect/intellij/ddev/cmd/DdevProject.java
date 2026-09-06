@@ -48,6 +48,11 @@ public final class DdevProject {
         return this.appRoot;
     }
 
+    public DdevProject withAppRoot(@Nullable String appRoot) {
+        return new DdevProject(this.name, appRoot, this.shortRoot, this.status, this.statusDesc,
+                this.type, this.primaryUrl, this.docroot);
+    }
+
     public @Nullable String getDocroot() {
         return this.docroot;
     }
