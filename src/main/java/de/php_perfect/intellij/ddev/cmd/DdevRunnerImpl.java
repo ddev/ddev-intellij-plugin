@@ -16,6 +16,7 @@ import de.php_perfect.intellij.ddev.state.DdevConfigLoader;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import de.php_perfect.intellij.ddev.state.State;
 import de.php_perfect.intellij.ddev.wordpress.WordPressImportReconciler;
+import de.php_perfect.intellij.ddev.wordpress.WordPressConfigManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -82,17 +83,17 @@ public final class DdevRunnerImpl implements DdevRunner {
 
     @Override
     public void share(@NotNull Project project) {
-        this.share(project, null);
+        this.share(project, null, WordPressConfigManager.docroot(project));
     }
 
     @Override
-    public void share(@NotNull Project project, @Nullable String workingDirectory) {
+    public void share(@NotNull Project project, @Nullable String workingDirectory, @Nullable String docroot) {
         final String title = DdevIntegrationBundle.message("ddev.run.share");
         final Runner runner = Runner.getInstance(project);
         final ShareManager shareManager = ShareManager.getInstance(project);
         runner.run(this.createCommandLine("share", project, workingDirectory), title, shareManager::stopSharing,
                 processHandler -> shareManager.setShareProcessHandler(processHandler,
-                        workingDirectory != null ? workingDirectory : project.getBasePath()));
+                        workingDirectory != null ? workingDirectory : project.getBasePath(), docroot));
     }
 
     @Override

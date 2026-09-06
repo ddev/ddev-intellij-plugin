@@ -4,9 +4,9 @@ import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
+import de.php_perfect.intellij.ddev.wordpress.WordPressConfigManager;
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 abstract class DdevOpenWordPressFileAction extends DdevRunAction {
@@ -43,7 +43,6 @@ abstract class DdevOpenWordPressFileAction extends DdevRunAction {
             return null;
         }
 
-        final Path path = Path.of(basePath).resolve(this.relativePath);
-        return Files.isRegularFile(path) ? path : null;
+        return WordPressConfigManager.findFile(Path.of(basePath), WordPressConfigManager.docroot(project), this.relativePath);
     }
 }

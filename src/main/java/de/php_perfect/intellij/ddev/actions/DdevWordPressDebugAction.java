@@ -29,7 +29,8 @@ abstract class DdevWordPressDebugAction extends DdevRunAction {
 
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
-                final Path config = WordPressConfigManager.setDebugMode(Path.of(basePath), this.mode);
+                final Path config = WordPressConfigManager.setDebugMode(Path.of(basePath),
+                        WordPressConfigManager.docroot(project), this.mode);
                 LocalFileSystem.getInstance().refreshAndFindFileByNioFile(config);
             } catch (IOException exception) {
                 ApplicationManager.getApplication().invokeLater(() -> Messages.showErrorDialog(
@@ -49,7 +50,7 @@ abstract class DdevWordPressDebugAction extends DdevRunAction {
 
         try {
             final WordPressConfigManager.DebugState state = WordPressConfigManager.readDebugState(
-                    Path.of(Objects.requireNonNull(project.getBasePath())));
+                    Path.of(Objects.requireNonNull(project.getBasePath())), WordPressConfigManager.docroot(project));
             return state != null && this.isApplicable(state);
         } catch (IOException exception) {
             return false;

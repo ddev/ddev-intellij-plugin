@@ -21,7 +21,7 @@ public interface DdevRunner {
 
     void share(@NotNull Project project);
 
-    void share(@NotNull Project project, @Nullable String workingDirectory);
+    void share(@NotNull Project project, @Nullable String workingDirectory, @Nullable String docroot);
 
     void stopShare(@NotNull Project project);
 

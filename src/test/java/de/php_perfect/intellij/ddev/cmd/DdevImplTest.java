@@ -111,8 +111,8 @@ final class DdevImplTest extends BasePlatformTestCase {
     @Test
     void listProjects() throws CommandFailedException, IOException {
         final List<DdevProject> expected = List.of(
-                new DdevProject("alpha", "/home/user/Projects/alpha", "~/Projects/alpha", Description.Status.RUNNING, "running", "laravel", "https://alpha.ddev.site"),
-                new DdevProject("beta", "/home/user/Projects/beta", "~/Projects/beta", Description.Status.STOPPED, "stopped", "drupal11", "https://beta.ddev.site")
+                new DdevProject("alpha", "/home/user/Projects/alpha", "~/Projects/alpha", Description.Status.RUNNING, "running", "laravel", "https://alpha.ddev.site", "public"),
+                new DdevProject("beta", "/home/user/Projects/beta", "~/Projects/beta", Description.Status.STOPPED, "stopped", "drupal11", "https://beta.ddev.site", "web")
         );
 
         ProcessOutput processOutput = new ProcessOutput(Files.readString(Path.of("src/test/resources/ddev_list.json")), "", 0, false, false);
@@ -152,6 +152,7 @@ final class DdevImplTest extends BasePlatformTestCase {
     void describe() throws CommandFailedException, IOException {
         Description expected = Description.builder()
                 .name("acol")
+                .docroot("public")
                 .phpVersion("8.1")
                 .status(Description.Status.STOPPED)
                 .services(new HashMap<>())

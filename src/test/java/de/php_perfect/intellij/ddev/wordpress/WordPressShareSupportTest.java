@@ -60,4 +60,18 @@ final class WordPressShareSupportTest {
 
         assertThat(plugin).hasContent("existing");
     }
+
+    @Test
+    void sharesFromTheDocumentRootAndSupportsAParentConfig() throws Exception {
+        final Path documentRoot = Files.createDirectories(this.projectRoot.resolve("public"));
+        final Path config = this.projectRoot.resolve("wp-config.php");
+        Files.writeString(config, "<?php\n");
+        try (var session = WordPressShareSupport.start(this.projectRoot, "public", "https://public.ngrok.app")) {
+            assertThat(session).isNotNull();
+            assertThat(documentRoot.resolve("wp-content/mu-plugins/ddev-intellij-share.php")).exists();
+            assertThat(this.projectRoot.resolve("wp-content")).doesNotExist();
+        }
+        assertThat(config).hasContent("<?php\n");
+        assertThat(documentRoot.resolve("wp-content/mu-plugins/ddev-intellij-share.php")).doesNotExist();
+    }
 }

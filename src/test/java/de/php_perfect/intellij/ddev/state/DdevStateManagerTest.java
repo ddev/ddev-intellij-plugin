@@ -52,6 +52,7 @@ final class DdevStateManagerTest extends BasePlatformTestCase {
         expectedState.setDdevVersion(new Version("v1.19.0"));
         expectedState.setDescription(Description.builder()
                 .name("acol")
+                .docroot("public")
                 .phpVersion("8.1")
                 .status(Description.Status.STOPPED)
                 .services(new HashMap<>())
@@ -106,6 +107,7 @@ final class DdevStateManagerTest extends BasePlatformTestCase {
         expectedState.setDdevVersion(new Version("v1.19.0"));
         expectedState.setDescription(Description.builder()
                 .name("acol")
+                .docroot("public")
                 .phpVersion("8.1")
                 .status(Description.Status.STOPPED)
                 .services(new HashMap<>())
@@ -120,6 +122,7 @@ final class DdevStateManagerTest extends BasePlatformTestCase {
 
         expectedState.setDescription(Description.builder()
                 .name("acol")
+                .docroot("public")
                 .phpVersion("7.4")
                 .status(Description.Status.STOPPED)
                 .services(new HashMap<>())
