@@ -1,11 +1,13 @@
 package de.php_perfect.intellij.ddev.php.composer;
 
 import com.intellij.execution.ExecutionException;
+import com.intellij.execution.configurations.GeneralCommandLine;
 import com.intellij.execution.process.ProcessHandler;
 import com.intellij.openapi.project.Project;
 import com.intellij.testFramework.ServiceContainerUtil;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import de.php_perfect.intellij.ddev.cmd.Description;
+import de.php_perfect.intellij.ddev.cmd.wsl.WslAware;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import de.php_perfect.intellij.ddev.state.State;
 import org.jdom.Element;
@@ -13,6 +15,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import java.nio.file.Path;
@@ -39,6 +43,7 @@ final class DdevComposerExecutionTest extends BasePlatformTestCase {
 
     @Test
     void processCreationFailureIsReported() {
+        Mockito.when(this.state.getDdevBinary()).thenReturn("ddev");
         final String workingDir = missingDirectory();
 
         final ExecutionException exception = Assertions.assertThrows(ExecutionException.class, () ->
@@ -49,13 +54,42 @@ final class DdevComposerExecutionTest extends BasePlatformTestCase {
 
     @Test
     void projectBasePathIsDefaultWorkingDirectory() {
-        final Project project = Mockito.mock(Project.class);
+        final Project project = mockProjectWithBinary("ddev");
         Mockito.when(project.getBasePath()).thenReturn(missingDirectory());
 
         Assertions.assertThrows(ExecutionException.class, () ->
                 new DdevComposerExecution().createProcessHandler(project, null, List.of("install"), "composer install"));
 
         Mockito.verify(project).getBasePath();
+    }
+
+    @Test
+    void usesConfiguredBinaryAndStartsThePatchedProcess() throws Exception {
+        final Project project = mockProjectWithBinary("/custom/bin/ddev");
+        Mockito.when(project.getBasePath()).thenReturn("/ide-project");
+        final ArgumentCaptor<GeneralCommandLine> command = ArgumentCaptor.forClass(GeneralCommandLine.class);
+
+        try (MockedStatic<WslAware> wsl = Mockito.mockStatic(WslAware.class)) {
+            wsl.when(() -> WslAware.toHostPath("/composer-project", "/ide-project")).thenReturn("/host-project");
+            wsl.when(() -> WslAware.patchCommandLine(Mockito.any(GeneralCommandLine.class)))
+                    .thenReturn(new GeneralCommandLine(Path.of(System.getProperty("java.home"), "bin", "java").toString(), "-version"));
+            final ProcessHandler handler = new DdevComposerExecution().createProcessHandler(project,
+                    "/composer-project", List.of("install", "--no-scripts"), "Composer install");
+            try {
+                handler.startNotify();
+                Assertions.assertTrue(handler.waitFor(10_000));
+                Assertions.assertEquals(0, handler.getExitCode());
+            } finally {
+                if (!handler.isProcessTerminated()) {
+                    handler.destroyProcess();
+                }
+            }
+
+            wsl.verify(() -> WslAware.patchCommandLine(command.capture()));
+            Assertions.assertEquals("/custom/bin/ddev", command.getValue().getExePath());
+            Assertions.assertEquals(List.of("composer", "install", "--no-scripts"), command.getValue().getParametersList().getList());
+            Assertions.assertEquals("/host-project", command.getValue().getWorkDirectory().getPath());
+        }
     }
 
     @Test
@@ -152,6 +186,17 @@ final class DdevComposerExecutionTest extends BasePlatformTestCase {
         Mockito.when(this.state.isBinaryConfigured()).thenReturn(binaryConfigured);
         Mockito.when(this.state.isConfigured()).thenReturn(configured);
         Mockito.when(this.state.getDescription()).thenReturn(description);
+    }
+
+    private static Project mockProjectWithBinary(String binary) {
+        final Project project = Mockito.mock(Project.class);
+        final DdevStateManager stateManager = Mockito.mock(DdevStateManager.class);
+        final State state = Mockito.mock(State.class);
+        Mockito.when(project.getService(DdevStateManager.class)).thenReturn(stateManager);
+        Mockito.when(stateManager.getState()).thenReturn(state);
+        Mockito.when(state.getDdevBinary()).thenReturn(binary);
+
+        return project;
     }
 
     private static String missingDirectory() {
