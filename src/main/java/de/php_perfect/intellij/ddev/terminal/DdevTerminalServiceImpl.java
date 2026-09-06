@@ -23,4 +23,12 @@ public final class DdevTerminalServiceImpl implements DdevTerminalService {
         tabState.myTabName = title;
         TerminalToolWindowManager.getInstance(this.project).createNewSession(runner, tabState);
     }
+
+    @Override
+    public void openCommand(@NotNull List<String> command, @NotNull String title, @Nullable String workingDirectory) {
+        final DdevTerminalRunner runner = DdevTerminalRunner.forCommand(this.project, command, title, workingDirectory);
+        final TerminalTabState tabState = new TerminalTabState();
+        tabState.myTabName = title;
+        TerminalToolWindowManager.getInstance(this.project).createNewSession(runner, tabState);
+    }
 }

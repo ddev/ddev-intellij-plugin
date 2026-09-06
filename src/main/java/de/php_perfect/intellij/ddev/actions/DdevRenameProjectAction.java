@@ -16,6 +16,10 @@ public final class DdevRenameProjectAction extends DdevRunAction {
         final Description description = state.getDescription();
         final String currentName = description != null ? description.getName() : null;
 
+        if (currentName == null) {
+            return;
+        }
+
         final String newName = Messages.showInputDialog(
                 project,
                 DdevIntegrationBundle.message("renameProject.message"),
@@ -33,7 +37,8 @@ public final class DdevRenameProjectAction extends DdevRunAction {
     @Override
     protected boolean isActive(@NotNull Project project) {
         final State state = DdevStateManager.getInstance(project).getState();
+        final Description description = state.getDescription();
 
-        return state.isAvailable() && state.isConfigured();
+        return state.isAvailable() && state.isConfigured() && description != null && description.getName() != null;
     }
 }

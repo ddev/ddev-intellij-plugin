@@ -9,25 +9,22 @@ import com.intellij.openapi.project.Project;
 import de.php_perfect.intellij.ddev.DdevIntegrationBundle;
 import de.php_perfect.intellij.ddev.cmd.Runner;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
+import de.php_perfect.intellij.ddev.util.Homebrew;
+import de.php_perfect.intellij.ddev.install.Installers;
+import de.php_perfect.intellij.ddev.terminal.DdevTerminalService;
+import com.intellij.openapi.util.SystemInfo;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
 
 /**
  * Updates DDEV through Homebrew when it was installed that way
- * (https://github.com/ddev/ddev-intellij-plugin/issues/40). Other installation
- * methods keep the "Installation Instructions" link as their update path.
+ * (https://github.com/ddev/ddev-intellij-plugin/issues/40), or through DDEV's install script when
+ * it was installed by that script. Other installation methods keep the "Installation Instructions"
+ * link as their update path.
  */
 public final class UpdateDdevAction extends DumbAwareAction {
-    private static final @NotNull List<String> BREW_PATHS = List.of(
-            "/opt/homebrew/bin/brew",
-            "/usr/local/bin/brew",
-            "/home/linuxbrew/.linuxbrew/bin/brew"
-    );
+    private static final @NotNull String SCRIPT_INSTALL_LOCATION = "/usr/local/bin/ddev";
 
     public UpdateDdevAction() {
         super(DdevIntegrationBundle.messagePointer("action.DdevIntegration.UpdateDdev.text"), DdevIntegrationBundle.messagePointer("action.DdevIntegration.UpdateDdev.description"), AllIcons.Actions.Download);
@@ -36,9 +33,17 @@ public final class UpdateDdevAction extends DumbAwareAction {
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
         final Project project = e.getProject();
-        final String brewBinary = findBrewManagingDdev();
 
-        if (project == null || brewBinary == null) {
+        if (project == null) {
+            return;
+        }
+
+        final String brewBinary = Homebrew.findManagingDdev();
+
+        if (brewBinary == null) {
+            if (isScriptInstalled(project)) {
+                Installers.installDdev(project);
+            }
             return;
         }
 
@@ -49,26 +54,17 @@ public final class UpdateDdevAction extends DumbAwareAction {
                 ApplicationManager.getApplication().executeOnPooledThread(() -> DdevStateManager.getInstance(project).reinitialize()));
     }
 
-    public static boolean isAvailable() {
-        return findBrewManagingDdev() != null;
+    public static boolean isAvailable(@NotNull Project project) {
+        return Homebrew.findManagingDdev() != null || isScriptInstalled(project);
     }
 
-    private static @Nullable String findBrewManagingDdev() {
-        for (final String brewPath : BREW_PATHS) {
-            final Path brew = Paths.get(brewPath);
-
-            if (!Files.isExecutable(brew)) {
-                continue;
-            }
-
-            // brew lives at <prefix>/bin/brew; DDEV installed via Homebrew has a keg at <prefix>/Cellar/ddev.
-            final Path cellar = brew.getParent().getParent().resolve("Cellar").resolve("ddev");
-
-            if (Files.isDirectory(cellar)) {
-                return brewPath;
-            }
-        }
-
-        return null;
+    /**
+     * DDEV's install script places the binary in /usr/local/bin; running the script again updates it.
+     * Package-manager installs elsewhere keep their own update path.
+     */
+    private static boolean isScriptInstalled(@NotNull Project project) {
+        return !SystemInfo.isWindows && Homebrew.find() == null
+                && DdevTerminalService.getInstance(project) != null
+                && SCRIPT_INSTALL_LOCATION.equals(DdevStateManager.getInstance(project).getState().getDdevBinary());
     }
 }

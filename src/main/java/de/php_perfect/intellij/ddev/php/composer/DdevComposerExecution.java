@@ -1,5 +1,6 @@
 package de.php_perfect.intellij.ddev.php.composer;
 
+import de.php_perfect.intellij.ddev.util.DdevProjectRoot;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.configurations.GeneralCommandLine;
 import com.intellij.execution.process.ProcessHandler;
@@ -40,7 +41,7 @@ public class DdevComposerExecution implements ComposerExecution {
         commandLine.addParameter("composer");
         commandLine.addParameters(command);
         commandLine.setWorkDirectory(workingDir != null
-                ? WslAware.toHostPath(workingDir, project.getBasePath()) : project.getBasePath());
+                ? WslAware.toHostPath(workingDir, project.getBasePath()) : DdevProjectRoot.of(project));
 
         try {
             final GeneralCommandLine patched = ProgressManager.getInstance().runProcess(

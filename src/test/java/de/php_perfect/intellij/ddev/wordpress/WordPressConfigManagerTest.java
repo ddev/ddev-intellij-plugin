@@ -13,19 +13,55 @@ final class WordPressConfigManagerTest {
     private Path projectRoot;
 
     @Test
-    void prefersAndUpdatesTheDdevConfig() throws Exception {
-        Files.writeString(this.projectRoot.resolve("wp-config.php"), "<?php\ndefine( 'WP_DEBUG', false );\n");
+    void overridesTheDdevDefaultsInWpConfigAndLeavesTheGeneratedFileAlone() throws Exception {
+        final Path config = this.projectRoot.resolve("wp-config.php");
+        Files.writeString(config, """
+                <?php
+                /**
+                 * #ddev-generated: Automatically generated WordPress settings file.
+                 * ddev manages this file and may delete or overwrite the file unless this comment is removed.
+                 * It is recommended that you leave this file alone.
+                 *
+                 * @package ddevapp
+                 */
+
+                /* Add any custom values between this line and the "stop editing" line. */
+
+                /* That's all, stop editing! Happy publishing. */
+
+                $ddev_settings = __DIR__ . '/wp-config-ddev.php';
+                require_once $ddev_settings;
+                """);
         final Path ddevConfig = this.projectRoot.resolve("wp-config-ddev.php");
-        Files.writeString(ddevConfig, "<?php\n\n/**\n * Set WordPress variables.\n */\n");
+        final String generated = """
+                <?php
+                /**
+                 * #ddev-generated: Automatically generated WordPress settings file.
+                 */
+                defined( 'WP_HOME' ) || define( 'WP_HOME', 'https://old.ddev.site' );
+                defined( 'WP_DEBUG' ) || define( 'WP_DEBUG', true );
+                """;
+        Files.writeString(ddevConfig, generated);
+
+        assertThat(WordPressConfigManager.readDebugState(this.projectRoot))
+                .isEqualTo(new WordPressConfigManager.DebugState(true, false));
 
         assertThat(WordPressConfigManager.setDebugMode(this.projectRoot, WordPressConfigManager.DebugMode.SILENT))
-                .isEqualTo(ddevConfig);
-        assertThat(Files.readString(ddevConfig))
-                .contains("define( 'WP_DEBUG', true );")
-                .contains("define( 'WP_DEBUG_LOG', true );")
-                .contains("define( 'WP_DEBUG_DISPLAY', false );");
+                .isEqualTo(config);
+        final String content = Files.readString(config);
+        assertThat(content)
+                .doesNotContain("#ddev-generated", "ddev manages this file", "leave this file alone")
+                .contains("define( 'WP_DEBUG', true );", "define( 'WP_DEBUG_LOG', true );",
+                        "define( 'WP_DEBUG_DISPLAY', false );");
+        assertThat(content.indexOf("WP_DEBUG_DISPLAY")).isLessThan(content.indexOf("That's all"));
+        assertThat(Files.readString(ddevConfig)).isEqualTo(generated);
         assertThat(WordPressConfigManager.readDebugState(this.projectRoot))
                 .isEqualTo(new WordPressConfigManager.DebugState(true, true));
+
+        WordPressConfigManager.setDebugMode(this.projectRoot, WordPressConfigManager.DebugMode.DISABLED);
+        assertThat(Files.readString(ddevConfig)).isEqualTo(generated);
+        assertThat(WordPressConfigManager.readDebugState(this.projectRoot))
+                .isEqualTo(new WordPressConfigManager.DebugState(false, false));
     }
 
     @Test
@@ -62,14 +98,33 @@ final class WordPressConfigManagerTest {
         WordPressConfigManager.setDebugMode(this.projectRoot, WordPressConfigManager.DebugMode.DISABLED);
 
         assertThat(Files.readString(config))
-                .contains("define( 'WP_DEBUG', false );", "define( 'DB_NAME', 'db' );")
+                .contains("define('WP_DEBUG',false);", "define( 'DB_NAME', 'db' );")
                 .doesNotContain("WP_DEBUG_LOG", "WP_DEBUG_DISPLAY");
+    }
+
+    @Test
+    void keepsTheGuardOfAGuardedDefinition() throws Exception {
+        final Path config = this.projectRoot.resolve("wp-config.php");
+        Files.writeString(config, """
+                <?php
+                if (true) {
+                    defined('WP_DEBUG') || define('WP_DEBUG', true);
+                    $table_prefix = 'wp_';
+                }
+                """);
+
+        WordPressConfigManager.setDebugMode(this.projectRoot, WordPressConfigManager.DebugMode.DISABLED);
+
+        assertThat(Files.readString(config))
+                .contains("    defined('WP_DEBUG') || define('WP_DEBUG', false);\n    $table_prefix = 'wp_';");
+        assertThat(WordPressConfigManager.readDebugState(this.projectRoot))
+                .isEqualTo(new WordPressConfigManager.DebugState(false, false));
     }
 
     @Test
     void findsConfigAndDebugLogInTheConfiguredDocumentRoot() throws Exception {
         final Path documentRoot = Files.createDirectories(this.projectRoot.resolve("web"));
-        final Path config = documentRoot.resolve("wp-config-ddev.php");
+        final Path config = documentRoot.resolve("wp-config.php");
         Files.writeString(config, "<?php\ndefine('WP_DEBUG', false);\n");
         final Path log = documentRoot.resolve("wp-content/debug.log");
         Files.createDirectories(log.getParent());
@@ -80,6 +135,6 @@ final class WordPressConfigManagerTest {
         assertThat(WordPressConfigManager.readDebugState(this.projectRoot, "web"))
                 .isEqualTo(new WordPressConfigManager.DebugState(true, true));
         assertThat(WordPressConfigManager.findFile(this.projectRoot, "web", "wp-content/debug.log")).isEqualTo(log);
-        assertThat(this.projectRoot.resolve("wp-config-ddev.php")).doesNotExist();
+        assertThat(this.projectRoot.resolve("wp-config.php")).doesNotExist();
     }
 }

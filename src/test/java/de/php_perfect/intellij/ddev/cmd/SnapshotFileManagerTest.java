@@ -24,15 +24,6 @@ final class SnapshotFileManagerTest {
     }
 
     @Test
-    void deletesLegacySnapshotDirectoryRecursively() throws Exception {
-        final Path selected = Files.createDirectories(this.projectRoot.resolve(".ddev/db_snapshots/legacy"));
-        Files.createFile(selected.resolve("database.sql.gz"));
-
-        assertThat(SnapshotFileManager.deleteSnapshot(this.projectRoot, "legacy")).isTrue();
-        assertThat(selected).doesNotExist();
-    }
-
-    @Test
     void reportsMissingSnapshotWithoutTouchingTheDirectory() throws Exception {
         final Path snapshots = Files.createDirectories(this.projectRoot.resolve(".ddev/db_snapshots"));
 

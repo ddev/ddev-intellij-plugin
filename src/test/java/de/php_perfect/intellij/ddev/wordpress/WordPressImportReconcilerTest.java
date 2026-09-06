@@ -43,11 +43,44 @@ final class WordPressImportReconcilerTest {
     }
 
     @Test
-    void replacesWordPressHostsAcrossHttpAndHttpsUrls() {
-        assertThat(WordPressImportReconciler.buildSearchReplaceArguments(
-                "https://www.example.com/", "https://example.ddev.site"))
-                .containsExactly("wp", "search-replace", "www.example.com", "example.ddev.site",
-                        "--skip-columns=guid", "--all-tables");
+    void replacesCompleteOriginsButNeverTheBareHostname() {
+        assertThat(apply("https://example.com/", "https://example.ddev.site/", """
+                https://example.com/a http://example.com //example.com/b
+                https:\\/\\/example.com\\/c \\/\\/example.com
+                mail@example.com https://example.com.au https://example.community https://www.example.com
+                see https://example.com.
+                """)).isEqualTo("""
+                https://example.ddev.site/a https://example.ddev.site //example.ddev.site/b
+                https:\\/\\/example.ddev.site\\/c \\/\\/example.ddev.site
+                mail@example.com https://example.com.au https://example.community https://www.example.com
+                see https://example.ddev.site.
+                """);
+    }
+
+    @Test
+    void neverRewritesATargetOriginThatStartsWithTheSourceHost() {
+        assertThat(apply("http://acme", "https://acme.ddev.site", "http://acme/x //acme https:\\/\\/acme"))
+                .isEqualTo("https://acme.ddev.site/x //acme.ddev.site https:\\/\\/acme.ddev.site");
+    }
+
+    @Test
+    void matchesTheSiteUrlPathOnlyAsACompleteSegment() {
+        assertThat(apply("https://example.com/blog", "https://example.ddev.site",
+                "https://example.com/blog/post https://example.com/blogger https:\\/\\/example.com\\/blog"))
+                .isEqualTo("https://example.ddev.site/post https://example.com/blogger https:\\/\\/example.ddev.site");
+    }
+
+    /**
+     * Applies the generated WP-CLI passes in order with Java's regex engine, which shares PCRE's
+     * syntax for every construct the patterns use.
+     */
+    private static String apply(String siteUrl, String targetUrl, String content) {
+        String result = content;
+        for (List<String> command : WordPressImportReconciler.buildSearchReplaceCommands(siteUrl, targetUrl)) {
+            assertThat(command).startsWith("wp", "search-replace").contains("--regex", "--skip-columns=guid");
+            result = result.replaceAll(command.get(2), command.get(3).replace("${1}", "$1"));
+        }
+        return result;
     }
 
     @Test

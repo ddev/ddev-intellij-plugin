@@ -43,6 +43,23 @@ final class WordPressShareSupportTest {
     }
 
     @Test
+    void neutralisesGuardedDdevDefinitionsWhileSharing() throws Exception {
+        final Path config = this.projectRoot.resolve("wp-config-ddev.php");
+        final String original = "<?php\nif (getenv('IS_DDEV_PROJECT') == 'true') {\n"
+                + "    defined('WP_HOME') || define('WP_HOME', 'https://local.ddev.site');\n"
+                + "    defined('WP_SITEURL') || define('WP_SITEURL', WP_HOME . \"/\");\n}\n";
+        Files.writeString(config, original);
+
+        try (var session = WordPressShareSupport.start(this.projectRoot, "https://public.ngrok.app")) {
+            assertThat(session).isNotNull();
+            assertThat(config).content()
+                    .doesNotContain("define('WP_HOME', 'https://local.ddev.site')")
+                    .contains("define( 'WP_SHARED_URL', 'https://public.ngrok.app' );");
+        }
+        assertThat(config).hasContent(original);
+    }
+
+    @Test
     void ignoresProjectsWithoutAWordPressConfig() throws Exception {
         assertThat(WordPressShareSupport.start(this.projectRoot, "https://public.ngrok.app")).isNull();
     }

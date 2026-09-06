@@ -1,5 +1,6 @@
 package de.php_perfect.intellij.ddev.php;
 
+import de.php_perfect.intellij.ddev.util.DdevProjectRoot;
 import com.intellij.docker.remote.DockerComposeCredentialsHolder;
 import com.intellij.docker.remote.DockerComposeCredentialsType;
 import com.intellij.openapi.diagnostic.Logger;
@@ -75,7 +76,7 @@ public final class PhpInterpreterProviderImpl implements PhpInterpreterProvider 
     }
 
     private void updateRemoteMapping(@NotNull PhpInterpreter interpreter) {
-        final var pathMapping = new PathMappingSettings.PathMapping(project.getBasePath(), "/var/www/html");
+        final var pathMapping = new PathMappingSettings.PathMapping(DdevProjectRoot.of(project), "/var/www/html");
         final var mappings = new RemoteMappingsManager.Mappings();
         mappings.setServerId("php", interpreter.getId());
         mappings.setSettings(List.of(pathMapping));

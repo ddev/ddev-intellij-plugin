@@ -8,10 +8,14 @@ import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.ui.IdeBorderFactory;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
+import com.intellij.ui.components.JBTextField;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.JBUI;
 import com.intellij.util.ui.UIUtil;
 import de.php_perfect.intellij.ddev.DdevIntegrationBundle;
+import de.php_perfect.intellij.ddev.dbmanager.DatabaseManager;
+import de.php_perfect.intellij.ddev.docker.DockerProvider;
+import de.php_perfect.intellij.ddev.expose.ExposeCommandsDialog;
 import de.php_perfect.intellij.ddev.util.FeatureRequiredPlugins;
 import de.php_perfect.intellij.ddev.util.PluginChecker;
 import de.php_perfect.intellij.ddev.toolwindow.DdevProjectNameFormatter;
@@ -47,6 +51,13 @@ public final class DdevSettingsComponent {
     });
     private final @NotNull JBCheckBox expandServicesInProjectsToolWindow = new JBCheckBox(
             DdevIntegrationBundle.message("settings.projects.expandServices"));
+    private final @NotNull JBCheckBox automaticallyStartProject = new JBCheckBox(
+            DdevIntegrationBundle.message("settings.projects.automaticallyStart"));
+    private final @NotNull JBTextField defaultShareProvider = new JBTextField();
+    private final @NotNull ComboBox<DockerProvider> dockerProvider = new ComboBox<>(
+            DockerProvider.available().toArray(new DockerProvider[0]));
+    private final @NotNull JBTextField colimaArguments = new JBTextField();
+    private final @NotNull ComboBox<String> databaseManager = new ComboBox<>(databaseManagerOptions());
 
     public DdevSettingsComponent(Project project) {
         // Create panels with checkboxes and comments manually instead of using deprecated UI.PanelFactory
@@ -122,6 +133,32 @@ public final class DdevSettingsComponent {
         projectsPanel.add(this.expandServicesInProjectsToolWindow);
         projectsPanel.add(Box.createVerticalStrut(5));
         projectsPanel.add(this.automaticallyInstallCms);
+        projectsPanel.add(Box.createVerticalStrut(5));
+        projectsPanel.add(this.automaticallyStartProject);
+        projectsPanel.add(comment(DdevIntegrationBundle.message("settings.projects.automaticallyStart.description")));
+
+        this.defaultShareProvider.getEmptyText().setText(DdevIntegrationBundle.message("settings.share.defaultProvider.empty"));
+        final JPanel sharePanel = titledPanel(DdevIntegrationBundle.message("settings.share"));
+        sharePanel.add(new JBLabel(DdevIntegrationBundle.message("settings.share.defaultProvider")));
+        sharePanel.add(this.defaultShareProvider);
+        sharePanel.add(comment(DdevIntegrationBundle.message("settings.share.defaultProvider.description")));
+
+        final JPanel dockerPanel = titledPanel(DdevIntegrationBundle.message("settings.docker"));
+        dockerPanel.add(new JBLabel(DdevIntegrationBundle.message("settings.docker.provider")));
+        dockerPanel.add(this.dockerProvider);
+        dockerPanel.add(Box.createVerticalStrut(5));
+        dockerPanel.add(new JBLabel(DdevIntegrationBundle.message("settings.docker.colimaArguments")));
+        dockerPanel.add(this.colimaArguments);
+
+        final JPanel databasePanel = titledPanel(DdevIntegrationBundle.message("settings.database"));
+        databasePanel.add(new JBLabel(DdevIntegrationBundle.message("settings.database.manager")));
+        databasePanel.add(this.databaseManager);
+
+        final JPanel terminalPanel = titledPanel(DdevIntegrationBundle.message("settings.terminal"));
+        final JButton configureExposedCommands = new JButton(DdevIntegrationBundle.message("settings.terminal.exposedCommands"));
+        configureExposedCommands.addActionListener(event -> new ExposeCommandsDialog(project).show());
+        terminalPanel.add(configureExposedCommands);
+        terminalPanel.add(comment(DdevIntegrationBundle.message("settings.terminal.exposedCommands.description")));
 
         final JPanel wordpressPanel = new JPanel();
         wordpressPanel.setBorder(IdeBorderFactory.createTitledBorder(
@@ -141,8 +178,34 @@ public final class DdevSettingsComponent {
                 .addComponent(snapshotPanel, 1)
                 .addComponent(projectsPanel, 1)
                 .addComponent(wordpressPanel, 1)
+                .addComponent(sharePanel, 1)
+                .addComponent(dockerPanel, 1)
+                .addComponent(databasePanel, 1)
+                .addComponent(terminalPanel, 1)
                 .addComponentFillVertically(new JPanel(), 0)
                 .getPanel();
+    }
+
+    private static @NotNull String[] databaseManagerOptions() {
+        final java.util.ArrayList<String> options = new java.util.ArrayList<>();
+        options.add(DdevIntegrationBundle.message("settings.database.manager.ask"));
+        DatabaseManager.available().forEach(manager -> options.add(manager.label()));
+        return options.toArray(new String[0]);
+    }
+
+    private static @NotNull JPanel titledPanel(@NotNull String title) {
+        final JPanel panel = new JPanel();
+        panel.setBorder(IdeBorderFactory.createTitledBorder(title, true));
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        return panel;
+    }
+
+    private static @NotNull JComponent comment(@NotNull String text) {
+        final JBLabel label = new JBLabel(text);
+        label.setFont(JBUI.Fonts.smallFont());
+        label.setForeground(UIManager.getColor("Component.infoForeground"));
+        label.setAllowAutoWrapping(true);
+        return label;
     }
 
     /**
@@ -303,6 +366,53 @@ public final class DdevSettingsComponent {
 
     public void setExpandServicesInProjectsToolWindow(boolean expanded) {
         this.expandServicesInProjectsToolWindow.setSelected(expanded);
+    }
+
+    public boolean getAutomaticallyStartProject() {
+        return this.automaticallyStartProject.isSelected();
+    }
+
+    public void setAutomaticallyStartProject(boolean automaticallyStartProject) {
+        this.automaticallyStartProject.setSelected(automaticallyStartProject);
+    }
+
+    public @NotNull String getDefaultShareProvider() {
+        return this.defaultShareProvider.getText().trim();
+    }
+
+    public void setDefaultShareProvider(@NotNull String provider) {
+        this.defaultShareProvider.setText(provider);
+    }
+
+    public @NotNull String getDockerProvider() {
+        final Object selected = this.dockerProvider.getSelectedItem();
+        return selected instanceof DockerProvider provider ? provider.value() : DockerProvider.AUTO_DETECT.value();
+    }
+
+    public void setDockerProvider(@NotNull String provider) {
+        this.dockerProvider.setSelectedItem(DockerProvider.fromValue(provider));
+    }
+
+    public @NotNull String getColimaArguments() {
+        return this.colimaArguments.getText().trim();
+    }
+
+    public void setColimaArguments(@NotNull String arguments) {
+        this.colimaArguments.setText(arguments);
+    }
+
+    /**
+     * Returns the configured manager's label, or an empty string when the user is asked each time.
+     */
+    public @NotNull String getDatabaseManager() {
+        final DatabaseManager manager = DatabaseManager.fromValue((String) this.databaseManager.getSelectedItem());
+        return manager == null ? "" : manager.label();
+    }
+
+    public void setDatabaseManager(@NotNull String manager) {
+        final DatabaseManager selected = DatabaseManager.fromValue(manager);
+        this.databaseManager.setSelectedItem(selected == null
+                ? DdevIntegrationBundle.message("settings.database.manager.ask") : selected.label());
     }
 
     public @NotNull String getDdevBinary() {

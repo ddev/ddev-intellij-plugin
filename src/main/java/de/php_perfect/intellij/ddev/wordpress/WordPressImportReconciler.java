@@ -17,6 +17,7 @@ import de.php_perfect.intellij.ddev.cmd.Runner;
 import de.php_perfect.intellij.ddev.settings.DdevSettingsState;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -27,6 +28,9 @@ import java.util.regex.Pattern;
 public final class WordPressImportReconciler {
     private static final Pattern SAFE_IDENTIFIER = Pattern.compile("[A-Za-z0-9_]+");
     private static final int COMMAND_TIMEOUT = 300_000;
+    private static final String REGEX_SPECIAL = ".\\+*?[^]$(){}=!<>|:-";
+    // An origin ends where the hostname or path segment ends; "example.com." at the end of a sentence still matches.
+    private static final String ORIGIN_END = "(?![\\w-]|\\.\\w)";
     // Read evaluated configuration (including wp-config-ddev.php) before WordPress needs its tables.
     private static final String PREFIX_COMMAND = "WP_CLI::add_command('ddev-integration-prefix', "
             + "static function () { WP_CLI::line($GLOBALS['table_prefix']); }, "
@@ -122,8 +126,8 @@ public final class WordPressImportReconciler {
             return;
         }
 
-        runOnSuccess(project, binary, workingDirectory, "Update WordPress URLs",
-                buildSearchReplaceArguments(siteUrl, targetUrl), flushRewrites);
+        runSequence(project, binary, workingDirectory, "Update WordPress URLs",
+                buildSearchReplaceCommands(siteUrl, targetUrl), flushRewrites);
     }
 
     private static boolean shouldApply(@NotNull Project project, @NotNull WordPressImportPolicy policy,
@@ -195,15 +199,63 @@ public final class WordPressImportReconciler {
         return url.replaceFirst("^https?://", "").replaceFirst("/+$", "");
     }
 
-    static @NotNull List<String> buildSearchReplaceArguments(@NotNull String siteUrl,
-                                                              @NotNull String targetUrl) {
-        return List.of("wp", "search-replace", normalizeUrl(siteUrl), normalizeUrl(targetUrl),
-                "--skip-columns=guid", "--all-tables");
+    /**
+     * Replaces complete origins only, in plain and JSON-escaped ({@code https:\/\/host}) form. The
+     * bare hostname also occurs in e-mail addresses, other domains and prose, which must keep pointing
+     * at the original site. The first pass rewrites absolute URLs; the second rewrites scheme-relative
+     * ones and skips anything preceded by a colon or backslash, so URLs the first pass produced are
+     * never matched again even when the target host starts with the source host.
+     */
+    static @NotNull List<List<String>> buildSearchReplaceCommands(@NotNull String siteUrl,
+                                                                   @NotNull String targetUrl) {
+        final String host = quoteUrlPath(normalizeUrl(siteUrl)) + ORIGIN_END;
+        final String target = targetUrl.replaceFirst("/+$", "");
+        final int schemeEnd = target.indexOf("://");
+        final String targetScheme = schemeEnd < 0 ? "https" : target.substring(0, schemeEnd);
+        final String targetHost = normalizeUrl(target);
+        // ${1} keeps the backreference unambiguous when the target host starts with a digit.
+        return List.of(
+                regexReplace("https?:(\\\\?/)\\\\?/" + host, targetScheme + ":${1}${1}" + targetHost),
+                regexReplace("(?<![:\\\\])(\\\\?/)\\\\?/" + host, "${1}${1}" + targetHost));
+    }
+
+    private static @NotNull String quoteUrlPath(@NotNull String value) {
+        final StringBuilder quoted = new StringBuilder();
+        for (char character : value.toCharArray()) {
+            if (character == '/') {
+                quoted.append("\\\\?/");
+            } else {
+                if (REGEX_SPECIAL.indexOf(character) >= 0) {
+                    quoted.append('\\');
+                }
+                quoted.append(character);
+            }
+        }
+        return quoted.toString();
+    }
+
+    private static @NotNull List<String> regexReplace(@NotNull String pattern, @NotNull String replace) {
+        return List.of("wp", "search-replace", pattern, replace, "--regex", "--skip-columns=guid",
+                "--all-tables");
+    }
+
+    private static void runSequence(@NotNull Project project, @NotNull String binary,
+                                    @NotNull String workingDirectory, @NotNull String title,
+                                    @NotNull List<List<String>> commands, @Nullable Runnable afterCompletion) {
+        if (commands.isEmpty()) {
+            if (afterCompletion != null) {
+                afterCompletion.run();
+            }
+            return;
+        }
+        runOnSuccess(project, binary, workingDirectory, title, commands.getFirst(),
+                () -> runSequence(project, binary, workingDirectory, title,
+                        commands.subList(1, commands.size()), afterCompletion));
     }
 
     private static void runOnSuccess(@NotNull Project project, @NotNull String binary,
                                      @NotNull String workingDirectory, @NotNull String title,
-                                     @NotNull List<String> arguments, Runnable afterCompletion) {
+                                     @NotNull List<String> arguments, @Nullable Runnable afterCompletion) {
         final PtyCommandLine commandLine = new PtyCommandLine();
         commandLine.setExePath(binary);
         commandLine.addParameters(arguments);

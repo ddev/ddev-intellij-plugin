@@ -1,5 +1,6 @@
 package de.php_perfect.intellij.ddev.actions;
 
+import de.php_perfect.intellij.ddev.util.DdevProjectRoot;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.LocalFileSystem;
@@ -37,7 +38,7 @@ abstract class DdevOpenWordPressFileAction extends DdevRunAction {
     }
 
     private Path resolve(@NotNull Project project) {
-        final String basePath = project.getBasePath();
+        final String basePath = DdevProjectRoot.of(project);
 
         if (basePath == null) {
             return null;

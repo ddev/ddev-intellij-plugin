@@ -67,8 +67,8 @@ public final class WordPressShareSupport {
         final Map<String, String> replacements = new LinkedHashMap<>();
         String updatedConfig = originalConfig;
         for (String name : SHARE_CONSTANTS) {
-            updatedConfig = definitionPattern(name).matcher(updatedConfig).replaceAll(match -> {
-                final String placeholder = "/* " + marker + ":" + replacements.size() + " */;" + newline;
+            updatedConfig = WordPressConfigManager.constantPattern(name).matcher(updatedConfig).replaceAll(match -> {
+                final String placeholder = "/* " + marker + ":" + replacements.size() + " */;";
                 replacements.put(placeholder, match.group());
                 return Matcher.quoteReplacement(placeholder);
             });
@@ -102,11 +102,6 @@ public final class WordPressShareSupport {
         }
 
         return new Session(config, replacements, plugin, pluginExisted, originalPlugin);
-    }
-
-    private static @NotNull Pattern definitionPattern(@NotNull String name) {
-        return Pattern.compile("(?m)^[\\t ]*define\\s*\\(\\s*(['\"])" + Pattern.quote(name)
-                + "\\1\\s*,\\s*[^;\\r\\n]+?\\s*\\)\\s*;[\\t ]*(?:\\R|$)");
     }
 
     private static @NotNull String escapePhpString(@NotNull String value) {

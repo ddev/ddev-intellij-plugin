@@ -5,6 +5,7 @@ import com.intellij.docker.remote.DockerComposeCredentialsType;
 import com.intellij.execution.ExecutionException;
 import com.intellij.javascript.nodejs.interpreter.NodeJsInterpreterManager;
 import com.intellij.javascript.nodejs.interpreter.NodeJsInterpreterRef;
+import com.intellij.javascript.nodejs.interpreter.local.NodeJsLocalInterpreterType;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.PathMappingSettings;
@@ -13,6 +14,8 @@ import com.jetbrains.nodejs.remote.NodeJSRemoteSdkAdditionalData;
 import com.jetbrains.nodejs.remote.NodeRemoteInterpreters;
 import de.php_perfect.intellij.ddev.docker_compose.DockerComposeConfig;
 import de.php_perfect.intellij.ddev.docker_compose.DockerComposeCredentialProvider;
+import de.php_perfect.intellij.ddev.index.IndexEntry;
+import de.php_perfect.intellij.ddev.index.ManagedConfigurationIndex;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -28,18 +31,41 @@ public final class NodeInterpreterProviderImpl implements NodeInterpreterProvide
 
     public void configureNodeInterpreter(final @NotNull NodeInterpreterConfig nodeInterpreterConfig) {
         final NodeRemoteInterpreters nodeRemoteInterpreters = NodeRemoteInterpreters.getInstance();
+        final ManagedConfigurationIndex index = ManagedConfigurationIndex.getInstance(this.project);
+        final IndexEntry entry = index.get(NodeInterpreterConfig.class);
+        final DockerComposeCredentialsType type = DockerComposeCredentialsType.getInstance();
+        NodeJSRemoteSdkAdditionalData sdkData = nodeRemoteInterpreters.getInterpreters().stream()
+                .filter(data -> (entry != null && entry.id().equals(data.getSdkId()))
+                        || data.getRemoteConnectionType() == type
+                        && "web".equals(data.connectionCredentials().getCredentials(type).getComposeServiceName())
+                        && data.connectionCredentials().getCredentials(type).getComposeFilePaths()
+                        .equals(List.of(nodeInterpreterConfig.composeFilePath())))
+                .findFirst().orElse(null);
 
-        if (!nodeRemoteInterpreters.getInterpreters().isEmpty()) {
+        if (sdkData != null && entry != null && entry.id().equals(sdkData.getSdkId())
+                && entry.hashEquals(nodeInterpreterConfig.hashCode())) {
             return;
         }
 
-        LOG.debug("Creating nodejs interpreter");
+        LOG.debug("Configuring nodejs interpreter for " + nodeInterpreterConfig.name());
 
         final DockerComposeCredentialsHolder credentials = DockerComposeCredentialProvider.getInstance().getDdevDockerComposeCredentials(new DockerComposeConfig(List.of(nodeInterpreterConfig.composeFilePath()), nodeInterpreterConfig.name()));
-        final NodeJSRemoteSdkAdditionalData sdkData = this.buildNodeJSRemoteSdkAdditionalData(credentials, nodeInterpreterConfig.binaryPath());
-        nodeRemoteInterpreters.add(sdkData);
+        if (sdkData == null) {
+            sdkData = this.buildNodeJSRemoteSdkAdditionalData(credentials, nodeInterpreterConfig.binaryPath());
+            nodeRemoteInterpreters.add(sdkData);
+        } else {
+            sdkData.setInterpreterPath(nodeInterpreterConfig.binaryPath());
+            sdkData.setCredentials(type.getCredentialsKey(), credentials);
+            sdkData.setPathMappings(this.loadPathMappings(sdkData));
+        }
 
-        NodeJsInterpreterManager.getInstance(this.project).setInterpreterRef(NodeJsInterpreterRef.create(sdkData.getSdkId()));
+        final NodeJsInterpreterManager manager = NodeJsInterpreterManager.getInstance(this.project);
+        final NodeJsInterpreterRef current = manager.getInterpreterRef();
+        if (current == null || current.isProjectRef() || NodeJsLocalInterpreterType.isNodeFromPathRef(current)
+                || entry != null && entry.id().equals(current.getReferenceName())) {
+            manager.setInterpreterRef(NodeJsInterpreterRef.create(sdkData.getSdkId()));
+        }
+        index.set(sdkData.getSdkId(), NodeInterpreterConfig.class, nodeInterpreterConfig.hashCode());
     }
 
     private @NotNull NodeJSRemoteSdkAdditionalData buildNodeJSRemoteSdkAdditionalData(DockerComposeCredentialsHolder credentials, @NotNull String binaryPath) {
