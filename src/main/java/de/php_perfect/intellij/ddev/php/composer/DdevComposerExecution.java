@@ -4,8 +4,11 @@ import com.intellij.execution.ExecutionException;
 import com.intellij.execution.configurations.GeneralCommandLine;
 import com.intellij.execution.process.ProcessHandler;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.progress.EmptyProgressIndicator;
+import com.intellij.openapi.progress.ProgressManager;
 import com.jetbrains.php.composer.execution.ComposerExecution;
 import de.php_perfect.intellij.ddev.cmd.Description;
+import de.php_perfect.intellij.ddev.cmd.wsl.WslAware;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import de.php_perfect.intellij.ddev.state.State;
 import org.jdom.Element;
@@ -29,13 +32,20 @@ public class DdevComposerExecution implements ComposerExecution {
     public ProcessHandler createProcessHandler(@NotNull Project project, String workingDir, @NotNull List<String> command, @NotNull String commandText) throws ExecutionException {
         // Build the DDEV command: ddev composer [args...]
         GeneralCommandLine commandLine = new GeneralCommandLine();
-        commandLine.setExePath("ddev");
+        final String binary = DdevStateManager.getInstance(project).getState().getDdevBinary();
+        if (binary == null || binary.isBlank()) {
+            throw new ExecutionException("DDEV binary is not configured");
+        }
+        commandLine.setExePath(binary);
         commandLine.addParameter("composer");
         commandLine.addParameters(command);
-        commandLine.setWorkDirectory(workingDir != null ? workingDir : project.getBasePath());
+        commandLine.setWorkDirectory(workingDir != null
+                ? WslAware.toHostPath(workingDir, project.getBasePath()) : project.getBasePath());
 
         try {
-            return new DdevComposerProcessHandler(commandLine.createProcess(), commandText);
+            final GeneralCommandLine patched = ProgressManager.getInstance().runProcess(
+                    () -> WslAware.patchCommandLine(commandLine), new EmptyProgressIndicator());
+            return new DdevComposerProcessHandler(patched.createProcess(), commandText);
         } catch (Exception e) {
             throw new ExecutionException("Failed to start DDEV Composer process: " + e.getMessage(), e);
         }
