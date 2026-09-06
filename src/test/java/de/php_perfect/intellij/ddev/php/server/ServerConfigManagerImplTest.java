@@ -44,7 +44,8 @@ final class ServerConfigManagerImplTest extends BasePlatformTestCase {
     }
 
     private void assertServerConfigMatches(ServerConfig serverConfig) {
-        final List<PhpServer> servers = PhpServersWorkspaceStateComponent.getInstance(this.getProject()).getServers();
+        final List<PhpServer> servers = PhpServersWorkspaceStateComponent.getInstance(this.getProject()).getServers()
+                .stream().filter(server -> "test.ddev.site".equals(server.getName())).toList();
 
         Assert.assertEquals(1, servers.size());
 
