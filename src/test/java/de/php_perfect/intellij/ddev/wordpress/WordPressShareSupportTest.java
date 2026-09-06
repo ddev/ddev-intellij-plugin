@@ -62,6 +62,26 @@ final class WordPressShareSupportTest {
     }
 
     @Test
+    void restoresConditionalDefinitionsInPlaceWithOriginalLineEndings() throws Exception {
+        final Path config = this.projectRoot.resolve("wp-config.php");
+        final String original = "<?php\r\n/** Site configuration. */\r\ndeclare(strict_types=1);\r\n"
+                + "if (getenv('IS_DDEV_PROJECT') === 'true') {\r\n"
+                + "    define( 'WP_HOME', 'https://local.ddev.site' );\r\n"
+                + "} else {\r\n    define( 'WP_HOME', 'https://production.example' );\r\n}\r\n"
+                + "require_once ABSPATH . 'wp-settings.php';\r\n";
+        Files.writeString(config, original);
+        try (var session = WordPressShareSupport.start(this.projectRoot, "https://public.ngrok.app")) {
+            assertThat(session).isNotNull();
+            final String sharing = Files.readString(config);
+            assertThat(sharing.indexOf("define( 'WP_SHARED_URL'"))
+                    .isLessThan(sharing.indexOf("require_once"))
+                    .isGreaterThan(sharing.indexOf("declare(strict_types=1);"));
+            Files.writeString(config, sharing + "// unrelated edit\r\n");
+        }
+        assertThat(config).content().isEqualTo(original + "// unrelated edit\r\n");
+    }
+
+    @Test
     void sharesFromTheDocumentRootAndSupportsAParentConfig() throws Exception {
         final Path documentRoot = Files.createDirectories(this.projectRoot.resolve("public"));
         final Path config = this.projectRoot.resolve("wp-config.php");

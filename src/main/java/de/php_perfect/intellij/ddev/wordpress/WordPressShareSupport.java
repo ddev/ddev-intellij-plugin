@@ -7,10 +7,10 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -62,14 +62,30 @@ public final class WordPressShareSupport {
         }
 
         final String originalConfig = Files.readString(config);
-        final Map<String, List<String>> originalDefinitions = captureDefinitions(originalConfig);
+        final String newline = originalConfig.contains("\r\n") ? "\r\n" : "\n";
+        final String marker = "DDEV share " + UUID.randomUUID();
+        final Map<String, String> replacements = new LinkedHashMap<>();
         String updatedConfig = originalConfig;
-        updatedConfig = setDefinition(updatedConfig, "WP_SHARED_URL",
-                "define( 'WP_SHARED_URL', '" + escapePhpString(shareUrl) + "' );");
-        updatedConfig = setDefinition(updatedConfig, "WP_HOME",
-                "define( 'WP_HOME', isset( $_SERVER['HTTP_HOST'] ) ? 'https://' . $_SERVER['HTTP_HOST'] : WP_SHARED_URL );");
-        updatedConfig = setDefinition(updatedConfig, "WP_SITEURL",
-                "define( 'WP_SITEURL', WP_HOME . '/' );");
+        for (String name : SHARE_CONSTANTS) {
+            updatedConfig = definitionPattern(name).matcher(updatedConfig).replaceAll(match -> {
+                final String placeholder = "/* " + marker + ":" + replacements.size() + " */;" + newline;
+                replacements.put(placeholder, match.group());
+                return Matcher.quoteReplacement(placeholder);
+            });
+        }
+        final Matcher openingTag = Pattern.compile("(?is)<\\?php\\b"
+                + "(?:(?:\\s|/\\*.*?\\*/|//[^\\r\\n]*|#[^\\r\\n]*)*declare\\s*\\([^)]*\\)\\s*;)*")
+                .matcher(updatedConfig);
+        if (!openingTag.find()) {
+            throw new IOException("Missing PHP opening tag in " + config);
+        }
+        final String definitions = newline + "/* " + marker + " */" + newline
+                + "define( 'WP_SHARED_URL', '" + escapePhpString(shareUrl) + "' );" + newline
+                + "define( 'WP_HOME', isset( $_SERVER['HTTP_HOST'] ) ? 'https://' . $_SERVER['HTTP_HOST'] : WP_SHARED_URL );" + newline
+                + "define( 'WP_SITEURL', WP_HOME . '/' );" + newline;
+        replacements.put(definitions, "");
+        updatedConfig = updatedConfig.substring(0, openingTag.end()) + definitions
+                + updatedConfig.substring(openingTag.end());
 
         final Path plugin = WordPressConfigManager.documentRoot(projectRoot, docroot)
                 .resolve("wp-content/mu-plugins/ddev-intellij-share.php");
@@ -85,45 +101,12 @@ public final class WordPressShareSupport {
             throw exception;
         }
 
-        return new Session(config, originalDefinitions, plugin, pluginExisted, originalPlugin);
-    }
-
-    private static @NotNull Map<String, List<String>> captureDefinitions(@NotNull String content) {
-        final LinkedHashMap<String, List<String>> definitions = new LinkedHashMap<>();
-        for (String name : SHARE_CONSTANTS) {
-            final ArrayList<String> matches = new ArrayList<>();
-            final Matcher matcher = definitionPattern(name).matcher(content);
-            while (matcher.find()) {
-                matches.add(matcher.group().stripTrailing());
-            }
-            definitions.put(name, matches);
-        }
-        return definitions;
-    }
-
-    private static @NotNull String setDefinition(@NotNull String content, @NotNull String name,
-                                                  @NotNull String definition) {
-        return insertDefinition(definitionPattern(name).matcher(content).replaceAll(""), definition);
+        return new Session(config, replacements, plugin, pluginExisted, originalPlugin);
     }
 
     private static @NotNull Pattern definitionPattern(@NotNull String name) {
         return Pattern.compile("(?m)^[\\t ]*define\\s*\\(\\s*(['\"])" + Pattern.quote(name)
                 + "\\1\\s*,\\s*[^;\\r\\n]+?\\s*\\)\\s*;[\\t ]*(?:\\R|$)");
-    }
-
-    private static @NotNull String insertDefinition(@NotNull String content, @NotNull String definition) {
-        final String newline = content.contains("\r\n") ? "\r\n" : "\n";
-        final Matcher anchor = Pattern.compile("(?m)^[\\t ]*/\\*(?:\\*|\\s+That's all)").matcher(content);
-        if (anchor.find()) {
-            return content.substring(0, anchor.start()) + definition + newline + newline
-                    + content.substring(anchor.start());
-        }
-        final int phpClose = content.lastIndexOf("?>");
-        final int insertionPoint = phpClose >= 0 ? phpClose : content.length();
-        final String separator = insertionPoint > 0 && !content.substring(0, insertionPoint).endsWith(newline)
-                ? newline : "";
-        return content.substring(0, insertionPoint) + separator + definition + newline
-                + content.substring(insertionPoint);
     }
 
     private static @NotNull String escapePhpString(@NotNull String value) {
@@ -132,16 +115,16 @@ public final class WordPressShareSupport {
 
     public static final class Session implements AutoCloseable {
         private final @NotNull Path config;
-        private final @NotNull Map<String, List<String>> originalDefinitions;
+        private final @NotNull Map<String, String> replacements;
         private final @NotNull Path plugin;
         private final boolean pluginExisted;
         private final byte @Nullable [] originalPlugin;
         private boolean closed;
 
-        private Session(@NotNull Path config, @NotNull Map<String, List<String>> originalDefinitions,
+        private Session(@NotNull Path config, @NotNull Map<String, String> replacements,
                         @NotNull Path plugin, boolean pluginExisted, byte @Nullable [] originalPlugin) {
             this.config = config;
-            this.originalDefinitions = originalDefinitions;
+            this.replacements = replacements;
             this.plugin = plugin;
             this.pluginExisted = pluginExisted;
             this.originalPlugin = originalPlugin;
@@ -152,15 +135,10 @@ public final class WordPressShareSupport {
             if (this.closed) {
                 return;
             }
-            this.closed = true;
-
             if (Files.isRegularFile(this.config)) {
                 String content = Files.readString(this.config);
-                for (String name : SHARE_CONSTANTS) {
-                    content = definitionPattern(name).matcher(content).replaceAll("");
-                    for (String definition : this.originalDefinitions.getOrDefault(name, List.of())) {
-                        content = insertDefinition(content, definition);
-                    }
+                for (Map.Entry<String, String> replacement : this.replacements.entrySet()) {
+                    content = content.replace(replacement.getKey(), replacement.getValue());
                 }
                 Files.writeString(this.config, content, StandardCharsets.UTF_8);
             }
@@ -170,6 +148,7 @@ public final class WordPressShareSupport {
             } else {
                 Files.deleteIfExists(this.plugin);
             }
+            this.closed = true;
         }
     }
 }
