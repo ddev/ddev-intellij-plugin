@@ -1,5 +1,6 @@
 package de.php_perfect.intellij.ddev.docker_compose;
 
+import de.php_perfect.intellij.ddev.util.DdevProjectRoot;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
@@ -20,7 +21,7 @@ public final class DdevComposeFileLoaderImpl implements DdevComposeFileLoader {
 
     @Override
     public @Nullable VirtualFile load() {
-        final String basePath = this.project.getBasePath();
+        final String basePath = DdevProjectRoot.of(this.project);
 
         if (basePath == null) {
             return null;

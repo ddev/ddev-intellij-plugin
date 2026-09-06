@@ -1,13 +1,16 @@
 package de.php_perfect.intellij.ddev.cmd;
 
+import de.php_perfect.intellij.ddev.util.DdevProjectRoot;
 import com.intellij.execution.configurations.GeneralCommandLine;
 import com.intellij.execution.configurations.PtyCommandLine;
+import com.intellij.execution.process.ProcessHandler;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import de.php_perfect.intellij.ddev.DdevConfigArgumentProvider;
 import de.php_perfect.intellij.ddev.DdevIntegrationBundle;
@@ -26,6 +29,7 @@ import java.nio.file.Path;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 public final class DdevRunnerImpl implements DdevRunner {
     private static final Logger LOG = Logger.getInstance(DdevRunnerImpl.class);
@@ -77,24 +81,39 @@ public final class DdevRunnerImpl implements DdevRunner {
         }
 
         runner.runOnSuccess(commandLine, title, () -> {
-            this.deleteDdevFolderIfConfigured(project, project.getBasePath());
+            this.deleteDdevFolderIfConfigured(project, DdevProjectRoot.of(project));
             this.updateDescription(project);
         });
     }
 
     @Override
     public void share(@NotNull Project project) {
-        this.share(project, null, WordPressConfigManager.docroot(project));
+        this.share(project, null, WordPressConfigManager.docroot(project), null);
     }
 
     @Override
-    public void share(@NotNull Project project, @Nullable String workingDirectory, @Nullable String docroot) {
+    public void share(@NotNull Project project, @Nullable String workingDirectory, @Nullable String docroot,
+                      @Nullable String provider) {
         final String title = DdevIntegrationBundle.message("ddev.run.share");
         final Runner runner = Runner.getInstance(project);
         final ShareManager shareManager = ShareManager.getInstance(project);
-        runner.run(this.createCommandLine("share", project, workingDirectory), title, shareManager::stopSharing,
-                processHandler -> shareManager.setShareProcessHandler(processHandler,
-                        workingDirectory != null ? workingDirectory : project.getBasePath(), docroot));
+        final AtomicReference<ProcessHandler> shareProcess = new AtomicReference<>();
+        final String configuredProvider = DdevSettingsState.getInstance(project).defaultShareProvider;
+        final String effectiveProvider = provider != null ? provider : configuredProvider.isBlank() ? null : configuredProvider;
+        final GeneralCommandLine commandLine = this.createCommandLine("share", project, workingDirectory);
+        if (effectiveProvider != null) {
+            commandLine.addParameter("--provider=" + effectiveProvider);
+        }
+        runner.run(commandLine, title, () -> {
+            final ProcessHandler processHandler = shareProcess.get();
+            if (processHandler != null) {
+                shareManager.stopSharing(processHandler);
+            }
+        }, processHandler -> {
+            shareProcess.set(processHandler);
+            shareManager.setShareProcessHandler(processHandler,
+                    workingDirectory != null ? workingDirectory : DdevProjectRoot.of(project), docroot);
+        });
     }
 
     @Override
@@ -151,25 +170,14 @@ public final class DdevRunnerImpl implements DdevRunner {
 
     @Override
     public void importDatabase(@NotNull Project project, @NotNull String filePath) {
-        final String workingDirectory = project.getBasePath();
+        final String workingDirectory = DdevProjectRoot.of(project);
         final Description description = DdevStateManager.getInstance(project).getState().getDescription();
         final String projectName = description != null ? description.getName() : null;
-        final String projectType = workingDirectory != null ? DdevProjectTypeDetector.detect(workingDirectory) : null;
+        final String projectType = description != null ? description.getType() : null;
 
         if (workingDirectory != null) {
             this.importDatabase(project, workingDirectory, filePath, projectName, projectType);
         }
-    }
-
-    @Override
-    public void importDatabase(@NotNull Project project, @Nullable String workingDirectory, @NotNull String filePath) {
-        if (workingDirectory == null) {
-            this.importDatabase(project, filePath);
-            return;
-        }
-
-        this.importDatabase(project, workingDirectory, filePath, null,
-                DdevProjectTypeDetector.detect(workingDirectory));
     }
 
     @Override
@@ -198,7 +206,7 @@ public final class DdevRunnerImpl implements DdevRunner {
         final String title = DdevIntegrationBundle.message("ddev.run.exportDatabase");
         final Runner runner = Runner.getInstance(project);
         runner.run(this.createCommandLine("export-db", project, workingDirectory).withParameters("--file="
-                + WslAware.toCommandPath(filePath, workingDirectory != null ? workingDirectory : project.getBasePath())), title);
+                + WslAware.toCommandPath(filePath, workingDirectory != null ? workingDirectory : DdevProjectRoot.of(project))), title);
     }
 
     @Override
@@ -245,6 +253,48 @@ public final class DdevRunnerImpl implements DdevRunner {
         final String title = DdevIntegrationBundle.message("ddev.run.deleteImages");
         final Runner runner = Runner.getInstance(project);
         runner.run(this.createCommandLine("delete", project).withParameters("images", "--all", "--yes"), title);
+    }
+
+    @Override
+    public void freeUpDiskSpace(@NotNull Project project) {
+        final String binary = DdevStateManager.getInstance(project).getState().getDdevBinary();
+
+        if (binary == null) {
+            return;
+        }
+
+        ApplicationManager.getApplication().executeOnPooledThread(() -> {
+            List<String> running;
+            try {
+                running = Ddev.getInstance().listProjects(binary, project).stream()
+                        .filter(DdevProject::isRunning)
+                        .map(DdevProject::getName)
+                        .filter(Objects::nonNull)
+                        .toList();
+            } catch (CommandFailedException exception) {
+                running = List.of();
+            }
+            final List<String> restart = running;
+            final Runner runner = Runner.getInstance(project);
+            final String title = DdevIntegrationBundle.message("ddev.run.freeUpDiskSpace");
+            final Runnable restartProjects = () -> {
+                if (restart.isEmpty()) {
+                    this.updateDescription(project);
+                    return;
+                }
+                runner.run(this.createCommandLine("start", project).withParameters(restart), title,
+                        () -> this.updateDescription(project));
+            };
+            runner.runOnSuccess(this.createCommandLine("poweroff", project), title,
+                    () -> runner.run(this.createCommandLine("delete", project).withParameters("images", "--yes"),
+                            title, restartProjects));
+        });
+    }
+
+    @Override
+    public void runHostCommand(@NotNull Project project, @Nullable String workingDirectory, @NotNull String command) {
+        Runner.getInstance(project).run(this.createCommandLine(command, project, workingDirectory),
+                DdevIntegrationBundle.message("ddev.run.hostCommand", command));
     }
 
     @Override
@@ -394,7 +444,7 @@ public final class DdevRunnerImpl implements DdevRunner {
                                      @NotNull String snapshotName, boolean hasDatabase,
                                      @Nullable Runnable afterCompletion) {
         final Runnable complete = () -> {
-            if (workingDirectory == null || Objects.equals(workingDirectory, project.getBasePath())) {
+            if (targetsIdeProject(project, workingDirectory)) {
                 this.updateConfiguration(project);
             }
             this.runAfterTargetCommand(project, workingDirectory, afterCompletion);
@@ -408,7 +458,7 @@ public final class DdevRunnerImpl implements DdevRunner {
         Runner.getInstance(project).runOnSuccess(this.createCommandLine("snapshot", project, workingDirectory)
                         .withParameters("restore", snapshotName),
                 DdevIntegrationBundle.message("ddev.run.renameProject.restore"), () -> {
-                    final String projectRoot = workingDirectory != null ? workingDirectory : project.getBasePath();
+                    final String projectRoot = workingDirectory != null ? workingDirectory : DdevProjectRoot.of(project);
                     if (projectRoot != null) {
                         try {
                             SnapshotFileManager.deleteSnapshot(Path.of(projectRoot), snapshotName);
@@ -439,7 +489,7 @@ public final class DdevRunnerImpl implements DdevRunner {
         final String title = DdevIntegrationBundle.message("ddev.run.config");
         final Runner runner = Runner.getInstance(project);
         runner.runOnSuccess(this.createCommandLine("config", project, workingDirectory).withParameters(configArguments), title, () -> {
-            if (workingDirectory == null || Objects.equals(workingDirectory, project.getBasePath())) {
+            if (targetsIdeProject(project, workingDirectory)) {
                 this.updateConfiguration(project);
             }
 
@@ -459,13 +509,21 @@ public final class DdevRunnerImpl implements DdevRunner {
 
     private void runAfterTargetCommand(@NotNull Project project, @Nullable String workingDirectory,
                                        @Nullable Runnable afterCompletion) {
-        if (workingDirectory == null || Objects.equals(workingDirectory, project.getBasePath())) {
+        if (targetsIdeProject(project, workingDirectory)) {
             this.updateDescription(project);
         }
 
         if (afterCompletion != null) {
             afterCompletion.run();
         }
+    }
+
+    /**
+     * IDE base paths and DDEV app roots may spell the same directory differently
+     * (separators, UNC prefixes), so they are compared as file system paths.
+     */
+    private static boolean targetsIdeProject(@NotNull Project project, @Nullable String workingDirectory) {
+        return workingDirectory == null || FileUtil.pathsEqual(workingDirectory, DdevProjectRoot.of(project));
     }
 
     private void openConfig(@NotNull Project project) {
@@ -517,7 +575,7 @@ public final class DdevRunnerImpl implements DdevRunner {
         return new PtyCommandLine(List.of(Objects.requireNonNull(state.getDdevBinary()), ddevAction))
                 .withInitialRows(30)
                 .withInitialColumns(120)
-                .withWorkDirectory(workingDirectory != null ? workingDirectory : project.getBasePath())
+                .withWorkDirectory(workingDirectory != null ? workingDirectory : DdevProjectRoot.of(project))
                 .withCharset(StandardCharsets.UTF_8)
                 .withEnvironment("DDEV_NONINTERACTIVE", "true");
     }

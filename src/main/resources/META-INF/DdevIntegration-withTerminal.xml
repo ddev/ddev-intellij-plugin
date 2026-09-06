@@ -8,6 +8,7 @@
     <extensions defaultExtensionNs="org.jetbrains.plugins.terminal">
         <openPredefinedTerminalProvider
                 implementation="de.php_perfect.intellij.ddev.terminal.DdevPredefinedTerminalActionProvider"/>
+        <shellExecOptionsCustomizer implementation="de.php_perfect.intellij.ddev.terminal.DdevTerminalCustomizer"/>
     </extensions>
 
     <projectListeners>

@@ -52,6 +52,15 @@ final class DdevProjectsTree {
     static final class LoadingItem {
     }
 
+    static final class MessageItem {
+        final @NotNull String text;
+        final boolean error;
+        MessageItem(@NotNull String text, boolean error) {
+            this.text = text;
+            this.error = error;
+        }
+    }
+
     static final class Renderer extends ColoredTreeCellRenderer {
         private final @NotNull Project project;
 
@@ -95,6 +104,9 @@ final class DdevProjectsTree {
                 if (serviceItem.getUrl() != null) {
                     this.append("  " + serviceItem.getUrl(), SimpleTextAttributes.GRAYED_ATTRIBUTES);
                 }
+            } else if (item instanceof MessageItem messageItem) {
+                this.append(messageItem.text, messageItem.error
+                        ? SimpleTextAttributes.ERROR_ATTRIBUTES : SimpleTextAttributes.GRAYED_ATTRIBUTES);
             } else if (item instanceof LoadingItem) {
                 this.append(DdevIntegrationBundle.message("toolWindow.projects.node.loading"),
                         SimpleTextAttributes.GRAYED_ATTRIBUTES);

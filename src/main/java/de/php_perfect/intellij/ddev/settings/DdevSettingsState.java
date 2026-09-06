@@ -8,6 +8,9 @@ import com.intellij.openapi.project.Project;
 import com.intellij.util.xmlb.XmlSerializerUtil;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @State(name = "de.php_perfect.intellij.ddev.settings.DdevSettingsState", storages = @Storage("DdevIntegration.xml"))
 @Service(Service.Level.PROJECT)
 public final class DdevSettingsState implements PersistentStateComponent<DdevSettingsState> {
@@ -26,6 +29,12 @@ public final class DdevSettingsState implements PersistentStateComponent<DdevSet
     public @NotNull String projectNameFormat;
     public boolean expandServicesInProjectsToolWindow;
     public boolean showCurrentProjectOnly;
+    public boolean automaticallyStartProject;
+    public @NotNull String defaultShareProvider;
+    public @NotNull String dockerProvider;
+    public @NotNull String colimaArguments;
+    public @NotNull String databaseManager;
+    public @NotNull List<String> exposedCommands;
 
     public DdevSettingsState() {
         // Set default values for new installations
@@ -44,6 +53,12 @@ public final class DdevSettingsState implements PersistentStateComponent<DdevSet
         this.projectNameFormat = de.php_perfect.intellij.ddev.toolwindow.DdevProjectNameFormatter.DEFAULT;
         this.expandServicesInProjectsToolWindow = true;
         this.showCurrentProjectOnly = false;
+        this.automaticallyStartProject = false;
+        this.defaultShareProvider = "";
+        this.dockerProvider = de.php_perfect.intellij.ddev.docker.DockerProvider.AUTO_DETECT.value();
+        this.colimaArguments = "--cpu=2 --memory=4";
+        this.databaseManager = "";
+        this.exposedCommands = new ArrayList<>();
     }
 
     public static @NotNull DdevSettingsState getInstance(Project project) {

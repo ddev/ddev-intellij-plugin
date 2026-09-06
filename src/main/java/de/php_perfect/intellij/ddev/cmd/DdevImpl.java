@@ -1,5 +1,6 @@
 package de.php_perfect.intellij.ddev.cmd;
 
+import de.php_perfect.intellij.ddev.util.DdevProjectRoot;
 import com.google.gson.reflect.TypeToken;
 import com.intellij.execution.ExecutionException;
 import com.intellij.execution.configurations.GeneralCommandLine;
@@ -63,18 +64,7 @@ public final class DdevImpl implements Ddev {
     @Override
     public @NotNull List<AddOn> listAddOns(final @NotNull String binary, final @NotNull Project project) throws CommandFailedException {
         final Type type = TypeToken.getParameterized(List.class, AddOn.class).getType();
-        final List<String> arguments = List.of("add-on", "list", "--all", "--wrap-table");
-        final String output = executeOutput(binary, arguments, project, ADD_ON_LIST_COMMAND_TIMEOUT, null);
-
-        try {
-            return JsonParser.getInstance().parse(output, type);
-        } catch (JsonParserException ignored) {
-            final List<AddOn> addOns = AddOnListParser.parse(output);
-            if (!addOns.isEmpty()) {
-                return addOns;
-            }
-            throw new CommandFailedException("DDEV did not return a usable add-on list");
-        }
+        return execute(binary, List.of("add-on", "list", "--all"), type, project, ADD_ON_LIST_COMMAND_TIMEOUT);
     }
 
     @Override
@@ -196,7 +186,7 @@ public final class DdevImpl implements Ddev {
         }
 
         return new GeneralCommandLine(arguments)
-                .withWorkDirectory(workingDirectory != null ? workingDirectory : project.getBasePath())
+                .withWorkDirectory(workingDirectory != null ? workingDirectory : DdevProjectRoot.of(project))
                 .withEnvironment("DDEV_NONINTERACTIVE", "true");
     }
 }

@@ -1,6 +1,7 @@
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.models.ProductRelease
 
 fun properties(key: String) = providers.gradleProperty(key)
 fun environment(key: String) = providers.environmentVariable(key)
@@ -144,8 +145,9 @@ intellijPlatform {
         })
 
         ideaVersion {
-            // 2026.2 is the minimum supported platform. Keep the upper bound open so later
-            // IDEs can install the plugin; each release is still checked by Plugin Verifier.
+            // 2026.2 is the minimum supported platform. The upper bound stays open so later IDEs
+            // can install the plugin; the plugin uses non-stable Docker plugin APIs, so Plugin
+            // Verifier also runs against the newest EAP to catch surface changes before release.
             sinceBuild = "262"
         }
     }
@@ -175,6 +177,13 @@ intellijPlatform {
             create(IntelliJPlatformType.WebStorm, properties("platformVersion"))
             create(IntelliJPlatformType.DataGrip, properties("platformVersion"))
             create(IntelliJPlatformType.IntellijIdeaUltimate, properties("platformVersion"))
+            // Newest EAP: the open untilBuild makes future IDEs installable, so they are verified here.
+            select {
+                types = listOf(IntelliJPlatformType.PhpStorm)
+                channels = listOf(ProductRelease.Channel.EAP)
+                sinceBuild = "262"
+                untilBuild = "999.*"
+            }
         }
     }
 

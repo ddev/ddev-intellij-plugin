@@ -4,6 +4,58 @@ All notable changes to this project will be documented in this file.
 
 The formats is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
+## [1.3.0-alpha3]
+
+Cumulative release notes since the last stable release, **1.2.9**, including all 1.3.0 feature work and subsequent fixes.
+
+### Added
+* A DDEV tool window for managing all projects, with project and service status, lifecycle actions, browser and IDE shortcuts, directory access, renaming, and deletion. Settings control project name formatting, service expansion, and filtering to the current project.
+* A project creation wizard with project type detection and optional CMS or framework installation. The bundled catalog includes 21 recipes, including WordPress, Drupal, Laravel, Symfony, TYPO3, Craft CMS, Shopware, Magento, and Astro.
+* Database snapshot creation, restoration, deletion, and cleanup, plus settings for snapshot behavior when stopping or deleting projects and optional removal of the project's `.ddev` directory on deletion.
+* Database import and export actions, and terminal sessions for databases and individual service containers.
+* Quick actions to change PHP, Node.js, database, and webserver versions or types, and to edit PHP and webserver configuration files.
+* Actions to enable or disable Xdebug, install or remove DDEV add-ons, reset Mutagen, and delete DDEV Docker images.
+* A stop-sharing action, notifications with the public sharing URL, and reporting of ngrok sharing failures.
+* WordPress debug and silent-debug controls, with shortcuts to WordPress configuration files and the debug log.
+* Temporary WordPress URL configuration for sharing, and configurable Ask, Always, or Never policies for reconciling URLs and table prefixes after database imports.
+* An Update Now action for DDEV installations managed by Homebrew or by DDEV's install script.
+* Share With… to pick ngrok, cloudflared, or a custom provider from `.ddev/share-providers` for a single share, a default share provider setting, and install help when the tunnel binary is missing.
+* An opt-in setting that starts the DDEV project when it is opened and stops it once the last IDE window using it closes.
+* Open Database and Open Database With… for the IDE Database tool window, phpMyAdmin, Adminer, TablePlus, TablePro, Sequel Ace, Querious, DBeaver, and HeidiSQL, including an offer to install the phpMyAdmin or Adminer add-on.
+* A Start Docker Provider action for Docker Desktop, Docker CE, OrbStack, Colima, and Rancher Desktop, with provider auto-detection and configurable Colima arguments.
+* Install DDEV and Configure DDEV Path when DDEV is not found, and an offer to delete the previous version's Docker images after DDEV is upgraded.
+* Open DDEV Project… actions that open any DDEV project in the current or a new window.
+* Container commands, such as `wp` or `drush`, exposed in the IDE terminal for one project or all DDEV projects on macOS, Linux, Windows (cmd, PowerShell, and Git Bash), and WSL. They run in the matching container directory, translate project paths in arguments and output, make files outside the project available to the container, keep the exit code, and never start a stopped project.
+* A shortcut in the add-on chooser that opens the selected add-on's repository.
+
+### Changed
+* Resolve the DDEV executable from `PATH` by default while retaining support for an explicitly configured binary.
+* Load available project types, runtime versions, and other configuration choices from DDEV, with bundled fallback options.
+* Keep the minimum supported IntelliJ Platform version at 2026.2 (build 262) and remove the upper build limit.
+* Recognize DDEV projects when the IDE project is opened at a subfolder of the DDEV project.
+* Write WordPress debug settings to `wp-config.php`, leaving the DDEV-generated `wp-config-ddev.php` untouched.
+* Keep expanded nodes and the selection in the DDEV tool window when it refreshes.
+
+### Fixed
+* Keep search fields visible in chooser popups and skip PHP server configuration when the primary URL has no hostname.
+* Harden CMS installation with credential redaction, protection against overwriting existing files, failure handling and retries, and use of the actual project URL after DDEV starts.
+* Respect WordPress document roots and supported parent-directory configuration files when changing debug settings, sharing, or reconciling imports.
+* Restore WordPress configuration after sharing while preserving the original PHP scopes, declarations, line endings, and unrelated edits.
+* Reconcile imported WordPress tables against the effective configured table prefix instead of assuming `wp_`.
+* Rewrite only complete site origins, including JSON-escaped ones, when updating URLs after a WordPress database import.
+* Keep a newer share running when an earlier share process exits.
+* Show when a project has no additional services or its services could not be loaded, and report snapshots that could not be deleted.
+* Preserve the WSL distribution context for project commands, including projects under `/mnt/c`, and translate file arguments for WSL execution.
+* Honor the configured DDEV executable and WSL settings when running Composer.
+* Configure Node.js interpreters per project, reuse matching interpreters, and preserve explicit custom selections.
+* Keep the DDEV web container terminal working in IntelliJ 2026.3, whose terminal connector no longer accepts pty4j processes, and use the terminal and PATH lookup APIs that 2026.3 keeps.
+* Replace deprecated IntelliJ APIs in project opening and resource-bundle initialization, including the two `OpenProjectTaskBuilder.build(Function1)` calls reported for alpha2.
+
+### Build and Test Updates
+* Validate the CMS recipe catalog against its JSON Schema during checks and plugin builds, and add focused regression coverage for the new workflows and fixes.
+* Run Plugin Verifier against the newest PhpStorm EAP as well, because the plugin allows installation in future IDE versions.
+* Update GitHub Actions: `actions/checkout` 6 to 7, `gradle/actions` 5 to 6, `actions/setup-java` 5 to 6, and `1password/load-secrets-action` 4 to 5.
+
 ## [1.2.9]
 
 ### Changed

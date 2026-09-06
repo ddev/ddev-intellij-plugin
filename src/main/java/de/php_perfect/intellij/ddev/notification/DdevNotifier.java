@@ -26,9 +26,17 @@ public interface DdevNotifier {
 
     void notifySnapshotListFailed();
 
+    void notifySnapshotDeleteFailed(@NotNull String name, @NotNull String detail);
+
     void notifyShareUrl(@NotNull String url);
 
     void notifyShareFailed(@NotNull String errorCode);
+
+    void notifyShareToolMissing(@NotNull String tool);
+
+    void notifyDockerProviderStartFailed(@NotNull String detail);
+
+    void notifyDdevUpgraded(@NotNull String previousVersion, @NotNull String currentVersion);
 
     void notifyWordPressShareSetupFailed(@NotNull String detail);
 

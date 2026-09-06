@@ -1,5 +1,6 @@
 package de.php_perfect.intellij.ddev.actions;
 
+import de.php_perfect.intellij.ddev.util.DdevProjectRoot;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
@@ -20,7 +21,7 @@ import java.nio.file.Path;
 public final class DdevEditPhpConfigAction extends DdevRunAction {
     @Override
     protected void run(@NotNull Project project) {
-        final String basePath = project.getBasePath();
+        final String basePath = DdevProjectRoot.of(project);
 
         if (basePath == null) {
             return;

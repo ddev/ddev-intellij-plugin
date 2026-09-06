@@ -21,7 +21,11 @@ public interface DdevRunner {
 
     void share(@NotNull Project project);
 
-    void share(@NotNull Project project, @Nullable String workingDirectory, @Nullable String docroot);
+    /**
+     * @param provider the {@code ddev share --provider} to use, or {@code null} for the configured default
+     */
+    void share(@NotNull Project project, @Nullable String workingDirectory, @Nullable String docroot,
+               @Nullable String provider);
 
     void stopShare(@NotNull Project project);
 
@@ -40,8 +44,6 @@ public interface DdevRunner {
     void clearSnapshots(@NotNull Project project, @Nullable String workingDirectory, @Nullable Runnable afterCompletion);
 
     void importDatabase(@NotNull Project project, @NotNull String filePath);
-
-    void importDatabase(@NotNull Project project, @Nullable String workingDirectory, @NotNull String filePath);
 
     void importDatabase(@NotNull Project project, @NotNull String workingDirectory, @NotNull String filePath,
                         @Nullable String projectName, @Nullable String projectType);
@@ -63,6 +65,18 @@ public interface DdevRunner {
     void mutagenReset(@NotNull Project project, @Nullable String workingDirectory, @Nullable Runnable afterCompletion);
 
     void deleteImages(@NotNull Project project);
+
+    /**
+     * Deletes the Docker images of previous DDEV versions. DDEV is powered off first, because
+     * containers of running projects still use those images, and the running projects are started
+     * again afterwards.
+     */
+    void freeUpDiskSpace(@NotNull Project project);
+
+    /**
+     * Runs one of DDEV's host commands, such as {@code ddev tableplus}, for the project in {@code workingDirectory}.
+     */
+    void runHostCommand(@NotNull Project project, @Nullable String workingDirectory, @NotNull String command);
 
     void installAddOn(@NotNull Project project, @NotNull String addOnName);
 

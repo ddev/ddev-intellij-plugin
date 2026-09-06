@@ -11,6 +11,12 @@ import com.intellij.openapi.ide.CopyPasteManager;
 import com.intellij.openapi.project.Project;
 import de.php_perfect.intellij.ddev.DdevIntegrationBundle;
 import de.php_perfect.intellij.ddev.actions.*;
+import de.php_perfect.intellij.ddev.cmd.DdevRunner;
+import de.php_perfect.intellij.ddev.cmd.ShareProviders;
+import de.php_perfect.intellij.ddev.docker.DockerProviderStarter;
+import de.php_perfect.intellij.ddev.install.Installers;
+import de.php_perfect.intellij.ddev.settings.DdevSettingsConfigurable;
+import com.intellij.openapi.options.ShowSettingsUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.datatransfer.StringSelection;
@@ -33,6 +39,12 @@ public final class DdevNotifierImpl implements DdevNotifier {
                         DdevIntegrationBundle.message("notification.InstallDdev.text"),
                         NotificationType.INFORMATION
                 )
+                .addAction(NotificationAction.createSimpleExpiring(
+                        DdevIntegrationBundle.message("notification.InstallDdev.install"),
+                        () -> Installers.installDdev(this.project)))
+                .addAction(NotificationAction.createSimpleExpiring(
+                        DdevIntegrationBundle.message("notification.InstallDdev.configurePath"),
+                        () -> ShowSettingsUtil.getInstance().showSettingsDialog(this.project, DdevSettingsConfigurable.class)))
                 .addAction(new InstallationInstructionsAction())
                 .notify(this.project), ModalityState.nonModal());
     }
@@ -40,7 +52,7 @@ public final class DdevNotifierImpl implements DdevNotifier {
     @Override
     public void notifyNewVersionAvailable(final @NotNull String currentVersion, final @NotNull String latestVersion) {
         // Check outside the EDT whether DDEV is managed by Homebrew and can be updated directly.
-        final boolean updatableViaHomebrew = UpdateDdevAction.isAvailable();
+        final boolean updatable = UpdateDdevAction.isAvailable(this.project);
 
         ApplicationManager.getApplication().invokeLater(() -> {
             final var notification = NotificationGroupManager.getInstance()
@@ -51,7 +63,7 @@ public final class DdevNotifierImpl implements DdevNotifier {
                             NotificationType.INFORMATION
                     );
 
-            if (updatableViaHomebrew) {
+            if (updatable) {
                 notification.addAction(new UpdateDdevAction());
             }
 
@@ -147,6 +159,9 @@ public final class DdevNotifierImpl implements DdevNotifier {
                         DdevIntegrationBundle.message("notification.dockerNotAvailable.text", context),
                         NotificationType.WARNING
                 )
+                .addAction(NotificationAction.createSimpleExpiring(
+                        DdevIntegrationBundle.message("notification.dockerNotAvailable.start"),
+                        () -> DockerProviderStarter.start(this.project)))
                 .addAction(new ReloadPluginAction())
                 .notify(this.project), ModalityState.nonModal());
     }
@@ -220,6 +235,79 @@ public final class DdevNotifierImpl implements DdevNotifier {
                         DdevIntegrationBundle.message("notification.SnapshotListFailed.text"),
                         NotificationType.WARNING
                 )
+                .notify(this.project), ModalityState.nonModal());
+    }
+
+    @Override
+    public void notifySnapshotDeleteFailed(@NotNull String name, @NotNull String detail) {
+        ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
+                .getNotificationGroup(STICKY)
+                .createNotification(
+                        DdevIntegrationBundle.message("notification.SnapshotDeleteFailed.title"),
+                        DdevIntegrationBundle.message("notification.SnapshotDeleteFailed.text", name, detail),
+                        NotificationType.WARNING
+                )
+                .notify(this.project), ModalityState.nonModal());
+    }
+
+    @Override
+    public void notifyShareToolMissing(@NotNull String tool) {
+        final boolean installable = Installers.canInstallShareTool(tool);
+        final String installUrl = ShareProviders.installUrl(tool);
+
+        ApplicationManager.getApplication().invokeLater(() -> {
+            final var notification = NotificationGroupManager.getInstance()
+                    .getNotificationGroup(STICKY)
+                    .createNotification(
+                            DdevIntegrationBundle.message("notification.ShareToolMissing.title", tool),
+                            DdevIntegrationBundle.message("notification.ShareToolMissing.text", tool),
+                            NotificationType.WARNING
+                    );
+            if (installable) {
+                notification.addAction(NotificationAction.createSimpleExpiring(
+                        DdevIntegrationBundle.message("notification.ShareToolMissing.install", tool),
+                        () -> Installers.installShareTool(this.project, tool)));
+            }
+            if (installUrl != null) {
+                notification.addAction(NotificationAction.createSimple(
+                        DdevIntegrationBundle.message("notification.ShareToolMissing.instructions"),
+                        () -> BrowserUtil.browse(installUrl)));
+            }
+            notification.addAction(NotificationAction.createSimpleExpiring(
+                    DdevIntegrationBundle.message("action.DdevIntegration.Run.ShareWith.MainMenu.text"),
+                    () -> ShareProviderChooser.share(this.project, null,
+                            de.php_perfect.intellij.ddev.wordpress.WordPressConfigManager.docroot(this.project))));
+            notification.notify(this.project);
+        }, ModalityState.nonModal());
+    }
+
+    @Override
+    public void notifyDockerProviderStartFailed(@NotNull String detail) {
+        ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
+                .getNotificationGroup(STICKY)
+                .createNotification(
+                        DdevIntegrationBundle.message("notification.DockerProviderStartFailed.title"),
+                        detail,
+                        NotificationType.WARNING
+                )
+                .addAction(NotificationAction.createSimpleExpiring(
+                        DdevIntegrationBundle.message("notification.DockerProviderStartFailed.configure"),
+                        () -> ShowSettingsUtil.getInstance().showSettingsDialog(this.project, DdevSettingsConfigurable.class)))
+                .notify(this.project), ModalityState.nonModal());
+    }
+
+    @Override
+    public void notifyDdevUpgraded(@NotNull String previousVersion, @NotNull String currentVersion) {
+        ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
+                .getNotificationGroup(STICKY)
+                .createNotification(
+                        DdevIntegrationBundle.message("notification.DdevUpgraded.title", currentVersion),
+                        DdevIntegrationBundle.message("notification.DdevUpgraded.text", previousVersion),
+                        NotificationType.INFORMATION
+                )
+                .addAction(NotificationAction.createSimpleExpiring(
+                        DdevIntegrationBundle.message("notification.DdevUpgraded.freeUp"),
+                        () -> DdevRunner.getInstance().freeUpDiskSpace(this.project)))
                 .notify(this.project), ModalityState.nonModal());
     }
 }

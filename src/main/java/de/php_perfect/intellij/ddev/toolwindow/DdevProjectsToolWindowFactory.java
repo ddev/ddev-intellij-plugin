@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 public final class DdevProjectsToolWindowFactory implements ToolWindowFactory, DumbAware {
     @Override
     public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
-        final DdevProjectsPanel panel = new DdevProjectsPanel(project);
+        final DdevProjectsPanel panel = new DdevProjectsPanel(project, toolWindow.getDisposable());
         final Content content = ContentFactory.getInstance().createContent(panel, "", false);
         toolWindow.getContentManager().addContent(content);
     }

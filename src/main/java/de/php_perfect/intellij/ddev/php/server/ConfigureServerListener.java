@@ -1,5 +1,6 @@
 package de.php_perfect.intellij.ddev.php.server;
 
+import de.php_perfect.intellij.ddev.util.DdevProjectRoot;
 import com.intellij.openapi.project.Project;
 import de.php_perfect.intellij.ddev.DescriptionChangedListener;
 import de.php_perfect.intellij.ddev.cmd.Description;
@@ -18,7 +19,7 @@ public final class ConfigureServerListener implements DescriptionChangedListener
 
     @Override
     public void onDescriptionChanged(@Nullable Description description) {
-        String localPath = this.project.getBasePath();
+        String localPath = DdevProjectRoot.of(this.project);
 
         if (description == null || localPath == null) {
             return;

@@ -1,5 +1,6 @@
 package de.php_perfect.intellij.ddev.actions;
 
+import de.php_perfect.intellij.ddev.util.DdevProjectRoot;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
@@ -21,7 +22,7 @@ abstract class DdevWordPressDebugAction extends DdevRunAction {
 
     @Override
     protected void run(@NotNull Project project) {
-        final String basePath = project.getBasePath();
+        final String basePath = DdevProjectRoot.of(project);
 
         if (basePath == null) {
             return;
@@ -44,13 +45,13 @@ abstract class DdevWordPressDebugAction extends DdevRunAction {
 
     @Override
     protected boolean isActive(@NotNull Project project) {
-        if (project.getBasePath() == null) {
+        if (DdevProjectRoot.of(project) == null) {
             return false;
         }
 
         try {
             final WordPressConfigManager.DebugState state = WordPressConfigManager.readDebugState(
-                    Path.of(Objects.requireNonNull(project.getBasePath())), WordPressConfigManager.docroot(project));
+                    Path.of(Objects.requireNonNull(DdevProjectRoot.of(project))), WordPressConfigManager.docroot(project));
             return state != null && this.isApplicable(state);
         } catch (IOException exception) {
             return false;

@@ -64,6 +64,11 @@ public final class DdevSettingsConfigurable implements Configurable {
         modified |= !this.ddevSettingsComponent.getWordpressUrlImportPolicy().equals(settings.wordpressUrlImportPolicy);
         modified |= !this.ddevSettingsComponent.getProjectNameFormat().equals(settings.projectNameFormat);
         modified |= this.ddevSettingsComponent.getExpandServicesInProjectsToolWindow() != settings.expandServicesInProjectsToolWindow;
+        modified |= this.ddevSettingsComponent.getAutomaticallyStartProject() != settings.automaticallyStartProject;
+        modified |= !this.ddevSettingsComponent.getDefaultShareProvider().equals(settings.defaultShareProvider);
+        modified |= !this.ddevSettingsComponent.getDockerProvider().equals(settings.dockerProvider);
+        modified |= !this.ddevSettingsComponent.getColimaArguments().equals(settings.colimaArguments);
+        modified |= !this.ddevSettingsComponent.getDatabaseManager().equals(settings.databaseManager);
 
         return modified;
     }
@@ -91,6 +96,11 @@ public final class DdevSettingsConfigurable implements Configurable {
         settings.wordpressUrlImportPolicy = this.ddevSettingsComponent.getWordpressUrlImportPolicy();
         settings.projectNameFormat = this.ddevSettingsComponent.getProjectNameFormat();
         settings.expandServicesInProjectsToolWindow = this.ddevSettingsComponent.getExpandServicesInProjectsToolWindow();
+        settings.automaticallyStartProject = this.ddevSettingsComponent.getAutomaticallyStartProject();
+        settings.defaultShareProvider = this.ddevSettingsComponent.getDefaultShareProvider();
+        settings.dockerProvider = this.ddevSettingsComponent.getDockerProvider();
+        settings.colimaArguments = this.ddevSettingsComponent.getColimaArguments();
+        settings.databaseManager = this.ddevSettingsComponent.getDatabaseManager();
 
         StateWatcher.getInstance(this.project).stopWatching();
         ApplicationManager.getApplication().executeOnPooledThread(() -> DdevStateManager.getInstance(this.project).reinitialize());
@@ -130,6 +140,11 @@ public final class DdevSettingsConfigurable implements Configurable {
         this.ddevSettingsComponent.setWordpressUrlImportPolicy(settings.wordpressUrlImportPolicy);
         this.ddevSettingsComponent.setProjectNameFormat(settings.projectNameFormat);
         this.ddevSettingsComponent.setExpandServicesInProjectsToolWindow(settings.expandServicesInProjectsToolWindow);
+        this.ddevSettingsComponent.setAutomaticallyStartProject(settings.automaticallyStartProject);
+        this.ddevSettingsComponent.setDefaultShareProvider(settings.defaultShareProvider);
+        this.ddevSettingsComponent.setDockerProvider(settings.dockerProvider);
+        this.ddevSettingsComponent.setColimaArguments(settings.colimaArguments);
+        this.ddevSettingsComponent.setDatabaseManager(settings.databaseManager);
     }
 
     @Override
