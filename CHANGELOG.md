@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 
 The formats is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
+## [1.3.0-alpha2]
+
+Cumulative release notes since the last stable release, **1.2.9**, including all 1.3.0 feature work and subsequent fixes.
+
+### Added
+* A DDEV tool window for managing all projects, with project and service status, lifecycle actions, browser and IDE shortcuts, directory access, renaming, and deletion. Settings control project name formatting, service expansion, and filtering to the current project.
+* A project creation wizard with project type detection and optional CMS or framework installation. The bundled catalog includes 21 recipes, including WordPress, Drupal, Laravel, Symfony, TYPO3, Craft CMS, Shopware, Magento, and Astro.
+* Database snapshot creation, restoration, deletion, and cleanup, plus settings for snapshot behavior when stopping or deleting projects and optional removal of the project's `.ddev` directory on deletion.
+* Database import and export actions, and terminal sessions for databases and individual service containers.
+* Quick actions to change PHP, Node.js, database, and webserver versions or types, and to edit PHP and webserver configuration files.
+* Actions to enable or disable Xdebug, install or remove DDEV add-ons, reset Mutagen, and delete DDEV Docker images.
+* A stop-sharing action, notifications with the public sharing URL, and reporting of ngrok sharing failures.
+* WordPress debug and silent-debug controls, with shortcuts to WordPress configuration files and the debug log.
+* Temporary WordPress URL configuration for sharing, and configurable Ask, Always, or Never policies for reconciling URLs and table prefixes after database imports.
+* An Update Now action for Homebrew-managed DDEV installations.
+
+### Changed
+* Resolve the DDEV executable from `PATH` by default while retaining support for an explicitly configured binary.
+* Load available project types, runtime versions, and other configuration choices from DDEV, with bundled fallback options.
+* Keep the minimum supported IntelliJ Platform version at 2026.2 (build 262) and remove the upper build limit.
+
+### Fixed
+* Keep search fields visible in chooser popups and skip PHP server configuration when the primary URL has no hostname.
+* Harden CMS installation with credential redaction, protection against overwriting existing files, failure handling and retries, and use of the actual project URL after DDEV starts.
+* Respect WordPress document roots and supported parent-directory configuration files when changing debug settings, sharing, or reconciling imports.
+* Restore WordPress configuration after sharing while preserving the original PHP scopes, declarations, line endings, and unrelated edits.
+* Reconcile imported WordPress tables against the effective configured table prefix instead of assuming `wp_`.
+* Preserve the WSL distribution context for project commands, including projects under `/mnt/c`, and translate file arguments for WSL execution.
+* Honor the configured DDEV executable and WSL settings when running Composer.
+* Configure Node.js interpreters per project, reuse matching interpreters, and preserve explicit custom selections.
+* Replace deprecated IntelliJ APIs in project opening and resource-bundle initialization, including the two `OpenProjectTaskBuilder.build(Function1)` calls reported for alpha2.
+
+### Build and Test Updates
+* Validate the CMS recipe catalog against its JSON Schema during checks and plugin builds, and add focused regression coverage for the new workflows and fixes.
+* Update GitHub Actions: `actions/checkout` 6 to 7, `gradle/actions` 5 to 6, `actions/setup-java` 5 to 6, and `1password/load-secrets-action` 4 to 5.
+
 ## [1.2.9]
 
 ### Changed
