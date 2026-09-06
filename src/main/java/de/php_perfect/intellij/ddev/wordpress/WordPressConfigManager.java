@@ -1,11 +1,15 @@
 package de.php_perfect.intellij.ddev.wordpress;
 
+import com.intellij.openapi.project.Project;
+import de.php_perfect.intellij.ddev.cmd.Description;
+import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,19 +26,59 @@ public final class WordPressConfigManager {
     private WordPressConfigManager() {
     }
 
-    public static @Nullable Path findConfig(@NotNull Path projectRoot) {
-        final Path ddevConfig = projectRoot.resolve("wp-config-ddev.php");
+    public static @Nullable String docroot(@NotNull Project project) {
+        final Description description = DdevStateManager.getInstance(project).getState().getDescription();
+        return description == null ? null : description.getDocroot();
+    }
 
-        if (Files.isRegularFile(ddevConfig)) {
+    public static @NotNull Path documentRoot(@NotNull Path projectRoot, @Nullable String docroot) {
+        return docroot == null || docroot.isBlank() ? projectRoot : projectRoot.resolve(docroot).normalize();
+    }
+
+    public static @Nullable Path findFile(@NotNull Path projectRoot, @Nullable String docroot,
+                                          @NotNull String relativePath) {
+        final Path documentRoot = documentRoot(projectRoot, docroot);
+        final Path file = documentRoot.resolve(relativePath);
+        if (Files.isRegularFile(file)) {
+            return file;
+        }
+        // WordPress also supports wp-config.php in the parent of its document root.
+        if ((relativePath.equals("wp-config.php") || relativePath.equals("wp-config-ddev.php"))
+                && documentRoot.getParent() != null
+                && documentRoot.getParent().startsWith(projectRoot.normalize())) {
+            final Path parentConfig = documentRoot.getParent().resolve(relativePath);
+            if (Files.isRegularFile(parentConfig)) {
+                return parentConfig;
+            }
+        }
+        return null;
+    }
+
+    public static @Nullable Path findConfig(@NotNull Path projectRoot) {
+        return findConfig(projectRoot, null);
+    }
+
+    public static @Nullable Path findConfig(@NotNull Path projectRoot, @Nullable String docroot) {
+        final Path documentRoot = documentRoot(projectRoot, docroot);
+        for (String name : List.of("wp-config-ddev.php", "wp-config.php")) {
+            final Path file = documentRoot.resolve(name);
+            if (Files.isRegularFile(file)) return file;
+        }
+        final Path ddevConfig = findFile(projectRoot, docroot, "wp-config-ddev.php");
+
+        if (ddevConfig != null) {
             return ddevConfig;
         }
 
-        final Path standardConfig = projectRoot.resolve("wp-config.php");
-        return Files.isRegularFile(standardConfig) ? standardConfig : null;
+        return findFile(projectRoot, docroot, "wp-config.php");
     }
 
     public static @Nullable DebugState readDebugState(@NotNull Path projectRoot) throws IOException {
-        final Path config = findConfig(projectRoot);
+        return readDebugState(projectRoot, null);
+    }
+
+    public static @Nullable DebugState readDebugState(@NotNull Path projectRoot, @Nullable String docroot) throws IOException {
+        final Path config = findConfig(projectRoot, docroot);
 
         if (config == null) {
             return null;
@@ -47,7 +91,12 @@ public final class WordPressConfigManager {
     }
 
     public static @NotNull Path setDebugMode(@NotNull Path projectRoot, @NotNull DebugMode mode) throws IOException {
-        final Path config = findConfig(projectRoot);
+        return setDebugMode(projectRoot, null, mode);
+    }
+
+    public static @NotNull Path setDebugMode(@NotNull Path projectRoot, @Nullable String docroot,
+                                           @NotNull DebugMode mode) throws IOException {
+        final Path config = findConfig(projectRoot, docroot);
 
         if (config == null) {
             throw new IOException("No wp-config.php or wp-config-ddev.php found in " + projectRoot);

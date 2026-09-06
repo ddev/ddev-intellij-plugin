@@ -25,9 +25,11 @@ public final class DdevProject {
 
     private final @Nullable String primaryUrl;
 
+    private final @Nullable String docroot;
+
     public DdevProject(@Nullable String name, @Nullable String appRoot, @Nullable String shortRoot,
                        @Nullable Description.Status status, @Nullable String statusDesc,
-                       @Nullable String type, @Nullable String primaryUrl) {
+                       @Nullable String type, @Nullable String primaryUrl, @Nullable String docroot) {
         this.name = name;
         this.appRoot = appRoot;
         this.shortRoot = shortRoot;
@@ -35,6 +37,7 @@ public final class DdevProject {
         this.statusDesc = statusDesc;
         this.type = type;
         this.primaryUrl = primaryUrl;
+        this.docroot = docroot;
     }
 
     public @Nullable String getName() {
@@ -43,6 +46,10 @@ public final class DdevProject {
 
     public @Nullable String getAppRoot() {
         return this.appRoot;
+    }
+
+    public @Nullable String getDocroot() {
+        return this.docroot;
     }
 
     public @Nullable String getShortRoot() {
@@ -77,12 +84,12 @@ public final class DdevProject {
         return Objects.equals(this.name, that.name) && Objects.equals(this.appRoot, that.appRoot)
                 && Objects.equals(this.shortRoot, that.shortRoot) && this.status == that.status
                 && Objects.equals(this.statusDesc, that.statusDesc) && Objects.equals(this.type, that.type)
-                && Objects.equals(this.primaryUrl, that.primaryUrl);
+                && Objects.equals(this.primaryUrl, that.primaryUrl) && Objects.equals(this.docroot, that.docroot);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.name, this.appRoot, this.shortRoot, this.status, this.statusDesc, this.type, this.primaryUrl);
+        return Objects.hash(this.name, this.appRoot, this.shortRoot, this.status, this.statusDesc, this.type, this.primaryUrl, this.docroot);
     }
 
     @Override
@@ -90,6 +97,7 @@ public final class DdevProject {
         return "DdevProject{" +
                 "name='" + this.name + '\'' +
                 ", appRoot='" + this.appRoot + '\'' +
+                ", docroot='" + this.docroot + '\'' +
                 ", shortRoot='" + this.shortRoot + '\'' +
                 ", status=" + this.status +
                 ", statusDesc='" + this.statusDesc + '\'' +

@@ -626,7 +626,7 @@ public final class DdevProjectsPanel extends SimpleToolWindowPanel {
 
         @Override
         protected void perform(@NotNull DdevProject selected) {
-            DdevRunner.getInstance().share(DdevProjectsPanel.this.ideProject, selected.getAppRoot());
+            DdevRunner.getInstance().share(DdevProjectsPanel.this.ideProject, selected.getAppRoot(), selected.getDocroot());
         }
     }
 

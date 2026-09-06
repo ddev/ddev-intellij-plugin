@@ -65,4 +65,21 @@ final class WordPressConfigManagerTest {
                 .contains("define( 'WP_DEBUG', false );", "define( 'DB_NAME', 'db' );")
                 .doesNotContain("WP_DEBUG_LOG", "WP_DEBUG_DISPLAY");
     }
+
+    @Test
+    void findsConfigAndDebugLogInTheConfiguredDocumentRoot() throws Exception {
+        final Path documentRoot = Files.createDirectories(this.projectRoot.resolve("web"));
+        final Path config = documentRoot.resolve("wp-config-ddev.php");
+        Files.writeString(config, "<?php\ndefine('WP_DEBUG', false);\n");
+        final Path log = documentRoot.resolve("wp-content/debug.log");
+        Files.createDirectories(log.getParent());
+        Files.writeString(log, "debug output");
+
+        assertThat(WordPressConfigManager.setDebugMode(this.projectRoot, "web", WordPressConfigManager.DebugMode.SILENT))
+                .isEqualTo(config);
+        assertThat(WordPressConfigManager.readDebugState(this.projectRoot, "web"))
+                .isEqualTo(new WordPressConfigManager.DebugState(true, true));
+        assertThat(WordPressConfigManager.findFile(this.projectRoot, "web", "wp-content/debug.log")).isEqualTo(log);
+        assertThat(this.projectRoot.resolve("wp-config-ddev.php")).doesNotExist();
+    }
 }

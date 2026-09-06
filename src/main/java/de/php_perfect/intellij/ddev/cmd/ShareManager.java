@@ -8,6 +8,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Key;
 import de.php_perfect.intellij.ddev.notification.DdevNotifier;
 import de.php_perfect.intellij.ddev.wordpress.WordPressShareSupport;
+import de.php_perfect.intellij.ddev.wordpress.WordPressConfigManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,6 +37,7 @@ public final class ShareManager {
     private final @NotNull Project project;
     private volatile @Nullable ProcessHandler shareProcessHandler;
     private volatile @Nullable String sharedWorkingDirectory;
+    private @Nullable String sharedDocroot;
     private @Nullable WordPressShareSupport.Session wordpressSession;
 
     public ShareManager(@NotNull Project project) {
@@ -43,14 +45,15 @@ public final class ShareManager {
     }
 
     public void setShareProcessHandler(@Nullable ProcessHandler processHandler) {
-        this.setShareProcessHandler(processHandler, this.project.getBasePath());
+        this.setShareProcessHandler(processHandler, this.project.getBasePath(), WordPressConfigManager.docroot(this.project));
     }
 
     public synchronized void setShareProcessHandler(@Nullable ProcessHandler processHandler,
-                                                    @Nullable String workingDirectory) {
+                                                    @Nullable String workingDirectory, @Nullable String docroot) {
         this.cleanupWordPressShare();
         this.shareProcessHandler = processHandler;
         this.sharedWorkingDirectory = workingDirectory;
+        this.sharedDocroot = docroot;
 
         if (processHandler != null) {
             processHandler.addProcessListener(new ShareUrlNotifyingListener());
@@ -84,7 +87,7 @@ public final class ShareManager {
             return;
         }
         try {
-            this.wordpressSession = WordPressShareSupport.start(Path.of(this.sharedWorkingDirectory), url);
+            this.wordpressSession = WordPressShareSupport.start(Path.of(this.sharedWorkingDirectory), this.sharedDocroot, url);
         } catch (IOException exception) {
             DdevNotifier.getInstance(this.project).notifyWordPressShareSetupFailed(exception.getMessage());
         }

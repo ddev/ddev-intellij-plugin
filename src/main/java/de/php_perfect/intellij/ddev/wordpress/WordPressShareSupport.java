@@ -51,7 +51,12 @@ public final class WordPressShareSupport {
 
     public static @Nullable Session start(@NotNull Path projectRoot, @NotNull String shareUrl)
             throws IOException {
-        final Path config = WordPressConfigManager.findConfig(projectRoot);
+        return start(projectRoot, null, shareUrl);
+    }
+
+    public static @Nullable Session start(@NotNull Path projectRoot, @Nullable String docroot,
+                                          @NotNull String shareUrl) throws IOException {
+        final Path config = WordPressConfigManager.findConfig(projectRoot, docroot);
         if (config == null) {
             return null;
         }
@@ -66,7 +71,8 @@ public final class WordPressShareSupport {
         updatedConfig = setDefinition(updatedConfig, "WP_SITEURL",
                 "define( 'WP_SITEURL', WP_HOME . '/' );");
 
-        final Path plugin = projectRoot.resolve("wp-content/mu-plugins/ddev-intellij-share.php");
+        final Path plugin = WordPressConfigManager.documentRoot(projectRoot, docroot)
+                .resolve("wp-content/mu-plugins/ddev-intellij-share.php");
         final boolean pluginExisted = Files.exists(plugin);
         final byte[] originalPlugin = pluginExisted ? Files.readAllBytes(plugin) : null;
 

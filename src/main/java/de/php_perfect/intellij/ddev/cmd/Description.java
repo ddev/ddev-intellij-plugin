@@ -22,6 +22,8 @@ public class Description {
 
     private final @Nullable String name;
 
+    private final @Nullable String docroot;
+
     private final @Nullable String phpVersion;
 
     private final @Nullable Status status;
@@ -48,6 +50,7 @@ public class Description {
     // Private constructor for builder
     private Description(Builder builder) {
         this.name = builder.name;
+        this.docroot = builder.docroot;
         this.phpVersion = builder.phpVersion;
         this.status = builder.status;
         this.mailHogHttpsUrl = builder.mailHogHttpsUrl;
@@ -65,6 +68,7 @@ public class Description {
 
     public static class Builder {
         private @Nullable String name;
+        private @Nullable String docroot;
         private @Nullable String phpVersion;
         private @Nullable Status status;
         private @Nullable String mailHogHttpsUrl;
@@ -76,6 +80,11 @@ public class Description {
         private @Nullable String primaryUrl;
 
         private Builder() {}
+
+        public Builder docroot(@Nullable String docroot) {
+            this.docroot = docroot;
+            return this;
+        }
 
         public Builder name(@Nullable String name) {
             this.name = name;
@@ -136,6 +145,10 @@ public class Description {
         return name;
     }
 
+    public @Nullable String getDocroot() {
+        return this.docroot;
+    }
+
     public @Nullable String getPhpVersion() {
         return this.phpVersion;
     }
@@ -191,18 +204,19 @@ public class Description {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Description that = (Description) o;
-        return Objects.equals(getName(), that.getName()) && Objects.equals(getPhpVersion(), that.getPhpVersion()) && getStatus() == that.getStatus() && Objects.equals(getMailHogHttpsUrl(), that.getMailHogHttpsUrl()) && Objects.equals(getMailHogHttpUrl(), that.getMailHogHttpUrl()) && Objects.equals(getMailpitHttpsUrl(), that.getMailpitHttpsUrl()) && Objects.equals(getMailpitHttpUrl(), that.getMailpitHttpUrl()) && Objects.equals(getServices(), that.getServices()) && Objects.equals(getDatabaseInfo(), that.getDatabaseInfo()) && Objects.equals(getPrimaryUrl(), that.getPrimaryUrl());
+        return Objects.equals(getName(), that.getName()) && Objects.equals(getDocroot(), that.getDocroot()) && Objects.equals(getPhpVersion(), that.getPhpVersion()) && getStatus() == that.getStatus() && Objects.equals(getMailHogHttpsUrl(), that.getMailHogHttpsUrl()) && Objects.equals(getMailHogHttpUrl(), that.getMailHogHttpUrl()) && Objects.equals(getMailpitHttpsUrl(), that.getMailpitHttpsUrl()) && Objects.equals(getMailpitHttpUrl(), that.getMailpitHttpUrl()) && Objects.equals(getServices(), that.getServices()) && Objects.equals(getDatabaseInfo(), that.getDatabaseInfo()) && Objects.equals(getPrimaryUrl(), that.getPrimaryUrl());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getName(), getPhpVersion(), getStatus(), getMailHogHttpsUrl(), getMailHogHttpUrl(), getMailpitHttpsUrl(), getMailpitHttpUrl(), getServices(), getDatabaseInfo(), getPrimaryUrl());
+        return Objects.hash(getName(), getDocroot(), getPhpVersion(), getStatus(), getMailHogHttpsUrl(), getMailHogHttpUrl(), getMailpitHttpsUrl(), getMailpitHttpUrl(), getServices(), getDatabaseInfo(), getPrimaryUrl());
     }
 
     @Override
     public String toString() {
         return "Description{" +
                 "name='" + name + '\'' +
+                ", docroot='" + docroot + '\'' +
                 ", phpVersion='" + phpVersion + '\'' +
                 ", status=" + status +
                 ", mailHogHttpsUrl='" + mailHogHttpsUrl + '\'' +
