@@ -7,6 +7,7 @@ import com.intellij.execution.process.ProcessOutput;
 import com.intellij.openapi.project.Project;
 import de.php_perfect.intellij.ddev.cmd.parser.JsonParser;
 import de.php_perfect.intellij.ddev.cmd.parser.JsonParserException;
+import de.php_perfect.intellij.ddev.cmd.wsl.WslAware;
 import de.php_perfect.intellij.ddev.version.Version;
 import org.apache.commons.compress.utils.Lists;
 import org.jetbrains.annotations.NotNull;
@@ -91,7 +92,10 @@ public final class DdevImpl implements Ddev {
     @Override
     public @NotNull List<DdevProject> listProjects(final @NotNull String binary, final @NotNull Project project) throws CommandFailedException {
         final Type type = TypeToken.getParameterized(List.class, DdevProject.class).getType();
-        return execute(binary, List.of("list"), type, project, STATUS_COMMAND_TIMEOUT);
+        final List<DdevProject> projects = execute(binary, List.of("list"), type, project, STATUS_COMMAND_TIMEOUT);
+        return projects.stream()
+                .map(item -> item.withAppRoot(WslAware.toHostPath(item.getAppRoot(), project.getBasePath())))
+                .toList();
     }
 
     @Override

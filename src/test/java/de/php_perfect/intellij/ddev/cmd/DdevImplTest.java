@@ -2,6 +2,8 @@ package de.php_perfect.intellij.ddev.cmd;
 
 import com.intellij.execution.process.ProcessOutput;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.project.Project;
+import com.intellij.execution.wsl.WslPath;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import de.php_perfect.intellij.ddev.version.Version;
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +16,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
+
+import static org.mockito.Mockito.*;
 
 final class DdevImplTest extends BasePlatformTestCase {
     @Override
@@ -121,6 +125,24 @@ final class DdevImplTest extends BasePlatformTestCase {
         mockProcessExecutor.addProcessOutput("ddev list --json-output", processOutput);
 
         Assertions.assertEquals(expected, new DdevImpl().listProjects("ddev", getProject()));
+    }
+
+    @Test
+    void listsWslProjectsWithHostAccessibleRootsAndDocumentRoots() throws Exception {
+        final String base = "\\\\wsl.localhost\\Ubuntu\\home\\user\\current";
+        final Project project = mock(Project.class);
+        when(project.getBasePath()).thenReturn(base);
+        final MockProcessExecutor executor = (MockProcessExecutor) ProcessExecutor.getInstance();
+        executor.addProcessOutput("ddev list --json-output", new ProcessOutput(
+                Files.readString(Path.of("src/test/resources/ddev_list.json")), "", 0, false, false));
+        try (var paths = mockStatic(WslPath.class)) {
+            paths.when(() -> WslPath.parseWindowsUncPath(base))
+                    .thenReturn(new WslPath("\\\\wsl.localhost\\", "Ubuntu", "/home/user/current"));
+            final List<DdevProject> projects = new DdevImpl().listProjects("ddev", project);
+            Assertions.assertEquals("\\\\wsl.localhost\\Ubuntu\\home\\user\\Projects\\alpha", projects.getFirst().getAppRoot());
+            Assertions.assertEquals("public", projects.getFirst().getDocroot());
+            Assertions.assertEquals("web", projects.getLast().getDocroot());
+        }
     }
 
     @Test
