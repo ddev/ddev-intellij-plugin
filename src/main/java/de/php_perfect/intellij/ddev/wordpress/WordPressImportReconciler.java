@@ -27,7 +27,10 @@ import java.util.regex.Pattern;
 public final class WordPressImportReconciler {
     private static final Pattern SAFE_IDENTIFIER = Pattern.compile("[A-Za-z0-9_]+");
     private static final int COMMAND_TIMEOUT = 300_000;
-    private static final String TARGET_PREFIX = "wp_";
+    // Read evaluated configuration (including wp-config-ddev.php) before WordPress needs its tables.
+    private static final String PREFIX_COMMAND = "WP_CLI::add_command('ddev-integration-prefix', "
+            + "static function () { WP_CLI::line($GLOBALS['table_prefix']); }, "
+            + "['when' => 'after_wp_config_load']);";
 
     private WordPressImportReconciler() {
     }
@@ -41,7 +44,9 @@ public final class WordPressImportReconciler {
             try {
                 final List<String> tables = executeLines(project, binary, workingDirectory,
                         List.of("mysql", "-Nse", "SHOW TABLES;"));
-                final String prefix = detectPrefix(tables);
+                final String targetPrefix = configuredPrefix(project, binary, workingDirectory);
+                final String prefix = tables.contains(targetPrefix + "options") && tables.contains(targetPrefix + "posts")
+                        ? targetPrefix : detectPrefix(tables);
                 if (prefix == null) {
                     return;
                 }
@@ -55,7 +60,7 @@ public final class WordPressImportReconciler {
                 }
 
                 ApplicationManager.getApplication().invokeLater(() -> reconcileOnEdt(project, binary,
-                        workingDirectory, tables, prefix, siteUrl.trim(), targetUrl));
+                        workingDirectory, tables, prefix, targetPrefix, siteUrl.trim(), targetUrl));
             } catch (CommandFailedException | ExecutionException exception) {
                 ApplicationManager.getApplication().invokeLater(() -> Messages.showErrorDialog(project,
                         DdevIntegrationBundle.message("wordpress.import.inspect.failed"),
@@ -64,17 +69,17 @@ public final class WordPressImportReconciler {
         });
     }
 
-    private static void reconcileOnEdt(@NotNull Project project, @NotNull String binary,
+    static void reconcileOnEdt(@NotNull Project project, @NotNull String binary,
                                        @NotNull String workingDirectory, @NotNull List<String> tables,
-                                       @NotNull String prefix, @NotNull String siteUrl,
+                                       @NotNull String prefix, @NotNull String targetPrefix, @NotNull String siteUrl,
                                        @NotNull String targetUrl) {
         final DdevSettingsState settings = DdevSettingsState.getInstance(project);
         final Runnable reconcileUrl = () -> reconcileUrl(project, binary, workingDirectory, siteUrl, targetUrl);
 
-        if (!TARGET_PREFIX.equals(prefix)) {
+        if (!targetPrefix.equals(prefix)) {
             if (shouldApply(project, WordPressImportPolicy.fromValue(settings.wordpressTablePrefixImportPolicy),
-                    DdevIntegrationBundle.message("wordpress.import.prefix.message", prefix), true)) {
-                final String sql = buildPrefixRenameSql(tables, prefix, TARGET_PREFIX);
+                    DdevIntegrationBundle.message("wordpress.import.prefix.message", prefix, targetPrefix), true)) {
+                final String sql = buildPrefixRenameSql(tables, prefix, targetPrefix);
                 if (!sql.isBlank()) {
                     runOnSuccess(project, binary, workingDirectory, "Update WordPress table prefix",
                             List.of("mysql", "-e", sql), reconcileUrl);
@@ -87,6 +92,17 @@ public final class WordPressImportReconciler {
         }
 
         reconcileUrl.run();
+    }
+
+    static @NotNull String configuredPrefix(@NotNull Project project, @NotNull String binary,
+                                             @NotNull String workingDirectory)
+            throws ExecutionException, CommandFailedException {
+        final String prefix = execute(project, binary, workingDirectory,
+                List.of("wp", "--exec=" + PREFIX_COMMAND, "ddev-integration-prefix")).trim();
+        if (!SAFE_IDENTIFIER.matcher(prefix).matches()) {
+            throw new CommandFailedException("Cannot determine the configured WordPress table prefix");
+        }
+        return prefix;
     }
 
     private static void reconcileUrl(@NotNull Project project, @NotNull String binary,
