@@ -148,6 +148,7 @@ intellijPlatform {
 
     changelog {
         groups.empty()
+        versionPrefix.set("")
         repositoryUrl = properties("pluginRepositoryUrl")
     }
 }
