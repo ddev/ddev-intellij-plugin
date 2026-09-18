@@ -114,18 +114,7 @@ intellijPlatform {
         })
 
         ideaVersion {
-            // Pin to the verified version line: this plugin implements non-stable Docker plugin
-            // APIs (connection configurators) whose surface changes between releases, so
-            // compatibility with a new IDE version must be verified before claiming it.
-            untilBuild = properties("platformVersion").map { version ->
-                if (version.matches(Regex("""\d{4}\.\d+"""))) {
-                    val (year, release) = version.split('.')
-                    "${year.takeLast(2)}$release.*"
-                } else {
-                    // EAP/snapshot coordinates start with the branch number, e.g. 262-EAP-SNAPSHOT
-                    "${version.takeWhile(Char::isDigit)}.*"
-                }
-            }
+            untilBuild = "263.*"
         }
     }
 
@@ -159,6 +148,7 @@ intellijPlatform {
 
     changelog {
         groups.empty()
+        versionPrefix.set("")
         repositoryUrl = properties("pluginRepositoryUrl")
     }
 }
