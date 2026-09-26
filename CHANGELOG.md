@@ -9,6 +9,7 @@ The formats is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Changed
 * Extend the declared IDE compatibility range to include IntelliJ 2026.3 (263.*), retaining 2026.2 as the minimum, by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/542
 * Replace the deprecated `DynamicBundle(String)` constructor with `DynamicBundle(Class, String)` to address the API deprecation reported for IntelliJ 2026.3 by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/542
+* Fix the DDEV terminal failing on IntelliJ 2026.3 due to a changed `PtyProcessTtyConnector` constructor by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/542
 
 ### Dependency Updates
 * Bump actions/checkout from 6 to 7 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/537
@@ -17,6 +18,11 @@ The formats is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Bump actions/setup-java from 5 to 6 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/540
 
 Full Changelog: https://github.com/ddev/ddev-intellij-plugin/compare/1.2.9...1.2.10
+
+## [1.2.10-beta2]
+
+### Fixed
+* Fix the DDEV terminal failing on IntelliJ 2026.3 due to a changed `PtyProcessTtyConnector` constructor by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/542
 
 ## [1.2.9]
 
