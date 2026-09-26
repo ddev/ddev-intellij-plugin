@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The formats is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
-## [1.3.0-alpha3]
+## [1.3.0-alpha4]
 
 Cumulative release notes since the last stable release, **1.2.9**, including all 1.3.0 feature work and subsequent fixes.
 
@@ -31,7 +31,8 @@ Cumulative release notes since the last stable release, **1.2.9**, including all
 ### Changed
 * Resolve the DDEV executable from `PATH` by default while retaining support for an explicitly configured binary.
 * Load available project types, runtime versions, and other configuration choices from DDEV, with bundled fallback options.
-* Keep the minimum supported IntelliJ Platform version at 2026.2 (build 262) and remove the upper build limit.
+* Support IntelliJ Platform 2025.1 (build 251) and later, with no upper build limit, through separate builds for 2025.1 to 2025.3 and for 2026.1 and later. In the 2025.x build, container commands are not exposed in terminals of WSL projects.
+* Show failing DDEV commands as a notification with the error DDEV reported instead of raising an IDE error on every status poll.
 * Recognize DDEV projects when the IDE project is opened at a subfolder of the DDEV project.
 * Write WordPress debug settings to `wp-config.php`, leaving the DDEV-generated `wp-config-ddev.php` untouched.
 * Keep expanded nodes and the selection in the DDEV tool window when it refreshes.
@@ -50,10 +51,16 @@ Cumulative release notes since the last stable release, **1.2.9**, including all
 * Configure Node.js interpreters per project, reuse matching interpreters, and preserve explicit custom selections.
 * Keep the DDEV web container terminal working in IntelliJ 2026.3, whose terminal connector no longer accepts pty4j processes, and use the terminal and PATH lookup APIs that 2026.3 keeps.
 * Replace deprecated IntelliJ APIs in project opening and resource-bundle initialization, including the two `OpenProjectTaskBuilder.build(Function1)` calls reported for alpha2.
+* Fall back to the DDEV executable on `PATH` when the configured one cannot be started, such as a Linux path configured on Windows outside of WSL.
+* Read the DDEV version correctly when JSON output is enabled in the global DDEV configuration.
+* Log failed GitHub release checks as warnings instead of IDE errors.
+* Check for the DDEV configuration without refreshing the VFS on every status poll.
+* Fix an error when a DDEV status update finishes after the project was closed.
 
 ### Build and Test Updates
 * Validate the CMS recipe catalog against its JSON Schema during checks and plugin builds, and add focused regression coverage for the new workflows and fixes.
-* Run Plugin Verifier against the newest PhpStorm EAP as well, because the plugin allows installation in future IDE versions.
+* Build, test, verify, and publish the 2025.x and 2026.1+ builds separately, each against its own platform.
+* Run Plugin Verifier against every PhpStorm release line of each build's range, WebStorm, DataGrip and IntelliJ IDEA Ultimate at both ends of that range, and the newest PhpStorm EAP, because the plugin allows installation in future IDE versions.
 * Update GitHub Actions: `actions/checkout` 6 to 7, `gradle/actions` 5 to 6, `actions/setup-java` 5 to 6, and `1password/load-secrets-action` 4 to 5.
 
 ## [1.2.10]
