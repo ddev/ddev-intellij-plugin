@@ -34,6 +34,7 @@ public final class DdevImpl implements Ddev {
 
     // Only the version token itself, so JSON-formatted output (json-output enabled globally) is matched as well
     private static final Pattern VERSION_PATTERN = Pattern.compile("ddev version (v\\d[\\w.\\-]*)");
+
     // Medium timeout for add-on listing which may fetch the registry from the network
     private static final int ADD_ON_LIST_COMMAND_TIMEOUT = 60_000;
 
