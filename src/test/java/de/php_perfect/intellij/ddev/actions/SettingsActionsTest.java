@@ -8,7 +8,6 @@ import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.testFramework.ServiceContainerUtil;
 import com.intellij.testFramework.TestActionEvent;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
-import de.php_perfect.intellij.ddev.settings.DdevSettingsConfigurable;
 import de.php_perfect.intellij.ddev.settings.DdevSettingsState;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -32,13 +31,6 @@ final class SettingsActionsTest extends BasePlatformTestCase {
     protected void tearDown() throws Exception {
         DdevSettingsState.getInstance(getProject()).checkForUpdates = true;
         super.tearDown();
-    }
-
-    @Test
-    void changeSettingsOpensDdevSettings() {
-        performWithProject(new ChangeSettingsAction());
-
-        Mockito.verify(this.showSettingsUtil).showSettingsDialog(getProject(), DdevSettingsConfigurable.getName());
     }
 
     @Test

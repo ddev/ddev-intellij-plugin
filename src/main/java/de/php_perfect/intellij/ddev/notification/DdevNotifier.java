@@ -22,8 +22,6 @@ public interface DdevNotifier {
 
     void notifyDockerNotAvailable(final @NotNull String context);
 
-    void notifyDdevCommandFailed(@NotNull String command, @NotNull String reason);
-
     void notifyAddOnListFailed();
 
     void notifySnapshotListFailed();
@@ -41,6 +39,8 @@ public interface DdevNotifier {
     void notifyDdevUpgraded(@NotNull String previousVersion, @NotNull String currentVersion);
 
     void notifyWordPressShareSetupFailed(@NotNull String detail);
+
+    void notifyDdevCommandFailed(@NotNull String command, @NotNull String reason);
 
     static DdevNotifier getInstance(@NotNull Project project) {
         return project.getService(DdevNotifier.class);

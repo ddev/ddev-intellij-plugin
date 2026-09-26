@@ -168,20 +168,6 @@ public final class DdevNotifierImpl implements DdevNotifier {
     }
 
     @Override
-    public void notifyDdevCommandFailed(final @NotNull String command, final @NotNull String reason) {
-        ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
-                .getNotificationGroup(NON_STICKY)
-                .createNotification(
-                        DdevIntegrationBundle.message("notification.ddevCommandFailed.title"),
-                        DdevIntegrationBundle.message("notification.ddevCommandFailed.text", command, StringUtil.escapeXmlEntities(reason)),
-                        NotificationType.WARNING
-                )
-                .addAction(new ReloadPluginAction())
-                .addAction(new ChangeSettingsAction())
-                .notify(this.project), ModalityState.nonModal());
-    }
-
-    @Override
     public void notifyAddOnListFailed() {
         ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
                 .getNotificationGroup(NON_STICKY)
@@ -323,6 +309,22 @@ public final class DdevNotifierImpl implements DdevNotifier {
                 .addAction(NotificationAction.createSimpleExpiring(
                         DdevIntegrationBundle.message("notification.DdevUpgraded.freeUp"),
                         () -> DdevRunner.getInstance().freeUpDiskSpace(this.project)))
+                .notify(this.project), ModalityState.nonModal());
+    }
+
+    @Override
+    public void notifyDdevCommandFailed(final @NotNull String command, final @NotNull String reason) {
+        ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
+                .getNotificationGroup(NON_STICKY)
+                .createNotification(
+                        DdevIntegrationBundle.message("notification.ddevCommandFailed.title"),
+                        DdevIntegrationBundle.message("notification.ddevCommandFailed.text", command, StringUtil.escapeXmlEntities(reason)),
+                        NotificationType.WARNING
+                )
+                .addAction(new ReloadPluginAction())
+                .addAction(NotificationAction.createSimpleExpiring(
+                        DdevIntegrationBundle.message("notification.ddevCommandFailed.settings"),
+                        () -> ShowSettingsUtil.getInstance().showSettingsDialog(this.project, DdevSettingsConfigurable.class)))
                 .notify(this.project), ModalityState.nonModal());
     }
 }
