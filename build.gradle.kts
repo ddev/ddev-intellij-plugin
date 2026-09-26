@@ -158,6 +158,16 @@ tasks {
         gradleVersion = properties("gradleVersion").get()
     }
 
+    processResources {
+        // Read by the error reporter, which cannot query its own plugin descriptor on every
+        // supported platform version.
+        val version = pluginVersion
+        inputs.property("version", version)
+        filesMatching("ddev-integration.properties") {
+            expand("version" to version)
+        }
+    }
+
     /* Tests */
     test {
         ignoreFailures = System.getProperty("test.ignoreFailures")?.toBoolean() ?: false
