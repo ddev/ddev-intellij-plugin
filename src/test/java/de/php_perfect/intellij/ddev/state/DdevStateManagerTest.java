@@ -131,6 +131,35 @@ final class DdevStateManagerTest extends BasePlatformTestCase {
     }
 
     @Test
+    void testInitializeReplacesMissingConfiguredBinary() {
+        String expectedWhich = "which";
+        if (SystemInfo.isWindows) {
+            expectedWhich = "where";
+        }
+
+        final Project project = this.getProject();
+        final DdevSettingsState settings = DdevSettingsState.getInstance(project);
+        final String missingBinary = Path.of(System.getProperty("java.io.tmpdir"), "missing-ddev-" + System.nanoTime(), "ddev").toString();
+        settings.ddevBinary = missingBinary;
+
+        try {
+            final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+            mockProcessExecutor.addProcessOutput("docker info", new ProcessOutput(0));
+            mockProcessExecutor.addProcessOutput(expectedWhich + " ddev", new ProcessOutput("/foo/bar/bin/ddev", "", 0, false, false));
+            this.prepareCommand("/foo/bar/bin/ddev --version", "ddev version v1.19.0");
+
+            final DdevStateManager ddevStateManager = DdevStateManager.getInstance(project);
+            ddevStateManager.initialize();
+
+            Assertions.assertEquals("/foo/bar/bin/ddev", ddevStateManager.getState().getDdevBinary());
+            Assertions.assertEquals("/foo/bar/bin/ddev", settings.ddevBinary);
+            Assertions.assertEquals(new Version("v1.19.0"), ddevStateManager.getState().getDdevVersion());
+        } finally {
+            settings.ddevBinary = "";
+        }
+    }
+
+    @Test
     void testFailingDescribeLeavesDescriptionEmpty() {
         final Project project = this.getProject();
         final DdevSettingsState settings = DdevSettingsState.getInstance(project);

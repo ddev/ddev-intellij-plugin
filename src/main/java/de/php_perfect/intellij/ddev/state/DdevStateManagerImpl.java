@@ -1,7 +1,9 @@
 package de.php_perfect.intellij.ddev.state;
 
+import com.intellij.execution.process.ProcessNotCreatedException;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
+import com.intellij.util.ExceptionUtil;
 import com.intellij.util.messages.MessageBus;
 import de.php_perfect.intellij.ddev.DatabaseInfoChangedListener;
 import de.php_perfect.intellij.ddev.DescriptionChangedListener;
@@ -12,6 +14,10 @@ import de.php_perfect.intellij.ddev.notification.DdevNotifier;
 import de.php_perfect.intellij.ddev.settings.DdevSettingsState;
 import org.jetbrains.annotations.NotNull;
 
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -151,16 +157,48 @@ public final class DdevStateManagerImpl implements DdevStateManager {
     private void checkIsInstalled(boolean autodetect) {
         DdevSettingsState configurable = DdevSettingsState.getInstance(this.project);
 
-        if (autodetect && configurable.ddevBinary.isEmpty()) {
-            String detectedDdevBinary = BinaryLocator.getInstance().findInPath(this.project);
-
-            if (detectedDdevBinary != null) {
-                configurable.ddevBinary = detectedDdevBinary;
-                DdevNotifier.getInstance(this.project).notifyDdevDetected(detectedDdevBinary);
-            }
+        if (!configurable.ddevBinary.isEmpty() && isBinaryMissing(configurable.ddevBinary)) {
+            LOG.warn(String.format("Configured ddev binary %s no longer exists, looking it up on the PATH", configurable.ddevBinary));
+            this.detectBinary();
+        } else if (autodetect && configurable.ddevBinary.isEmpty()) {
+            this.detectBinary();
         }
 
         this.state.setDdevBinary(configurable.ddevBinary);
+    }
+
+    /**
+     * Replaces the configured binary with the one found on the PATH.
+     *
+     * @return whether a binary different from the configured one was found
+     */
+    private boolean detectBinary() {
+        final DdevSettingsState configurable = DdevSettingsState.getInstance(this.project);
+        final String detectedDdevBinary = BinaryLocator.getInstance().findInPath(this.project);
+
+        if (detectedDdevBinary == null || detectedDdevBinary.isEmpty() || detectedDdevBinary.equals(configurable.ddevBinary)) {
+            return false;
+        }
+
+        configurable.ddevBinary = detectedDdevBinary;
+        this.state.setDdevBinary(detectedDdevBinary);
+        DdevNotifier.getInstance(this.project).notifyDdevDetected(detectedDdevBinary);
+
+        return true;
+    }
+
+    private static boolean isBinaryMissing(@NotNull String binaryPath) {
+        final Path path;
+
+        try {
+            path = Paths.get(binaryPath);
+        } catch (InvalidPathException ignored) {
+            return false;
+        }
+
+        // Plain command names and paths that are not native to the host (e.g. Linux paths on Windows, which
+        // only resolve inside WSL) cannot be verified here; those surface as a failure to start the process.
+        return path.isAbsolute() && !Files.exists(path);
     }
 
     private void checkVersion() {
@@ -174,6 +212,11 @@ public final class DdevStateManagerImpl implements DdevStateManager {
             this.state.setDdevVersion(Ddev.getInstance().version(Objects.requireNonNull(this.state.getDdevBinary()), this.project));
             this.isVersionFailureReported.set(false);
         } catch (CommandFailedException exception) {
+            if (isProcessNotCreated(exception) && this.detectBinary()) {
+                this.checkVersion();
+                return;
+            }
+
             this.state.setDdevVersion(null);
             this.reportFailure("--version", exception, this.isVersionFailureReported);
         }
@@ -211,5 +254,9 @@ public final class DdevStateManagerImpl implements DdevStateManager {
         LOG.warn(exception);
         final String reason = Objects.requireNonNullElse(exception.getDdevMessage(), exception.getMessage());
         DdevNotifier.getInstance(this.project).notifyDdevCommandFailed(command, reason);
+    }
+
+    private static boolean isProcessNotCreated(@NotNull Throwable exception) {
+        return ExceptionUtil.findCause(exception, ProcessNotCreatedException.class) != null;
     }
 }
