@@ -68,35 +68,17 @@ dependencies {
             "org.jetbrains.plugins.terminal"
         )
 
-        // The 2026.2 test runtime does not include everything the bundled plugins above
-        // require, leaving them (and transitively this plugin) disabled in tests, see
-        // https://github.com/JetBrains/intellij-platform-gradle-plugin/issues/2165 and
-        // https://youtrack.jetbrains.com/issue/IJPL-248701
-        testBundledPlugins(
-            // Library/platform modules split out into separate plugins in 2026.2, providing
-            // (in order): javax.activation for Docker; the Services view and its navbar
-            // dependency for Docker; structure view for Docker's main module; the test runner
-            // and coverage chain for NodeJS and PHP; YAML for Docker compose; SSH for the
-            // remote interpreter plugins.
-            "intellij.libraries.misc.plugin",
-            "intellij.execution.serviceView.plugin",
-            "intellij.navbar.plugin",
-            "intellij.structureView.plugin",
-            "intellij.testRunner.plugin",
-            "org.jetbrains.plugins.yaml",
-            "intellij.ssh.plugin",
-            "intellij.bookmarks.plugin",
-            // Structural search for the PHP plugin; grid core for the database plugin.
-            "intellij.structuralSearch.plugin",
-            "intellij.grid.core.plugin"
-        )
+        // The test runtime does not resolve dependencies of bundled plugins, which leaves the
+        // database plugin disabled in tests without the grid plugin and its chart dependencies, see
+        // https://github.com/JetBrains/intellij-platform-gradle-plugin/issues/2165
+        testBundledPlugins("intellij.grid.plugin", "intellij.charts", "com.intellij.platform.images")
     }
 }
 
 java {
     toolchain {
-        // Must match the Java version of the target platform (2026.1 -> 21, 2026.2 -> 25).
-        languageVersion.set(JavaLanguageVersion.of(25))
+        // Must match the Java version of the oldest supported platform (2025.1 -> 21).
+        languageVersion.set(JavaLanguageVersion.of(21))
         // Matches the distribution used on CI; some other vendors (e.g. the Microsoft build)
         // break the instrumentCode task, see JetBrains/gradle-intellij-plugin#1240.
         vendor.set(JvmVendorSpec.AZUL)
@@ -139,10 +121,16 @@ intellijPlatform {
             "TemplateWordInPluginId,ForbiddenPluginIdPrefix,TemplateWordInPluginName"
         )
         ides {
-            create(IntelliJPlatformType.PhpStorm, properties("platformVersion"))
-            create(IntelliJPlatformType.WebStorm, properties("platformVersion"))
-            create(IntelliJPlatformType.DataGrip, properties("platformVersion"))
-            create(IntelliJPlatformType.IntellijIdeaUltimate, properties("platformVersion"))
+            // Every release line of the supported range, since the Docker plugin APIs this plugin
+            // implements change between releases; the other IDEs at both ends of the range.
+            listOf("2025.1", "2025.2", "2025.3", "2026.1", "2026.2", "263.5701.46").forEach { version ->
+                create(IntelliJPlatformType.PhpStorm, version)
+            }
+            listOf("2025.1", "2026.2").forEach { version ->
+                create(IntelliJPlatformType.WebStorm, version)
+                create(IntelliJPlatformType.DataGrip, version)
+                create(IntelliJPlatformType.IntellijIdeaUltimate, version)
+            }
         }
     }
 
