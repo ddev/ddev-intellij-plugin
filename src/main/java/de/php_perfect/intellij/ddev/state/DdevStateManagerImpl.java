@@ -24,6 +24,10 @@ public final class DdevStateManagerImpl implements DdevStateManager {
     private final AtomicBoolean isDescriptionUpdateRunning = new AtomicBoolean(false);
     private final AtomicBoolean isConfigurationUpdateRunning = new AtomicBoolean(false);
 
+    // A failing command is reported once until it succeeds again, since the state watcher retries it every few seconds
+    private final AtomicBoolean isVersionFailureReported = new AtomicBoolean(false);
+    private final AtomicBoolean isDescriptionFailureReported = new AtomicBoolean(false);
+
     public DdevStateManagerImpl(@NotNull Project project) {
         this.project = project;
     }
@@ -49,6 +53,11 @@ public final class DdevStateManagerImpl implements DdevStateManager {
             DdevNotifier.getInstance(this.project).notifyDockerNotAvailable(Docker.getInstance().getContext(this.project.getBasePath()));
 
             return;
+        }
+
+        if (reinitialize) {
+            this.isVersionFailureReported.set(false);
+            this.isDescriptionFailureReported.set(false);
         }
 
         this.checkChanged(() -> {
@@ -163,9 +172,10 @@ public final class DdevStateManagerImpl implements DdevStateManager {
 
         try {
             this.state.setDdevVersion(Ddev.getInstance().version(Objects.requireNonNull(this.state.getDdevBinary()), this.project));
+            this.isVersionFailureReported.set(false);
         } catch (CommandFailedException exception) {
-            LOG.error(exception);
             this.state.setDdevVersion(null);
+            this.reportFailure("--version", exception, this.isVersionFailureReported);
         }
     }
 
@@ -181,9 +191,25 @@ public final class DdevStateManagerImpl implements DdevStateManager {
 
         try {
             this.state.setDescription(Ddev.getInstance().describe(Objects.requireNonNull(this.state.getDdevBinary()), this.project));
+            this.isDescriptionFailureReported.set(false);
         } catch (CommandFailedException exception) {
-            LOG.error(exception);
             this.state.setDescription(null);
+            this.reportFailure("describe", exception, this.isDescriptionFailureReported);
         }
+    }
+
+    /**
+     * Command failures are caused by the local DDEV or Docker setup, so they are shown to the user as a
+     * notification instead of being logged as IDE errors.
+     */
+    private void reportFailure(@NotNull String command, @NotNull CommandFailedException exception, @NotNull AtomicBoolean reported) {
+        if (!reported.compareAndSet(false, true)) {
+            LOG.debug(exception);
+            return;
+        }
+
+        LOG.warn(exception);
+        final String reason = Objects.requireNonNullElse(exception.getDdevMessage(), exception.getMessage());
+        DdevNotifier.getInstance(this.project).notifyDdevCommandFailed(command, reason);
     }
 }

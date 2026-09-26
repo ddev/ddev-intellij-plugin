@@ -28,6 +28,11 @@ public final class DdevImpl implements Ddev {
     @Override
     public @NotNull Version version(@NotNull String binary, @NotNull Project project) throws CommandFailedException {
         final String versionString = this.executeVersionCommand(binary, project);
+
+        if (versionString.isBlank()) {
+            throw new CommandFailedException("DDEV returned no output for 'ddev --version'");
+        }
+
         final Pattern r = Pattern.compile("ddev version (v.*)$");
         final Matcher m = r.matcher(versionString);
 
@@ -57,7 +62,8 @@ public final class DdevImpl implements Ddev {
             }
 
             if (processOutput.getExitCode() != 0) {
-                throw new CommandFailedException("Command '" + commandLine.getCommandLineString() + "' returned non zero exit code " + processOutput);
+                throw new CommandFailedException("Command '" + commandLine.getCommandLineString() + "' returned non zero exit code " + processOutput,
+                        DdevErrorOutput.extractMessage(processOutput.getStderr()));
             }
 
             return processOutput.getStdout();
@@ -78,7 +84,13 @@ public final class DdevImpl implements Ddev {
             }
 
             if (processOutput.getExitCode() != 0) {
-                throw new CommandFailedException("Command '" + commandLine.getCommandLineString() + "' returned non zero exit code " + processOutput);
+                throw new CommandFailedException("Command '" + commandLine.getCommandLineString() + "' returned non zero exit code " + processOutput,
+                        DdevErrorOutput.extractMessage(processOutput.getStderr()));
+            }
+
+            if (processOutput.getStdout().isBlank()) {
+                throw new CommandFailedException("Command '" + commandLine.getCommandLineString() + "' returned no output",
+                        DdevErrorOutput.extractMessage(processOutput.getStderr()));
             }
 
             return JsonParser.getInstance().parse(processOutput.getStdout(), type);
