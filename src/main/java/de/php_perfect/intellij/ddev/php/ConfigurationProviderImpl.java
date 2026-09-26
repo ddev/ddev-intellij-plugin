@@ -19,7 +19,7 @@ public final class ConfigurationProviderImpl implements ConfigurationProvider {
 
     @Override
     public void configure(@NotNull Description description) {
-        if (!DdevSettingsState.getInstance(this.project).autoConfigurePhpInterpreter) {
+        if (this.project.isDisposed() || !DdevSettingsState.getInstance(this.project).autoConfigurePhpInterpreter) {
             return;
         }
 

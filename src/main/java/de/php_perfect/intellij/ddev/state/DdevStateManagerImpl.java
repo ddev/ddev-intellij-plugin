@@ -132,6 +132,10 @@ public final class DdevStateManagerImpl implements DdevStateManager {
 
         runnable.run();
 
+        if (this.project.isDisposed()) {
+            return;
+        }
+
         if (oldState != this.state.hashCode()) {
             LOG.debug("DDEV state changed: " + this.state);
             MessageBus messageBus = this.project.getMessageBus();
