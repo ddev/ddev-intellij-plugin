@@ -8,6 +8,7 @@ import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import de.php_perfect.intellij.ddev.cmd.Description;
 import de.php_perfect.intellij.ddev.cmd.MockProcessExecutor;
 import de.php_perfect.intellij.ddev.cmd.ProcessExecutor;
+import de.php_perfect.intellij.ddev.settings.DdevSettingsState;
 import de.php_perfect.intellij.ddev.version.Version;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -127,6 +128,61 @@ final class DdevStateManagerTest extends BasePlatformTestCase {
                 .build());
 
         Assertions.assertEquals(expectedState, ddevStateManager.getState());
+    }
+
+    @Test
+    void testInitializeReplacesMissingConfiguredBinary() {
+        String expectedWhich = "which";
+        if (SystemInfo.isWindows) {
+            expectedWhich = "where";
+        }
+
+        final Project project = this.getProject();
+        final DdevSettingsState settings = DdevSettingsState.getInstance(project);
+        final String missingBinary = Path.of(System.getProperty("java.io.tmpdir"), "missing-ddev-" + System.nanoTime(), "ddev").toString();
+        settings.ddevBinary = missingBinary;
+
+        try {
+            final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+            mockProcessExecutor.addProcessOutput("docker info", new ProcessOutput(0));
+            mockProcessExecutor.addProcessOutput(expectedWhich + " ddev", new ProcessOutput("/foo/bar/bin/ddev", "", 0, false, false));
+            this.prepareCommand("/foo/bar/bin/ddev --version", "ddev version v1.19.0");
+
+            final DdevStateManager ddevStateManager = DdevStateManager.getInstance(project);
+            ddevStateManager.initialize();
+
+            Assertions.assertEquals("/foo/bar/bin/ddev", ddevStateManager.getState().getDdevBinary());
+            Assertions.assertEquals("/foo/bar/bin/ddev", settings.ddevBinary);
+            Assertions.assertEquals(new Version("v1.19.0"), ddevStateManager.getState().getDdevVersion());
+        } finally {
+            settings.ddevBinary = "";
+        }
+    }
+
+    @Test
+    void testFailingDescribeLeavesDescriptionEmpty() {
+        final Project project = this.getProject();
+        final DdevSettingsState settings = DdevSettingsState.getInstance(project);
+        settings.ddevBinary = "ddev";
+
+        try {
+            final MockDdevConfigLoader ddevConfigLoader = (MockDdevConfigLoader) DdevConfigLoader.getInstance(project);
+            ddevConfigLoader.setExists(true);
+
+            final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+            mockProcessExecutor.addProcessOutput("docker info", new ProcessOutput(0));
+            this.prepareCommand("ddev --version", "ddev version v1.19.0");
+            mockProcessExecutor.addProcessOutput("ddev describe --json-output",
+                    new ProcessOutput("", "{\"level\":\"fatal\",\"msg\":\"Failed to describe project(s)\"}", 1, false, false));
+
+            final DdevStateManager ddevStateManager = DdevStateManager.getInstance(project);
+            ddevStateManager.initialize();
+
+            Assertions.assertEquals(new Version("v1.19.0"), ddevStateManager.getState().getDdevVersion());
+            Assertions.assertNull(ddevStateManager.getState().getDescription());
+        } finally {
+            settings.ddevBinary = "";
+        }
     }
 
     private void prepareCommand(String command, String output) {

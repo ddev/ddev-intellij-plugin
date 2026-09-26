@@ -25,11 +25,18 @@ public final class DdevImpl implements Ddev {
     // Long timeout for status commands due to possibly being blocked by ddev being busy
     private static final int STATUS_COMMAND_TIMEOUT = 300_000;
 
+    // Only the version token itself, so JSON-formatted output (json-output enabled globally) is matched as well
+    private static final Pattern VERSION_PATTERN = Pattern.compile("ddev version (v\\d[\\w.\\-]*)");
+
     @Override
     public @NotNull Version version(@NotNull String binary, @NotNull Project project) throws CommandFailedException {
         final String versionString = this.executeVersionCommand(binary, project);
-        final Pattern r = Pattern.compile("ddev version (v.*)$");
-        final Matcher m = r.matcher(versionString);
+
+        if (versionString.isBlank()) {
+            throw new CommandFailedException("DDEV returned no output for 'ddev --version'");
+        }
+
+        final Matcher m = VERSION_PATTERN.matcher(versionString);
 
         if (m.find()) {
             return new Version(m.group(1));
@@ -57,7 +64,8 @@ public final class DdevImpl implements Ddev {
             }
 
             if (processOutput.getExitCode() != 0) {
-                throw new CommandFailedException("Command '" + commandLine.getCommandLineString() + "' returned non zero exit code " + processOutput);
+                throw new CommandFailedException("Command '" + commandLine.getCommandLineString() + "' returned non zero exit code " + processOutput,
+                        DdevErrorOutput.extractMessage(processOutput.getStderr()));
             }
 
             return processOutput.getStdout();
@@ -78,7 +86,13 @@ public final class DdevImpl implements Ddev {
             }
 
             if (processOutput.getExitCode() != 0) {
-                throw new CommandFailedException("Command '" + commandLine.getCommandLineString() + "' returned non zero exit code " + processOutput);
+                throw new CommandFailedException("Command '" + commandLine.getCommandLineString() + "' returned non zero exit code " + processOutput,
+                        DdevErrorOutput.extractMessage(processOutput.getStderr()));
+            }
+
+            if (processOutput.getStdout().isBlank()) {
+                throw new CommandFailedException("Command '" + commandLine.getCommandLineString() + "' returned no output",
+                        DdevErrorOutput.extractMessage(processOutput.getStderr()));
             }
 
             return JsonParser.getInstance().parse(processOutput.getStdout(), type);

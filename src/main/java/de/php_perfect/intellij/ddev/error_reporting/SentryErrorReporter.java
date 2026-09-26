@@ -73,7 +73,7 @@ public class SentryErrorReporter extends ErrorReportSubmitter {
 
     private SentryEvent buildSentryEvent(IdeaLoggingEvent ideaLoggingEvent, @Nullable String additionalInfo, @Nullable Versions ddevVersions, @Nullable WSLDistribution wslDistribution) {
         SentryEvent event = new SentryEvent();
-        event.setRelease(getPluginDescriptor().getVersion());
+        event.setRelease(PluginVersion.get());
 
         if (additionalInfo != null) {
             event.setExtra("additional_info", additionalInfo);

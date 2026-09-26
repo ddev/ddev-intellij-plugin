@@ -15,7 +15,7 @@ public final class DdevIntegrationBundle extends DynamicBundle {
     private static final @NotNull DdevIntegrationBundle INSTANCE = new DdevIntegrationBundle();
 
     private DdevIntegrationBundle() {
-        super(BUNDLE);
+        super(DdevIntegrationBundle.class, BUNDLE);
     }
 
     @NotNull
