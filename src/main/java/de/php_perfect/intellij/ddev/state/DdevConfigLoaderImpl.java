@@ -47,7 +47,7 @@ public final class DdevConfigLoaderImpl implements DdevConfigLoader {
      */
     @Override
     public boolean exists() {
-        final String basePath = this.project.getBasePath();
+        final String basePath = DdevProjectRoot.of(this.project);
 
         if (basePath == null) {
             return false;
