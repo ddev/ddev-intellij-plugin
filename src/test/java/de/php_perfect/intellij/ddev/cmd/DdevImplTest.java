@@ -83,6 +83,17 @@ final class DdevImplTest extends BasePlatformTestCase {
     }
 
     @Test
+    void versionFromJsonOutput() throws CommandFailedException {
+        final String output = "{\"level\":\"info\",\"msg\":\"ddev version v1.25.3\",\"raw\":{\"version\":\"v1.25.3\"},\"time\":\"2026-08-19T09:46:38+02:00\"}";
+        final ProcessOutput processOutput = new ProcessOutput(output, "", 0, false, false);
+
+        final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+        mockProcessExecutor.addProcessOutput("ddev --version", processOutput);
+
+        Assertions.assertEquals(new Version("v1.25.3"), new DdevImpl().version("ddev", getProject()));
+    }
+
+    @Test
     void versionWithoutOutput() {
         final ProcessOutput processOutput = new ProcessOutput("", "", 0, false, false);
 
