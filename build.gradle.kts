@@ -151,6 +151,7 @@ java {
 sourceSets {
     main {
         java.srcDir("src/platform$platformVariantName/java")
+        resources.srcDir("src/platform$platformVariantName/resources")
     }
     test {
         java.srcDir("src/platform$platformVariantName/test")

@@ -1,0 +1,5 @@
+<idea-plugin>
+    <extensions defaultExtensionNs="org.jetbrains.plugins.terminal">
+        <shellExecOptionsCustomizer implementation="de.php_perfect.intellij.ddev.terminal.DdevTerminalCustomizer"/>
+    </extensions>
+</idea-plugin>

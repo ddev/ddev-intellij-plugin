@@ -1,4 +1,4 @@
-<idea-plugin>
+<idea-plugin xmlns:xi="http://www.w3.org/2001/XInclude">
     <extensions defaultExtensionNs="com.intellij">
         <projectService serviceImplementation="de.php_perfect.intellij.ddev.terminal.DdevTerminalServiceImpl"
                         serviceInterface="de.php_perfect.intellij.ddev.terminal.DdevTerminalService"/>
@@ -8,8 +8,10 @@
     <extensions defaultExtensionNs="org.jetbrains.plugins.terminal">
         <openPredefinedTerminalProvider
                 implementation="de.php_perfect.intellij.ddev.terminal.DdevPredefinedTerminalActionProvider"/>
-        <shellExecOptionsCustomizer implementation="de.php_perfect.intellij.ddev.terminal.DdevTerminalCustomizer"/>
     </extensions>
+
+    <!-- The terminal customizer uses a different extension point in each platform variant -->
+    <xi:include href="/META-INF/DdevIntegration-terminalCustomizer.xml" xpointer="xpointer(/idea-plugin/*)"/>
 
     <projectListeners>
         <listener class="de.php_perfect.intellij.ddev.terminal.TutorialListener"

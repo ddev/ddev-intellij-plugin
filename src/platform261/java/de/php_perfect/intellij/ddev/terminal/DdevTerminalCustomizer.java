@@ -13,7 +13,8 @@ import java.nio.file.Path;
  * DDEV project. The terminal translates the local launcher directory for WSL shells.
  *
  * <p>{@link ShellExecOptionsCustomizer} is experimental, but it is the documented successor of the
- * deprecated {@code LocalTerminalCustomizer}; Plugin Verifier runs against the newest EAP to catch changes.</p>
+ * deprecated {@code LocalTerminalCustomizer}; Plugin Verifier runs against the newest EAP to catch changes.
+ * It exists from 2026.1 on; the 2025.x plugin variant customizes terminals through the deprecated API instead.</p>
  */
 @SuppressWarnings("UnstableApiUsage")
 public final class DdevTerminalCustomizer implements ShellExecOptionsCustomizer {
