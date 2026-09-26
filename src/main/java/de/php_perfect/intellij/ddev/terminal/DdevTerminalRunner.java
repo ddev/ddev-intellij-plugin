@@ -6,13 +6,10 @@ import com.intellij.openapi.progress.EmptyProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.NlsContexts;
-import com.intellij.terminal.pty.PtyProcessTtyConnectorKt;
 import com.intellij.util.concurrency.AppExecutorUtil;
 import com.jediterm.core.util.TermSize;
 import com.jediterm.terminal.ProcessTtyConnector;
 import com.jediterm.terminal.TtyConnector;
-import com.jediterm.terminal.TtyConnectorResizeStrategy;
-import com.jediterm.terminal.TtyConnectorResizeStrategyProvider;
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
 import com.pty4j.unix.UnixPtyProcess;
@@ -37,10 +34,15 @@ public final class DdevTerminalRunner extends AbstractTerminalRunner<PtyProcess>
         super(project);
     }
 
+    // The terminal creates sessions through createProcess(options) followed by createTtyConnector(process);
+    // both exist on every supported platform version, unlike createTtyConnector(options), which is 2026.2+.
     @Override
-    public @NotNull TtyConnector createTtyConnector(@NotNull ShellStartupOptions startupOptions) throws ExecutionException {
-        final PtyProcess process = this.createDdevSshProcess();
+    public @NotNull PtyProcess createProcess(@NotNull ShellStartupOptions startupOptions) throws ExecutionException {
+        return this.createDdevSshProcess();
+    }
 
+    @Override
+    public @NotNull TtyConnector createTtyConnector(@NotNull PtyProcess process) {
         return new DdevTtyConnector(process);
     }
 
@@ -84,7 +86,7 @@ public final class DdevTerminalRunner extends AbstractTerminalRunner<PtyProcess>
      * Extends jediterm's {@link ProcessTtyConnector} rather than the platform's PtyProcessTtyConnector,
      * whose constructor signature differs between IDE versions within the supported build range.
      */
-    private static final class DdevTtyConnector extends ProcessTtyConnector implements TtyConnectorResizeStrategyProvider {
+    private static final class DdevTtyConnector extends ProcessTtyConnector {
         private final PtyProcess process;
 
         private DdevTtyConnector(@NotNull PtyProcess process) {
@@ -102,11 +104,6 @@ public final class DdevTerminalRunner extends AbstractTerminalRunner<PtyProcess>
             if (isConnected()) {
                 process.setWinSize(new WinSize(termSize.getColumns(), termSize.getRows()));
             }
-        }
-
-        @Override
-        public @NotNull TtyConnectorResizeStrategy getResizeStrategy() {
-            return PtyProcessTtyConnectorKt.getTtyConnectorResizeStrategy(process);
         }
 
         @Override
