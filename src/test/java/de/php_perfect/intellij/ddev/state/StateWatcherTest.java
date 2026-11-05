@@ -1,10 +1,15 @@
 package de.php_perfect.intellij.ddev.state;
 
+import com.intellij.testFramework.ServiceContainerUtil;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 final class StateWatcherTest extends BasePlatformTestCase {
 
@@ -41,6 +46,23 @@ final class StateWatcherTest extends BasePlatformTestCase {
     void startStopWatchingWithoutStart() {
         stateWatcher.stopWatching();
         Assert.assertFalse(stateWatcher.isWatching());
+    }
+
+    @Test
+    void watcherUpdatesStatePeriodically() throws InterruptedException {
+        final CountDownLatch updated = new CountDownLatch(1);
+        final DdevStateManager stateManager = Mockito.mock(DdevStateManager.class);
+        Mockito.doAnswer(invocation -> {
+            updated.countDown();
+            return null;
+        }).when(stateManager).updateDescription();
+        ServiceContainerUtil.replaceService(this.getProject(), DdevStateManager.class, stateManager, this.getTestRootDisposable());
+
+        stateWatcher.startWatching();
+
+        Assert.assertTrue(updated.await(30, TimeUnit.SECONDS));
+        stateWatcher.stopWatching();
+        Mockito.verify(stateManager, Mockito.atLeastOnce()).updateConfiguration();
     }
 
     @Override
