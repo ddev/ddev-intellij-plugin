@@ -28,6 +28,13 @@ The formats is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Bump gradle/actions from 5 to 6 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/531
 * Bump 1password/load-secrets-action from 4 to 5 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/539
 * Bump actions/setup-java from 5 to 6 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/540
+* Upgrade the Gradle wrapper from 9.6.1 to 9.8.2 by @AkibaAT
+* Bump org.jetbrains.intellij.platform from 2.17.0 to 2.20.0 by @AkibaAT
+* Bump IntelliJ Plugin Verifier from 1.408 to 1.411 by @AkibaAT
+* Bump Gson from 2.14.0 to 2.15.0 by @AkibaAT
+* Bump Sentry from 8.47.0 to 8.63.0 by @AkibaAT
+* Bump JUnit and JUnit Platform from 6.1.1 to 6.1.3 by @AkibaAT
+* Bump Mockito from 5.23.0 to 5.24.0 by @AkibaAT
 
 Full Changelog: https://github.com/ddev/ddev-intellij-plugin/compare/1.2.9...1.2.10
 
