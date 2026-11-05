@@ -16,6 +16,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.mockito.Mockito;
 
 import java.io.ByteArrayInputStream;
@@ -47,6 +49,7 @@ final class DdevTerminalRunnerTest extends BasePlatformTestCase {
     }
 
     @Test
+    @DisabledOnOs(OS.WINDOWS)
     void createProcessStartsDdevSsh() throws ExecutionException, InterruptedException {
         stubDdevBinary("/bin/echo");
 
