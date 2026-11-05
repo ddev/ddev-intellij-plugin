@@ -106,6 +106,10 @@ dependencies {
     }
 }
 
+configurations.runtimeClasspath {
+    resolutionStrategy.activateDependencyLocking()
+}
+
 java {
     toolchain {
         // Both build platforms (2025.1 and 2026.1) use Java 21.
@@ -177,7 +181,6 @@ intellijPlatform {
                 create(IntelliJPlatformType.IntellijIdeaUltimate, version)
             }
             if (platformVariantName == "251") {
-                // Latest 2025.3 patch release.
                 create(IntelliJPlatformType.IntellijIdeaUltimate, "2025.3.6.1")
             }
         }
@@ -211,10 +214,16 @@ tasks {
         ignoreFailures = System.getProperty("test.ignoreFailures")?.toBoolean() ?: false
 
         useJUnitPlatform()
+
+        configure<JacocoTaskExtension> {
+            isIncludeNoLocationClasses = true
+            excludes = listOf("jdk.internal.*")
+        }
     }
 
     jacocoTestReport {
         dependsOn(test)
+        classDirectories.setFrom(instrumentCode)
 
         reports {
             xml.required.set(true)

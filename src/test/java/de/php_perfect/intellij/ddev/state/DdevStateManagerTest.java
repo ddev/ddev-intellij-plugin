@@ -1,5 +1,7 @@
 package de.php_perfect.intellij.ddev.state;
 
+import com.intellij.execution.configurations.GeneralCommandLine;
+import com.intellij.execution.process.ProcessNotCreatedException;
 import com.intellij.execution.process.ProcessOutput;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
@@ -180,6 +182,81 @@ final class DdevStateManagerTest extends BasePlatformTestCase {
 
             Assertions.assertEquals(new Version("v1.19.0"), ddevStateManager.getState().getDdevVersion());
             Assertions.assertNull(ddevStateManager.getState().getDescription());
+        } finally {
+            settings.ddevBinary = "";
+        }
+    }
+
+    @Test
+    void testRepeatedVersionFailureKeepsVersionEmpty() {
+        final Project project = this.getProject();
+        final DdevSettingsState settings = DdevSettingsState.getInstance(project);
+        settings.ddevBinary = "ddev";
+
+        try {
+            final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+            final DdevStateManager ddevStateManager = DdevStateManager.getInstance(project);
+
+            for (int attempt = 0; attempt < 2; attempt++) {
+                mockProcessExecutor.addProcessOutput("docker info", new ProcessOutput(0));
+                mockProcessExecutor.addProcessOutput("ddev --version",
+                        new ProcessOutput("", "{\"level\":\"fatal\",\"msg\":\"Docker is not running\"}", 1, false, false));
+
+                ddevStateManager.initialize();
+
+                Assertions.assertEquals("ddev", ddevStateManager.getState().getDdevBinary());
+                Assertions.assertNull(ddevStateManager.getState().getDdevVersion());
+            }
+        } finally {
+            settings.ddevBinary = "";
+        }
+    }
+
+    @Test
+    void testUnstartableBinaryIsReplacedByPathBinary() {
+        String expectedWhich = "which";
+        if (SystemInfo.isWindows) {
+            expectedWhich = "where";
+        }
+
+        final Project project = this.getProject();
+        final DdevSettingsState settings = DdevSettingsState.getInstance(project);
+        settings.ddevBinary = "ddev-unstartable";
+
+        try {
+            final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+            mockProcessExecutor.addProcessOutput("docker info", new ProcessOutput(0));
+            mockProcessExecutor.addProcessFailure("ddev-unstartable --version",
+                    new ProcessNotCreatedException("Cannot run program", new GeneralCommandLine("ddev-unstartable", "--version")));
+            mockProcessExecutor.addProcessOutput(expectedWhich + " ddev", new ProcessOutput("/foo/bar/bin/ddev", "", 0, false, false));
+            this.prepareCommand("/foo/bar/bin/ddev --version", "ddev version v1.19.0");
+
+            final DdevStateManager ddevStateManager = DdevStateManager.getInstance(project);
+            ddevStateManager.initialize();
+
+            Assertions.assertEquals("/foo/bar/bin/ddev", ddevStateManager.getState().getDdevBinary());
+            Assertions.assertEquals("/foo/bar/bin/ddev", settings.ddevBinary);
+            Assertions.assertEquals(new Version("v1.19.0"), ddevStateManager.getState().getDdevVersion());
+        } finally {
+            settings.ddevBinary = "";
+        }
+    }
+
+    @Test
+    void testUnparsableBinaryPathIsKept() {
+        final Project project = this.getProject();
+        final DdevSettingsState settings = DdevSettingsState.getInstance(project);
+        settings.ddevBinary = "dd\0ev";
+
+        try {
+            final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+            mockProcessExecutor.addProcessOutput("docker info", new ProcessOutput(0));
+
+            final DdevStateManager ddevStateManager = DdevStateManager.getInstance(project);
+            ddevStateManager.initialize();
+
+            Assertions.assertEquals("dd\0ev", ddevStateManager.getState().getDdevBinary());
+            Assertions.assertNull(ddevStateManager.getState().getDdevVersion());
         } finally {
             settings.ddevBinary = "";
         }

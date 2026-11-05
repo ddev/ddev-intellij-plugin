@@ -25,20 +25,13 @@ public final class DdevErrorOutput {
 
         for (String line : stderr.split("\\R")) {
             final String trimmed = line.strip();
-            if (trimmed.isEmpty()) {
-                continue;
-            }
-
             final JsonObject entry = parseObject(trimmed);
-            if (entry == null) {
-                plainText.append(plainText.isEmpty() ? "" : "\n").append(trimmed);
-                continue;
-            }
+            final String entryMessage = entry != null ? errorMessage(entry) : null;
 
-            final String level = stringMember(entry, "level");
-            final String msg = stringMember(entry, "msg");
-            if (msg != null && level != null && ERROR_LEVELS.contains(level)) {
-                message = msg;
+            if (entryMessage != null) {
+                message = entryMessage;
+            } else if (entry == null && !trimmed.isEmpty()) {
+                plainText.append(plainText.isEmpty() ? "" : "\n").append(trimmed);
             }
         }
 
@@ -60,6 +53,11 @@ public final class DdevErrorOutput {
         } catch (JsonParseException exception) {
             return null;
         }
+    }
+
+    private static @Nullable String errorMessage(@NotNull JsonObject entry) {
+        final String level = stringMember(entry, "level");
+        return level != null && ERROR_LEVELS.contains(level) ? stringMember(entry, "msg") : null;
     }
 
     private static @Nullable String stringMember(@NotNull JsonObject object, @NotNull String name) {

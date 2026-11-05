@@ -11,6 +11,7 @@ import java.util.Map;
 
 public final class MockProcessExecutor implements ProcessExecutor {
     private final Map<String, ProcessOutput> processList = new HashMap<>();
+    private final Map<String, ExecutionException> failureList = new HashMap<>();
 
     public MockProcessExecutor() {
         this.addProcessOutput("docker info", new ProcessOutput(0));
@@ -26,9 +27,18 @@ public final class MockProcessExecutor implements ProcessExecutor {
         this.processList.put(command, processOutput);
     }
 
+    public void addProcessFailure(@NotNull String command, @NotNull ExecutionException exception) {
+        this.failureList.put(command, exception);
+    }
+
     @Override
     public @NotNull ProcessOutput executeCommandLine(GeneralCommandLine commandLine, int timeout, boolean loginShell) throws ExecutionException {
         String commandLineString = commandLine.getCommandLineString();
+
+        final ExecutionException failure = this.failureList.remove(commandLineString);
+        if (failure != null) {
+            throw failure;
+        }
 
         if (!this.processList.containsKey(commandLineString)) {
             throw new ExecutionException(String.format("[TEST] Command '%s' was not expected", commandLineString));
