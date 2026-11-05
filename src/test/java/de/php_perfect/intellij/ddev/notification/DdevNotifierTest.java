@@ -82,6 +82,40 @@ final class DdevNotifierTest extends BasePlatformTestCase {
     }
 
     @Test
+    void notifyMissingPlugins() {
+        Project project = getProject();
+
+        NotificationsManager notificationManager = NotificationsManager.getNotificationsManager();
+        Notification[] notifications = notificationManager.getNotificationsOfType(Notification.class, project);
+        assertEmpty(notifications);
+
+        new DdevNotifierImpl(project).notifyMissingPlugins("First Plugin, Second Plugin", "Test Feature");
+
+        this.waitForEventQueue();
+
+        notifications = notificationManager.getNotificationsOfType(Notification.class, project);
+        assertSize(1, notifications);
+        assertTrue(notifications[0].getContent().contains("First Plugin, Second Plugin"));
+    }
+
+    @Test
+    void notifyDdevCommandFailedEscapesReason() {
+        Project project = getProject();
+
+        NotificationsManager notificationManager = NotificationsManager.getNotificationsManager();
+        Notification[] notifications = notificationManager.getNotificationsOfType(Notification.class, project);
+        assertEmpty(notifications);
+
+        new DdevNotifierImpl(project).notifyDdevCommandFailed("ddev start", "<failed>");
+
+        this.waitForEventQueue();
+
+        notifications = notificationManager.getNotificationsOfType(Notification.class, project);
+        assertSize(1, notifications);
+        assertTrue(notifications[0].getContent().contains("&lt;failed&gt;"));
+    }
+
+    @Test
     void notifyPhpInterpreterUpdated() {
         Project project = getProject();
 
