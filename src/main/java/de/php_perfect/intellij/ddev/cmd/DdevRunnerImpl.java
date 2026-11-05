@@ -4,7 +4,7 @@ import com.intellij.execution.configurations.GeneralCommandLine;
 import com.intellij.execution.configurations.PtyCommandLine;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.extensions.ExtensionPointName;
-import com.intellij.openapi.fileEditor.FileEditorManager;
+import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import de.php_perfect.intellij.ddev.DdevConfigArgumentProvider;
@@ -77,7 +77,7 @@ public final class DdevRunnerImpl implements DdevRunner {
         VirtualFile ddevConfig = DdevConfigLoader.getInstance(project).load();
 
         if (ddevConfig != null && ddevConfig.exists()) {
-            FileEditorManager.getInstance(project).openFile(ddevConfig, true);
+            new OpenFileDescriptor(project, ddevConfig).navigate(true);
         }
     }
 
