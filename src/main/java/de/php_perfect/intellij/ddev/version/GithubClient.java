@@ -26,7 +26,8 @@ public final class GithubClient implements ReleaseClient {
             LOG.info("Loading latest DDEV release meta data from GitHub");
             return createParser().fromJson(requestBuilder.readString(indicator), LatestRelease.class);
         } catch (IOException e) {
-            LOG.error(e);
+            // Offline machines, proxies and GitHub outages are expected; the update check is simply skipped
+            LOG.warn("Unable to load the latest DDEV release from GitHub: " + e.getMessage());
             return null;
         }
     }

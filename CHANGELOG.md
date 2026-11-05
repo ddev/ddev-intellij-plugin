@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 
 The formats is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
+## [1.2.10]
+
+### Changed
+* Extend the declared IDE compatibility range to include IntelliJ 2026.3 (263.*) by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/542
+* Extend the supported IDE range down to 2025.1 (251.*), so users of IntelliJ 2025.1 to 2026.1 receive updates again by @AkibaAT
+* Publish separate builds for 2025.1 to 2025.3 and for 2026.1 to 2026.3 by @AkibaAT
+* Restore the SonarCloud analysis workflow under the DDEV organization by @AkibaAT
+* Show failing DDEV commands as a notification with the error DDEV reported instead of raising an IDE error on every status poll by @AkibaAT
+* Replace the deprecated `DynamicBundle(String)` constructor with `DynamicBundle(Class, String)` to address the API deprecation reported for IntelliJ 2026.3 by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/542
+
+### Fixed
+* Fix the DDEV terminal failing on IntelliJ 2026.3 due to a changed `PtyProcessTtyConnector` constructor by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/542
+* Create DDEV terminal sessions without the terminal API scheduled for removal in the 2026.x build by @AkibaAT
+* Open the DDEV configuration without the deprecated `FileEditorManager.openFile(VirtualFile, boolean)` by @AkibaAT
+* Fall back to the ddev binary on the PATH when the configured binary no longer exists or cannot be started by @AkibaAT
+* Fix reading the DDEV version when JSON output is enabled in the global DDEV configuration by @AkibaAT
+* Log failed GitHub release checks and ddev binary lookups as warnings instead of IDE errors by @AkibaAT
+* Check for the DDEV configuration without refreshing the VFS on every status poll by @AkibaAT
+* Fix an error when a DDEV status update finishes after the project was closed by @AkibaAT
+
+### Dependency Updates
+* Bump actions/checkout from 6 to 7 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/537
+* Bump gradle/actions from 5 to 6 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/531
+* Bump 1password/load-secrets-action from 4 to 5 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/539
+* Bump actions/setup-java from 5 to 6 by @dependabot in https://github.com/ddev/ddev-intellij-plugin/pull/540
+* Upgrade the Gradle wrapper from 9.6.1 to 9.8.2 by @AkibaAT
+* Bump org.jetbrains.intellij.platform from 2.17.0 to 2.20.0 by @AkibaAT
+* Bump IntelliJ Plugin Verifier from 1.408 to 1.411 by @AkibaAT
+* Bump Gson from 2.14.0 to 2.15.0 by @AkibaAT
+* Bump Sentry from 8.47.0 to 8.63.0 by @AkibaAT
+* Bump JUnit and JUnit Platform from 6.1.1 to 6.1.3 by @AkibaAT
+* Bump Mockito from 5.23.0 to 5.24.0 by @AkibaAT
+
+Full Changelog: https://github.com/ddev/ddev-intellij-plugin/compare/1.2.9...1.2.10
+
 ## [1.2.9]
 
 ### Changed

@@ -29,7 +29,7 @@ public class BinaryLocatorImpl implements BinaryLocator {
 
             return processOutput.getStdout().strip();
         } catch (ExecutionException exception) {
-            LOG.error(exception);
+            LOG.warn("Unable to look up the ddev binary on the PATH", exception);
             return null;
         }
     }

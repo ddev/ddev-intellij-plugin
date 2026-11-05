@@ -53,7 +53,9 @@ public final class PluginChecker {
         final List<String> missingPluginNames = new ArrayList<>();
 
         for (final String id : requiredPlugins) {
-            if (!PluginManagerCore.isLoaded(PluginId.getId(id))) {
+            final PluginId pluginId = PluginId.getId(id);
+
+            if (!PluginManagerCore.isPluginInstalled(pluginId) || PluginManagerCore.isDisabled(pluginId)) {
                 String displayName = PluginDisplayNameMapper.getDisplayName(id);
                 missingPluginNames.add(displayName);
             }

@@ -10,24 +10,24 @@ jobs:
     steps:
       # Check out current repository
       - name: Fetch Sources
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Extract Tag Name
-        uses: olegtarasov/get-tag@v2.1
+        uses: olegtarasov/get-tag@9a8716825750e73195b02db42777b92ffe960605 # v2.1.4
 
       # Validate wrapper
       - name: Gradle Wrapper Validation
-        uses: gradle/actions/wrapper-validation@v6
+        uses: gradle/actions/wrapper-validation@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
 
       # Set up Java environment for the next steps
       - name: Setup Java
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           distribution: zulu
           java-version: 21
 
       - name: Load secrets from 1Password
-        uses: 1password/load-secrets-action@v5
+        uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
         with:
           export-env: true
         env:
@@ -38,24 +38,30 @@ jobs:
           JETBRAINS_MARKETPLACE_SIGNING_KEY_PASSWORD: op://ddev-intellij-plugin-secrets/JetBrains Marketplace Signing Key/add more/private key password
 
       - name: Extract Channel from Version
-        uses: actions-ecosystem/action-regex-match@v2
+        uses: actions-ecosystem/action-regex-match@9e6c4fb3d5e898f505be7a1fb6e7b0a278f6665b # v2.0.2
         id: match-channel
         with:
           text: ${{ github.ref }}
           regex: '(eap|beta|alpha).*$'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
-      - name: Publish to JetBrains Marketplace
-        run: ./gradlew publishPlugin
+      # Sequential, so a failing variant stops the release.
+      - name: Publish 2025.x variant to JetBrains Marketplace
+        run: ./gradlew publishPlugin -PplatformVariant=251
+        env:
+          PUBLISH_CHANNEL: ${{ steps.match-channel.outputs.group1 }}
+
+      - name: Publish 2026.1+ variant to JetBrains Marketplace
+        run: ./gradlew publishPlugin -PplatformVariant=261
         env:
           PUBLISH_CHANNEL: ${{ steps.match-channel.outputs.group1 }}
 
       - name: Update GitHub Release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         with:
           fail_on_unmatched_files: true
           files: build/distributions/*.zip
@@ -64,16 +70,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Extract Tag Name
-        uses: olegtarasov/get-tag@v2.1
+        uses: olegtarasov/get-tag@9a8716825750e73195b02db42777b92ffe960605 # v2.1.4
         id: tagName
 
       - name: Load secrets from 1Password
-        uses: 1password/load-secrets-action@v5
+        uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
         with:
           export-env: true
         env:
@@ -83,6 +89,6 @@ jobs:
           SENTRY_PROJECT: op://ddev-intellij-plugin-secrets/Sentry Token/project
 
       - name: Create Sentry release
-        uses: getsentry/action-release@v3
+        uses: getsentry/action-release@e6703d0b00208e0b3687ba660d18ab5af7892821 # v3.7.2
         with:
           release: ${{ steps.tagName.outputs.tag }}

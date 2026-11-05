@@ -21,7 +21,7 @@ public final class AutoConfigureNodeInterpreterListener implements DescriptionCh
 
     @Override
     public void onDescriptionChanged(@Nullable Description description) {
-        if (description == null || description.getName() == null) {
+        if (this.project.isDisposed() || description == null || description.getName() == null) {
             return;
         }
 

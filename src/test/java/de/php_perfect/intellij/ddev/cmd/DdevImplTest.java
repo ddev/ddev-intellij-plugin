@@ -81,4 +81,49 @@ final class DdevImplTest extends BasePlatformTestCase {
 
         Assertions.assertEquals(expected, new DdevImpl().describe("ddev", getProject()));
     }
+
+    @Test
+    void versionFromJsonOutput() throws CommandFailedException {
+        final String output = "{\"level\":\"info\",\"msg\":\"ddev version v1.25.3\",\"raw\":{\"version\":\"v1.25.3\"},\"time\":\"2026-08-19T09:46:38+02:00\"}";
+        final ProcessOutput processOutput = new ProcessOutput(output, "", 0, false, false);
+
+        final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+        mockProcessExecutor.addProcessOutput("ddev --version", processOutput);
+
+        Assertions.assertEquals(new Version("v1.25.3"), new DdevImpl().version("ddev", getProject()));
+    }
+
+    @Test
+    void versionWithoutOutput() {
+        final ProcessOutput processOutput = new ProcessOutput("", "", 0, false, false);
+
+        final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+        mockProcessExecutor.addProcessOutput("ddev --version", processOutput);
+
+        final CommandFailedException exception = Assertions.assertThrows(CommandFailedException.class, () -> new DdevImpl().version("ddev", getProject()));
+        Assertions.assertTrue(exception.getMessage().contains("no output"));
+    }
+
+    @Test
+    void describeWithoutOutput() {
+        final ProcessOutput processOutput = new ProcessOutput("", "", 0, false, false);
+
+        final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+        mockProcessExecutor.addProcessOutput("ddev describe --json-output", processOutput);
+
+        final CommandFailedException exception = Assertions.assertThrows(CommandFailedException.class, () -> new DdevImpl().describe("ddev", getProject()));
+        Assertions.assertTrue(exception.getMessage().contains("returned no output"));
+    }
+
+    @Test
+    void describeFailureCarriesDdevMessage() {
+        final String stderr = "{\"level\":\"fatal\",\"msg\":\"Failed to describe project(s): GetFileAttributesEx /home/user/projects/app: The system cannot find the path specified.\",\"time\":\"2026-09-26T19:45:50+02:00\"}\n";
+        final ProcessOutput processOutput = new ProcessOutput("", stderr, 1, false, false);
+
+        final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+        mockProcessExecutor.addProcessOutput("ddev describe --json-output", processOutput);
+
+        final CommandFailedException exception = Assertions.assertThrows(CommandFailedException.class, () -> new DdevImpl().describe("ddev", getProject()));
+        Assertions.assertEquals("Failed to describe project(s): GetFileAttributesEx /home/user/projects/app: The system cannot find the path specified.", exception.getDdevMessage());
+    }
 }

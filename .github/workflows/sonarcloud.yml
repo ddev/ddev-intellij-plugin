@@ -1,0 +1,57 @@
+name: SonarCloud
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+
+jobs:
+  sonarcloud:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Load secrets from 1Password
+        uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
+        if: ${{ env.OP_SERVICE_ACCOUNT_TOKEN != null }}
+        with:
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          SONAR_TOKEN: op://ddev-intellij-plugin-secrets/Sonar Token/credential
+
+      - name: Fetch Sources
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: ${{ env.SONAR_TOKEN != null }}
+        with:
+          fetch-depth: 0
+
+      - name: Gradle Wrapper Validation
+        if: ${{ env.SONAR_TOKEN != null }}
+        uses: gradle/actions/wrapper-validation@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      - name: Setup Java
+        if: ${{ env.SONAR_TOKEN != null }}
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: zulu
+          java-version: 21
+
+      - name: 'Cache: SonarCloud'
+        if: ${{ env.SONAR_TOKEN != null }}
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+
+      - name: Setup Gradle
+        if: ${{ env.SONAR_TOKEN != null }}
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Run SonarCloud analysis
+        if: ${{ env.SONAR_TOKEN != null }}
+        run: ./gradlew -Dtest.ignoreFailures=true sonar --info --stacktrace
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

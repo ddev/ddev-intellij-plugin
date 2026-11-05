@@ -6,6 +6,7 @@ import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.text.StringUtil;
 import de.php_perfect.intellij.ddev.DdevIntegrationBundle;
 import de.php_perfect.intellij.ddev.actions.*;
 import org.jetbrains.annotations.NotNull;
@@ -145,6 +146,20 @@ public final class DdevNotifierImpl implements DdevNotifier {
                         NotificationType.WARNING
                 )
                 .addAction(new ReloadPluginAction())
+                .notify(this.project), ModalityState.nonModal());
+    }
+
+    @Override
+    public void notifyDdevCommandFailed(final @NotNull String command, final @NotNull String reason) {
+        ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
+                .getNotificationGroup(NON_STICKY)
+                .createNotification(
+                        DdevIntegrationBundle.message("notification.ddevCommandFailed.title"),
+                        DdevIntegrationBundle.message("notification.ddevCommandFailed.text", command, StringUtil.escapeXmlEntities(reason)),
+                        NotificationType.WARNING
+                )
+                .addAction(new ReloadPluginAction())
+                .addAction(new ChangeSettingsAction())
                 .notify(this.project), ModalityState.nonModal());
     }
 }

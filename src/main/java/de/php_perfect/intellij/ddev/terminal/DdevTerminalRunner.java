@@ -6,17 +6,17 @@ import com.intellij.openapi.progress.EmptyProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.NlsContexts;
-import com.intellij.terminal.pty.PtyProcessTtyConnector;
 import com.intellij.util.concurrency.AppExecutorUtil;
+import com.jediterm.core.util.TermSize;
+import com.jediterm.terminal.ProcessTtyConnector;
 import com.jediterm.terminal.TtyConnector;
 import com.pty4j.PtyProcess;
+import com.pty4j.WinSize;
 import com.pty4j.unix.UnixPtyProcess;
 import de.php_perfect.intellij.ddev.cmd.wsl.WslAware;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import de.php_perfect.intellij.ddev.state.State;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.plugins.terminal.AbstractTerminalRunner;
-import org.jetbrains.plugins.terminal.ShellStartupOptions;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -25,7 +25,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-public final class DdevTerminalRunner extends AbstractTerminalRunner<PtyProcess> {
+public final class DdevTerminalRunner extends PlatformTerminalRunner {
     private static final Logger LOG = Logger.getInstance(DdevTerminalRunner.class);
 
     public DdevTerminalRunner(@NotNull Project project) {
@@ -33,28 +33,12 @@ public final class DdevTerminalRunner extends AbstractTerminalRunner<PtyProcess>
     }
 
     @Override
-    public @NotNull TtyConnector createTtyConnector(@NotNull ShellStartupOptions startupOptions) throws ExecutionException {
-        final PtyProcess process = this.createDdevSshProcess();
-
-        return new PtyProcessTtyConnector(process, StandardCharsets.UTF_8) {
-            @Override
-            public void close() {
-                if (process instanceof UnixPtyProcess unixPtyProcess) {
-                    unixPtyProcess.hangup();
-                    AppExecutorUtil.getAppScheduledExecutorService().schedule(() -> {
-                        if (process.isAlive()) {
-                            LOG.info("Terminal hasn't been terminated by SIGHUP, performing default termination");
-                            process.destroy();
-                        }
-                    }, 1000, TimeUnit.MILLISECONDS);
-                } else {
-                    process.destroy();
-                }
-            }
-        };
+    protected @NotNull TtyConnector createSessionConnector(@NotNull Process process) {
+        return new DdevTtyConnector((PtyProcess) process);
     }
 
-    private @NotNull PtyProcess createDdevSshProcess() throws ExecutionException {
+    @Override
+    protected @NotNull PtyProcess createSessionProcess() throws ExecutionException {
         State ddevState = DdevStateManager.getInstance(this.myProject).getState();
 
         if (!ddevState.isAvailable()) {
@@ -88,5 +72,45 @@ public final class DdevTerminalRunner extends AbstractTerminalRunner<PtyProcess>
     @Override
     public boolean isTerminalSessionPersistent() {
         return false;
+    }
+
+    /**
+     * Extends jediterm's {@link ProcessTtyConnector} rather than the platform's PtyProcessTtyConnector,
+     * whose constructor signature differs between IDE versions within the supported build range.
+     */
+    private static final class DdevTtyConnector extends ProcessTtyConnector {
+        private final PtyProcess process;
+
+        private DdevTtyConnector(@NotNull PtyProcess process) {
+            super(process, StandardCharsets.UTF_8);
+            this.process = process;
+        }
+
+        @Override
+        public String getName() {
+            return "Local";
+        }
+
+        @Override
+        public void resize(@NotNull TermSize termSize) {
+            if (isConnected()) {
+                process.setWinSize(new WinSize(termSize.getColumns(), termSize.getRows()));
+            }
+        }
+
+        @Override
+        public void close() {
+            if (process instanceof UnixPtyProcess unixPtyProcess) {
+                unixPtyProcess.hangup();
+                AppExecutorUtil.getAppScheduledExecutorService().schedule(() -> {
+                    if (process.isAlive()) {
+                        LOG.info("Terminal hasn't been terminated by SIGHUP, performing default termination");
+                        process.destroy();
+                    }
+                }, 1000, TimeUnit.MILLISECONDS);
+            } else {
+                process.destroy();
+            }
+        }
     }
 }

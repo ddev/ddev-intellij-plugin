@@ -6,6 +6,8 @@ import com.intellij.openapi.vfs.VirtualFileManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -38,10 +40,22 @@ public final class DdevConfigLoaderImpl implements DdevConfigLoader {
         return config;
     }
 
+    /**
+     * Checked on the file system directly, since the state watcher calls this every few seconds and a VFS
+     * refresh on each call is expensive and fails while the VFS is being rebuilt.
+     */
     @Override
     public boolean exists() {
-        final VirtualFile ddevConfig = this.load();
+        final String basePath = this.project.getBasePath();
 
-        return ddevConfig != null && ddevConfig.exists();
+        if (basePath == null) {
+            return false;
+        }
+
+        try {
+            return Files.isRegularFile(Paths.get(basePath, DDEV_CONFIG_PATH));
+        } catch (InvalidPathException exception) {
+            return false;
+        }
     }
 }
