@@ -8,7 +8,7 @@ import java.lang.reflect.Type;
 public interface JsonParser {
     <T> @NotNull T parse(final String json, final Type typeOfT) throws JsonParserException;
 
-    static @NotNull JsonParser getInstance() {
+    static JsonParser getInstance() {
         return ApplicationManager.getApplication().getService(JsonParser.class);
     }
 }

@@ -6,7 +6,11 @@ import com.intellij.openapi.util.SystemInfo;
 
 final class WhichProvider {
     public static String getWhichCommand(String workingDirectory) {
-        if (!SystemInfo.isWindows) {
+        return getWhichCommand(workingDirectory, SystemInfo.isWindows);
+    }
+
+    static String getWhichCommand(String workingDirectory, boolean windows) {
+        if (!windows) {
             return "which";
         }
 

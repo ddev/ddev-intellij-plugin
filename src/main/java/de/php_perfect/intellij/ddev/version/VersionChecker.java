@@ -8,7 +8,7 @@ public interface VersionChecker {
 
     void checkDdevVersion(boolean confirmNewestVersion);
 
-    static @NotNull VersionChecker getInstance(@NotNull Project project) {
+    static VersionChecker getInstance(@NotNull Project project) {
         return project.getService(VersionChecker.class);
     }
 }
