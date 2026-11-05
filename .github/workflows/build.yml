@@ -9,6 +9,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Platform variants, see platformVariants in build.gradle.kts
+        variant: [ '251', '261' ]
 
     steps:
       # Check out current repository
@@ -34,10 +39,10 @@ jobs:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       - name: Build project
-        run: ./gradlew buildPlugin --exclude-task test
+        run: ./gradlew buildPlugin --exclude-task test -PplatformVariant=${{ matrix.variant }}
 
       - name: Upload Assets
         uses: actions/upload-artifact@v7
         with:
-          name: ddev-intellij-plugin
+          name: ddev-intellij-plugin-${{ matrix.variant }}
           path: build/distributions/*.zip

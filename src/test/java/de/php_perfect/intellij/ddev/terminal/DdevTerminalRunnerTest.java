@@ -6,14 +6,12 @@ import de.php_perfect.intellij.ddev.state.DdevConfigLoader;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import de.php_perfect.intellij.ddev.state.MockDdevConfigLoader;
 import de.php_perfect.intellij.ddev.state.State;
-import org.jetbrains.plugins.terminal.ShellStartupOptions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 final class DdevTerminalRunnerTest extends BasePlatformTestCase {
@@ -34,12 +32,7 @@ final class DdevTerminalRunnerTest extends BasePlatformTestCase {
         field.setAccessible(true);
         field.set(state, null);
 
-        final Map<String, String> envVariables = Map.of();
-        final ShellStartupOptions.Builder builder = new ShellStartupOptions.Builder();
-        builder.setWorkingDirectory(project.getBasePath());
-        builder.setEnvVariables(envVariables);
-
-        Assertions.assertThrowsExactly(ExecutionException.class, () -> ddevTerminalRunner.createProcess(builder.build()));
+        Assertions.assertThrowsExactly(ExecutionException.class, ddevTerminalRunner::createSessionProcess);
     }
 
     @Test

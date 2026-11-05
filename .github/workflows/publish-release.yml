@@ -49,8 +49,14 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
-      - name: Publish to JetBrains Marketplace
-        run: ./gradlew publishPlugin
+      # Sequential, so a failing variant stops the release.
+      - name: Publish 2025.x variant to JetBrains Marketplace
+        run: ./gradlew publishPlugin -PplatformVariant=251
+        env:
+          PUBLISH_CHANNEL: ${{ steps.match-channel.outputs.group1 }}
+
+      - name: Publish 2026.1+ variant to JetBrains Marketplace
+        run: ./gradlew publishPlugin -PplatformVariant=261
         env:
           PUBLISH_CHANNEL: ${{ steps.match-channel.outputs.group1 }}
 

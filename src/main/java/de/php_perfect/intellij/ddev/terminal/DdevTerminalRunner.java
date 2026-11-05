@@ -17,8 +17,6 @@ import de.php_perfect.intellij.ddev.cmd.wsl.WslAware;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import de.php_perfect.intellij.ddev.state.State;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.plugins.terminal.AbstractTerminalRunner;
-import org.jetbrains.plugins.terminal.ShellStartupOptions;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -27,26 +25,20 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-public final class DdevTerminalRunner extends AbstractTerminalRunner<PtyProcess> {
+public final class DdevTerminalRunner extends PlatformTerminalRunner {
     private static final Logger LOG = Logger.getInstance(DdevTerminalRunner.class);
 
     public DdevTerminalRunner(@NotNull Project project) {
         super(project);
     }
 
-    // The terminal creates sessions through createProcess(options) followed by createTtyConnector(process);
-    // both exist on every supported platform version, unlike createTtyConnector(options), which is 2026.2+.
     @Override
-    public @NotNull PtyProcess createProcess(@NotNull ShellStartupOptions startupOptions) throws ExecutionException {
-        return this.createDdevSshProcess();
+    protected @NotNull TtyConnector createSessionConnector(@NotNull Process process) {
+        return new DdevTtyConnector((PtyProcess) process);
     }
 
     @Override
-    public @NotNull TtyConnector createTtyConnector(@NotNull PtyProcess process) {
-        return new DdevTtyConnector(process);
-    }
-
-    private @NotNull PtyProcess createDdevSshProcess() throws ExecutionException {
+    protected @NotNull PtyProcess createSessionProcess() throws ExecutionException {
         State ddevState = DdevStateManager.getInstance(this.myProject).getState();
 
         if (!ddevState.isAvailable()) {

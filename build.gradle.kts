@@ -1,6 +1,7 @@
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.jetbrains.intellij.platform.gradle.tasks.VerifyPluginTask
 
 fun properties(key: String) = providers.gradleProperty(key)
 fun environment(key: String) = providers.environmentVariable(key)
@@ -12,9 +13,40 @@ plugins {
     id("jacoco")
 }
 
+// Each variant compiles its own terminal runner against its platform.
+class PlatformVariant(
+    val platformVersion: String,
+    val sinceBuild: String,
+    val untilBuild: String,
+    val verifiedVersions: List<String>,
+    val testBundledPlugins: List<String>,
+)
+
+val platformVariants = mapOf(
+    "251" to PlatformVariant(
+        platformVersion = "2025.1",
+        sinceBuild = "251",
+        untilBuild = "253.*",
+        verifiedVersions = listOf("2025.1", "2025.2", "2025.3"),
+        testBundledPlugins = listOf("intellij.grid.plugin", "intellij.charts", "com.intellij.platform.images"),
+    ),
+    "261" to PlatformVariant(
+        platformVersion = "2026.1",
+        sinceBuild = "261",
+        untilBuild = "263.*",
+        verifiedVersions = listOf("2026.1", "2026.2", "2026.3"),
+        testBundledPlugins = listOf(),
+    ),
+)
+val platformVariantName = properties("platformVariant").get()
+val platformVariant = platformVariants[platformVariantName]
+    ?: throw GradleException("Unknown platformVariant '$platformVariantName', expected one of ${platformVariants.keys}")
+val platformVersion = properties("platformVersion").orElse(platformVariant.platformVersion)
+
 val pluginVersion = environment("GIT_TAG_NAME").orElse("0.0.1-dev").get()
 group = properties("pluginGroup").get()
-version = pluginVersion
+// Marketplace needs a distinct version for each compatibility range.
+version = "$pluginVersion+$platformVariantName"
 
 repositories {
     mavenCentral()
@@ -50,7 +82,7 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:$junitPlatformVersion")
 
     intellijPlatform {
-        phpstorm(properties("platformVersion"))
+        phpstorm(platformVersion)
         pluginVerifier(pluginVerifierVersion)
         zipSigner()
         testFramework(TestFrameworkType.Platform)
@@ -68,20 +100,28 @@ dependencies {
             "org.jetbrains.plugins.terminal"
         )
 
-        // The test runtime does not resolve dependencies of bundled plugins, which leaves the
-        // database plugin disabled in tests without the grid plugin and its chart dependencies, see
+        // 2025.1 tests need explicit database plugin dependencies, see
         // https://github.com/JetBrains/intellij-platform-gradle-plugin/issues/2165
-        testBundledPlugins("intellij.grid.plugin", "intellij.charts", "com.intellij.platform.images")
+        testBundledPlugins(platformVariant.testBundledPlugins)
     }
 }
 
 java {
     toolchain {
-        // Must match the Java version of the oldest supported platform (2025.1 -> 21).
+        // Both build platforms (2025.1 and 2026.1) use Java 21.
         languageVersion.set(JavaLanguageVersion.of(21))
         // Matches the distribution used on CI; some other vendors (e.g. the Microsoft build)
         // break the instrumentCode task, see JetBrains/gradle-intellij-plugin#1240.
         vendor.set(JvmVendorSpec.AZUL)
+    }
+}
+
+sourceSets {
+    main {
+        java.srcDir("src/platform$platformVariantName/java")
+    }
+    test {
+        java.srcDir("src/platform$platformVariantName/test")
     }
 }
 
@@ -96,7 +136,8 @@ intellijPlatform {
         })
 
         ideaVersion {
-            untilBuild = "263.*"
+            sinceBuild = platformVariant.sinceBuild
+            untilBuild = platformVariant.untilBuild
         }
     }
 
@@ -114,6 +155,10 @@ intellijPlatform {
     }
 
     pluginVerification {
+        // The 251 runner needs terminal hooks deprecated in 2025.3.
+        if (platformVariantName == "261") {
+            failureLevel.set(failureLevel.get() + VerifyPluginTask.FailureLevel.SCHEDULED_FOR_REMOVAL_API_USAGES)
+        }
         ignoredProblemsFile = file("ignoredProblems.txt")
         // https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-faq.html#mutePluginVerifierProblems
         freeArgs = listOf(
@@ -123,18 +168,23 @@ intellijPlatform {
         ides {
             // Every release line of the supported range, since the Docker plugin APIs this plugin
             // implements change between releases; the other IDEs at both ends of the range.
-            listOf("2025.1", "2025.2", "2025.3", "2026.1", "2026.2", "263.5701.46").forEach { version ->
+            platformVariant.verifiedVersions.forEach { version ->
                 create(IntelliJPlatformType.PhpStorm, version)
             }
-            listOf("2025.1", "2026.2").forEach { version ->
+            listOf(platformVariant.platformVersion, if (platformVariantName == "251") "2025.3" else "2026.3").forEach { version ->
                 create(IntelliJPlatformType.WebStorm, version)
                 create(IntelliJPlatformType.DataGrip, version)
                 create(IntelliJPlatformType.IntellijIdeaUltimate, version)
+            }
+            if (platformVariantName == "251") {
+                // Latest 2025.3 patch release.
+                create(IntelliJPlatformType.IntellijIdeaUltimate, "2025.3.6.1")
             }
         }
     }
 
     changelog {
+        version.set(pluginVersion)
         groups.empty()
         versionPrefix.set("")
         repositoryUrl = properties("pluginRepositoryUrl")

@@ -13,6 +13,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-latest, windows-latest ]
+        # Platform variants, see platformVariants in build.gradle.kts
+        variant: [ '251', '261' ]
 
     steps:
       # Check out current repository
@@ -36,18 +38,18 @@ jobs:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
       - name: Run tests
-        run: ./gradlew test --stacktrace --info jacocoTestReport
+        run: ./gradlew test --stacktrace --info jacocoTestReport -PplatformVariant=${{ matrix.variant }}
 
       - name: Upload Test Report
         if: ${{ always() }}
         uses: actions/upload-artifact@v7
         with:
-          name: test-report-${{ matrix.os }}
+          name: test-report-${{ matrix.os }}-${{ matrix.variant }}
           path: build/reports/tests/test
 
       - name: Upload HTML test coverage report
         if: ${{ matrix.os == 'ubuntu-latest' && always() }}
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-report
+          name: coverage-report-${{ matrix.variant }}
           path: build/reports/jacoco/test/html

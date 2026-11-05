@@ -9,6 +9,11 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Platform variants, see platformVariants in build.gradle.kts
+        variant: [ '251', '261' ]
     steps:
       # Free GitHub Actions Environment Disk Space
       - name: Maximize Build Space
@@ -35,10 +40,10 @@ jobs:
           cache-read-only: true
 
       - name: Verify Plugin
-        run: ./gradlew verifyPlugin --stacktrace --info
+        run: ./gradlew verifyPlugin --stacktrace --info -PplatformVariant=${{ matrix.variant }}
 
       - name: Upload Report
         uses: actions/upload-artifact@v7
         with:
-          name: test-report-${{ matrix.os }}
+          name: plugin-verifier-report-${{ matrix.variant }}
           path: build/reports/pluginVerifier
