@@ -11,6 +11,7 @@ plugins {
     id("org.jetbrains.intellij.platform") version "2.20.0"
     id("java")
     id("jacoco")
+    id("org.sonarqube") version "7.5.0.8588"
 }
 
 // Each variant compiles its own terminal runner against its platform.
@@ -229,4 +230,15 @@ tasks {
             xml.required.set(true)
         }
     }
+}
+
+sonar {
+    properties {
+        property("sonar.projectKey", "ddev-intellij-plugin")
+        property("sonar.organization", "ddev")
+    }
+}
+
+tasks.sonar {
+    dependsOn(tasks.jacocoTestReport)
 }

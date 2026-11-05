@@ -10,6 +10,7 @@ The formats is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 * Extend the declared IDE compatibility range to include IntelliJ 2026.3 (263.*) by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/542
 * Extend the supported IDE range down to 2025.1 (251.*), so users of IntelliJ 2025.1 to 2026.1 receive updates again by @AkibaAT
 * Publish separate builds for 2025.1 to 2025.3 and for 2026.1 to 2026.3 by @AkibaAT
+* Restore the SonarCloud analysis workflow under the DDEV organization by @AkibaAT
 * Show failing DDEV commands as a notification with the error DDEV reported instead of raising an IDE error on every status poll by @AkibaAT
 * Replace the deprecated `DynamicBundle(String)` constructor with `DynamicBundle(Class, String)` to address the API deprecation reported for IntelliJ 2026.3 by @AkibaAT in https://github.com/ddev/ddev-intellij-plugin/pull/542
 
