@@ -10,6 +10,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
@@ -77,6 +78,22 @@ final class DdevConfigLoaderTest extends BasePlatformTestCase {
         }
 
         Assertions.assertInstanceOf(VirtualFile.class, new DdevConfigLoaderImpl(project).load());
+    }
+
+    @Test
+    void projectWithoutBasePathHasNoConfig() {
+        final DdevConfigLoaderImpl loader = new DdevConfigLoaderImpl(Mockito.mock(Project.class));
+
+        Assertions.assertFalse(loader.exists());
+        Assertions.assertNull(loader.load());
+    }
+
+    @Test
+    void invalidBasePathHasNoConfig() {
+        final Project project = Mockito.mock(Project.class);
+        Mockito.when(project.getBasePath()).thenReturn("/invalid\0path");
+
+        Assertions.assertFalse(new DdevConfigLoaderImpl(project).exists());
     }
 
     @Override

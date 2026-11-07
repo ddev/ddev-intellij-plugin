@@ -65,6 +65,7 @@ dependencies {
     val junitPlatformVersion = "6.1.3"
     val mockitoVersion = "5.24.0"
     val assertjVersion = "3.27.7"
+    val awaitilityVersion = "4.3.0"
     val pluginVerifierVersion = "1.411"
 
     // Implementation dependencies
@@ -77,6 +78,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
     testImplementation("org.mockito:mockito-core:$mockitoVersion")
     testImplementation("org.assertj:assertj-core:$assertjVersion")
+    testImplementation("org.awaitility:awaitility:$awaitilityVersion")
 
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-params:$junitVersion")

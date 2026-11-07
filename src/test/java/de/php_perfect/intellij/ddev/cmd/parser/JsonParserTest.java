@@ -57,12 +57,19 @@ final class JsonParserTest {
         Assertions.assertEquals("8.1", actual.getPhpVersion());
     }
 
-
     @Test
     void parseVersionSuccessfully() throws JsonParserException, IOException {
         String json = Files.readString(Path.of("src/test/resources/ddev_version.json"));
         Versions actual = new JsonParserImpl().parse(json, Versions.class);
 
         Assertions.assertEquals("v1.19.0", actual.getDdevVersion());
+    }
+
+    @Test
+    void skipsEmptyLines() throws JsonParserException {
+        TestObject expected = new TestObject();
+        expected.foo = "Bar";
+
+        Assertions.assertEquals(expected, new JsonParserImpl().parse("\n{\"raw\":{\"foo\":\"Bar\"}}", TestObject.class));
     }
 }

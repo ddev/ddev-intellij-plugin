@@ -8,7 +8,7 @@ import org.jetbrains.annotations.Nullable;
 public interface ReleaseClient {
     @Nullable LatestRelease loadCurrentVersion(@NotNull ProgressIndicator indicator);
 
-    static @NotNull ReleaseClient getInstance() {
+    static ReleaseClient getInstance() {
         return ApplicationManager.getApplication().getService(ReleaseClient.class);
     }
 }
