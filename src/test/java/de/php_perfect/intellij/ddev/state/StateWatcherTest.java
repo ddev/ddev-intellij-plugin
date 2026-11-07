@@ -2,8 +2,8 @@ package de.php_perfect.intellij.ddev.state;
 
 import com.intellij.testFramework.ServiceContainerUtil;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
-import org.junit.Assert;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -25,27 +25,27 @@ final class StateWatcherTest extends BasePlatformTestCase {
     @Test
     void startWatching() {
         stateWatcher.startWatching();
-        Assert.assertTrue(stateWatcher.isWatching());
+        Assertions.assertTrue(stateWatcher.isWatching());
     }
 
     @Test
     void startWatchingTwice() {
         stateWatcher.startWatching();
         stateWatcher.startWatching();
-        Assert.assertTrue(stateWatcher.isWatching());
+        Assertions.assertTrue(stateWatcher.isWatching());
     }
 
     @Test
     void startStopWatching() {
         stateWatcher.startWatching();
         stateWatcher.stopWatching();
-        Assert.assertFalse(stateWatcher.isWatching());
+        Assertions.assertFalse(stateWatcher.isWatching());
     }
 
     @Test
     void startStopWatchingWithoutStart() {
         stateWatcher.stopWatching();
-        Assert.assertFalse(stateWatcher.isWatching());
+        Assertions.assertFalse(stateWatcher.isWatching());
     }
 
     @Test
@@ -60,7 +60,7 @@ final class StateWatcherTest extends BasePlatformTestCase {
 
         stateWatcher.startWatching();
 
-        Assert.assertTrue(updated.await(30, TimeUnit.SECONDS));
+        Assertions.assertTrue(updated.await(30, TimeUnit.SECONDS));
         stateWatcher.stopWatching();
         Mockito.verify(stateManager, Mockito.atLeastOnce()).updateConfiguration();
     }

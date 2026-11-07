@@ -18,7 +18,7 @@ final class NodeInterpreterConfigTest {
     @Test
     void differingConfigsDoNotMatch() {
         Assertions.assertNotEquals(null, this.config);
-        Assertions.assertNotEquals("acol", this.config);
+        Assertions.assertNotEquals(new Object(), this.config);
         Assertions.assertNotEquals(new NodeInterpreterConfig("other", "/compose.yaml", "node"), this.config);
         Assertions.assertNotEquals(new NodeInterpreterConfig("acol", "/other.yaml", "node"), this.config);
         Assertions.assertNotEquals(new NodeInterpreterConfig("acol", "/compose.yaml", "nodejs"), this.config);

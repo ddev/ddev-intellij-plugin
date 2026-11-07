@@ -57,7 +57,7 @@ final class OpenServiceActionTest extends BasePlatformTestCase {
         final OpenServiceAction otherUri = new OpenServiceAction(URI.create("https://mail.ddev.site"), "Open", null, null);
 
         Assertions.assertNotEquals(action, otherUri);
-        Assertions.assertNotEquals(action, null);
+        Assertions.assertNotEquals(null, action);
         Assertions.assertNotEquals(action, new DdevStartAction());
     }
 

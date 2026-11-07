@@ -235,6 +235,7 @@ final class DdevStatusBarWidgetImplTest extends BasePlatformTestCase {
 
         @Override
         public void actionPerformed(@NotNull AnActionEvent e) {
+            // Only the action text matters to these tests.
         }
     }
 

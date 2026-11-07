@@ -20,7 +20,7 @@ final class ServerConfigTest {
     @Test
     void differingConfigsDoNotMatch() {
         Assertions.assertNotEquals(null, this.config);
-        Assertions.assertNotEquals("/local", this.config);
+        Assertions.assertNotEquals(new Object(), this.config);
         Assertions.assertNotEquals(new ServerConfig("/other", "/var/www/html", URI.create("https://acol.ddev.site")), this.config);
         Assertions.assertNotEquals(new ServerConfig("/local", "/srv", URI.create("https://acol.ddev.site")), this.config);
         Assertions.assertNotEquals(new ServerConfig("/local", "/var/www/html", URI.create("https://other.ddev.site")), this.config);

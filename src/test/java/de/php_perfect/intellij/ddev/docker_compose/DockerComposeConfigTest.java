@@ -20,7 +20,7 @@ final class DockerComposeConfigTest {
     @Test
     void differingConfigsDoNotMatch() {
         Assertions.assertNotEquals(null, this.config);
-        Assertions.assertNotEquals("acol", this.config);
+        Assertions.assertNotEquals(new Object(), this.config);
         Assertions.assertNotEquals(new DockerComposeConfig(List.of("/other.yaml"), "acol"), this.config);
         Assertions.assertNotEquals(new DockerComposeConfig(List.of("/compose.yaml"), "other"), this.config);
     }

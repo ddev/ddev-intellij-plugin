@@ -11,12 +11,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.awaitility.Awaitility;
 import org.mockito.Mockito;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BooleanSupplier;
 
 final class DdevDataSourceManagerImplTest extends BasePlatformTestCase {
     private static final DataSourceConfig CONFIG = new DataSourceConfig("DDEV", "DDEV generated data source", DataSourceConfig.Type.MARIADB, "10.11", "127.0.0.1", 1, "db", "db", "db");
@@ -45,7 +45,7 @@ final class DdevDataSourceManagerImplTest extends BasePlatformTestCase {
     }
 
     @Test
-    void createsManagedDataSource() throws InterruptedException {
+    void createsManagedDataSource() {
         new DdevDataSourceManagerImpl(this.getProject()).updateDdevDataSource(CONFIG);
         this.awaitIntrospection();
 
@@ -62,7 +62,7 @@ final class DdevDataSourceManagerImplTest extends BasePlatformTestCase {
     }
 
     @Test
-    void upToDateDataSourceIsLeftUntouched() throws InterruptedException {
+    void upToDateDataSourceIsLeftUntouched() {
         final DdevDataSourceManagerImpl manager = new DdevDataSourceManagerImpl(this.getProject());
         manager.updateDdevDataSource(CONFIG);
         this.awaitIntrospection();
@@ -74,7 +74,7 @@ final class DdevDataSourceManagerImplTest extends BasePlatformTestCase {
     }
 
     @Test
-    void changedConfigurationUpdatesManagedDataSource() throws InterruptedException {
+    void changedConfigurationUpdatesManagedDataSource() {
         final DdevDataSourceManagerImpl manager = new DdevDataSourceManagerImpl(this.getProject());
         manager.updateDdevDataSource(CONFIG);
         this.awaitIntrospection();
@@ -108,10 +108,12 @@ final class DdevDataSourceManagerImplTest extends BasePlatformTestCase {
         });
     }
 
-    private void awaitIntrospection() throws InterruptedException {
+    private void awaitIntrospection() {
         this.flushEventQueue();
-        waitWhile(() -> !isIntrospectionRunning(), 5);
-        waitWhile(DdevDataSourceManagerImplTest::isIntrospectionRunning, 30);
+        Awaitility.await().pollInterval(Duration.ofMillis(20)).atMost(Duration.ofSeconds(5))
+                .until(DdevDataSourceManagerImplTest::isIntrospectionRunning);
+        Awaitility.await().pollInterval(Duration.ofMillis(20)).atMost(Duration.ofSeconds(30))
+                .until(() -> !isIntrospectionRunning());
     }
 
     private static boolean isIntrospectionRunning() {
@@ -121,13 +123,6 @@ final class DdevDataSourceManagerImplTest extends BasePlatformTestCase {
                 .flatMap(Arrays::stream)
                 .map(StackTraceElement::getClassName)
                 .anyMatch(className -> className.equals(managerClass) || className.startsWith(managerClass + "$"));
-    }
-
-    private static void waitWhile(BooleanSupplier condition, long seconds) throws InterruptedException {
-        final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(seconds);
-        while (condition.getAsBoolean() && System.nanoTime() < deadline) {
-            Thread.sleep(20);
-        }
     }
 
     private void removeDataSources() {

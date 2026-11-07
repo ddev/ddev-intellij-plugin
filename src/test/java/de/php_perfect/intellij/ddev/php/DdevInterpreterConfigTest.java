@@ -18,7 +18,7 @@ final class DdevInterpreterConfigTest {
     @Test
     void differingConfigsDoNotMatch() {
         Assertions.assertNotEquals(null, this.config);
-        Assertions.assertNotEquals("acol", this.config);
+        Assertions.assertNotEquals(new Object(), this.config);
         Assertions.assertNotEquals(new DdevInterpreterConfig("other", "php8.1", "/compose.yaml"), this.config);
         Assertions.assertNotEquals(new DdevInterpreterConfig("acol", "php7.4", "/compose.yaml"), this.config);
         Assertions.assertNotEquals(new DdevInterpreterConfig("acol", "php8.1", "/other.yaml"), this.config);

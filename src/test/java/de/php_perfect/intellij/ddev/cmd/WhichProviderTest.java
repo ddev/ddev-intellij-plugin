@@ -28,7 +28,8 @@ final class WhichProviderTest {
     @Test
     void usesWhichInsideWsl() {
         try (MockedStatic<WslPath> wslPath = Mockito.mockStatic(WslPath.class)) {
-            wslPath.when(() -> WslPath.getDistributionByWindowsUncPath(WSL_PATH)).thenReturn(Mockito.mock(WSLDistribution.class));
+            final WSLDistribution distribution = Mockito.mock(WSLDistribution.class);
+            wslPath.when(() -> WslPath.getDistributionByWindowsUncPath(WSL_PATH)).thenReturn(distribution);
 
             Assertions.assertEquals("which", WhichProvider.getWhichCommand(WSL_PATH, true));
         }

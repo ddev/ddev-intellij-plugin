@@ -49,8 +49,9 @@ final class PluginVersionTest {
 
     private static Throwable initializationFailure(@Nullable InputStream resource) {
         final ClassLoader loader = new ResourceOverridingClassLoader(resource);
+        final String className = PluginVersion.class.getName();
         final ExceptionInInitializerError error = Assertions.assertThrows(ExceptionInInitializerError.class,
-                () -> Class.forName(PluginVersion.class.getName(), true, loader));
+                () -> Class.forName(className, true, loader));
 
         return error.getCause();
     }

@@ -21,7 +21,7 @@ final class StateImplTest {
         final StateImpl state = state(true, "v1.19.0", "acol", "/bin/ddev");
 
         Assertions.assertNotEquals(null, state);
-        Assertions.assertNotEquals("acol", state);
+        Assertions.assertNotEquals(new Object(), state);
         Assertions.assertNotEquals(state(false, "v1.19.0", "acol", "/bin/ddev"), state);
         Assertions.assertNotEquals(state(true, "v1.20.0", "acol", "/bin/ddev"), state);
         Assertions.assertNotEquals(state(true, "v1.19.0", "other", "/bin/ddev"), state);

@@ -18,7 +18,7 @@ final class DataSourceConfigTest {
     @Test
     void differingConfigsDoNotMatch() {
         Assertions.assertNotEquals(null, this.config);
-        Assertions.assertNotEquals("DDEV", this.config);
+        Assertions.assertNotEquals(new Object(), this.config);
         Assertions.assertNotEquals(config("DDEV", "desc", DataSourceConfig.Type.MYSQL, "8.0", "127.0.0.1", 3307, "db", "user", "pass"), this.config);
         Assertions.assertNotEquals(config("Other", "desc", DataSourceConfig.Type.MYSQL, "8.0", "127.0.0.1", 3306, "db", "user", "pass"), this.config);
         Assertions.assertNotEquals(config("DDEV", "other", DataSourceConfig.Type.MYSQL, "8.0", "127.0.0.1", 3306, "db", "user", "pass"), this.config);

@@ -62,7 +62,7 @@ final class ValueObjectTest {
         Assertions.assertEquals(value, equalValue);
         Assertions.assertEquals(value.hashCode(), equalValue.hashCode());
         Assertions.assertNotEquals(null, value);
-        Assertions.assertNotEquals(value, "other");
+        Assertions.assertNotEquals("other", value);
 
         for (final Object differentValue : differentValues) {
             Assertions.assertNotEquals(value, differentValue, differentValue.toString());
