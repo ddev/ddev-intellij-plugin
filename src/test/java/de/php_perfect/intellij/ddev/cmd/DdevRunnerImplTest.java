@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -179,7 +180,7 @@ final class DdevRunnerImplTest extends BasePlatformTestCase {
 
         Mockito.verify(this.runner).run(commandLine.capture(), Mockito.eq(expectedTitle), afterCompletion.capture());
         Assertions.assertEquals(expectedCommandLine, commandLine.getValue().getCommandLineString());
-        Assertions.assertEquals(getProject().getBasePath(), commandLine.getValue().getWorkDirectory().getPath());
+        Assertions.assertEquals(Path.of(getProject().getBasePath()), commandLine.getValue().getWorkDirectory().toPath());
 
         afterCompletion.getValue().run();
 

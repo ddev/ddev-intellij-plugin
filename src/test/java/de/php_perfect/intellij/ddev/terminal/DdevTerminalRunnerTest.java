@@ -22,7 +22,14 @@ import org.mockito.Mockito;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -50,11 +57,16 @@ final class DdevTerminalRunnerTest extends BasePlatformTestCase {
 
     @Test
     @DisabledOnOs(OS.WINDOWS)
-    void createProcessStartsDdevSsh() throws ExecutionException, InterruptedException {
+    void createProcessStartsDdevSsh() throws Exception {
         stubDdevBinary("/bin/echo");
+        Files.createDirectories(Path.of(Objects.requireNonNull(getProject().getBasePath())));
 
         final PtyProcess process = new DdevTerminalRunner(getProject()).createSessionProcess();
         try {
+            // macOS blocks the exiting child until PTY output is drained.
+            final CompletableFuture<String> output = CompletableFuture.supplyAsync(() -> readOutput(process));
+
+            Assertions.assertEquals("ssh", output.get(10, TimeUnit.SECONDS).trim());
             Assertions.assertTrue(process.waitFor(10, TimeUnit.SECONDS));
             Assertions.assertEquals(0, process.exitValue());
         } finally {
@@ -135,6 +147,14 @@ final class DdevTerminalRunnerTest extends BasePlatformTestCase {
     private void stubDdevBinary(String binary) {
         final State state = DdevStateStub.install(getProject(), getTestRootDisposable(), true, true, null).getState();
         Mockito.when(state.getDdevBinary()).thenReturn(binary);
+    }
+
+    private static String readOutput(PtyProcess process) {
+        try {
+            return new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private static <T extends PtyProcess> T mockProcess(Class<T> type) {
