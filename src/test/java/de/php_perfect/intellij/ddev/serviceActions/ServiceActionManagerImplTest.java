@@ -55,6 +55,49 @@ final class ServiceActionManagerImplTest {
         ));
     }
 
+    @Test
+    void missingDescriptionKeepsExistingActions() {
+        final AnAction existingAction = anAction("Open existing action", "https://www.existing.com", "existing action");
+        var serviceActionManager = new ServiceActionManagerImpl(new HashMap<>(Map.of("existingAction", existingAction)));
+
+        serviceActionManager.updateActionsByDescription(null);
+
+        assertThat(serviceActionManager.getServiceActions()).containsExactly(existingAction);
+    }
+
+    @Test
+    void servicesWithoutUsableAbsoluteUrlAreSkipped() {
+        var serviceActionManager = new ServiceActionManagerImpl(new HashMap<>());
+
+        serviceActionManager.updateActionsByDescription(aDescriptionWithServices(Map.of(
+                "invalid", new Service("invalid", "https://in valid.ddev.site", null),
+                "relative", new Service("relative", "/relative/path", null),
+                "internal", new Service("internal", null, null)
+        )));
+
+        assertThat(serviceActionManager.getServiceActions()).isEmpty();
+    }
+
+    @Test
+    void httpUrlIsUsedWithoutHttpsUrl() {
+        var serviceActionManager = new ServiceActionManagerImpl(new HashMap<>());
+
+        serviceActionManager.updateActionsByDescription(aDescriptionWithServices(Map.of(
+                "plain", new Service("plain", null, "http://plain.ddev.site")
+        )));
+
+        assertThat(serviceActionManager.getServiceActions()).containsExactly(
+                anAction("Open plain", "http://plain.ddev.site", "Open plain service in your browser"));
+    }
+
+    private Description aDescriptionWithServices(Map<String, Service> services) {
+        return Description.builder()
+                .name("test")
+                .status(Status.RUNNING)
+                .services(services)
+                .build();
+    }
+
     private AnAction anAction(String displayText, String uri, String description) {
         return new OpenServiceAction(URI.create(uri), displayText, description, AllIcons.General.Web);
     }

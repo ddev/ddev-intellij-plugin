@@ -1,5 +1,6 @@
 package de.php_perfect.intellij.ddev.cmd;
 
+import com.intellij.execution.ExecutionException;
 import com.intellij.execution.process.ProcessOutput;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.util.SystemInfo;
@@ -48,6 +49,16 @@ final class BinaryLocatorTest extends BasePlatformTestCase {
 
         MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
         mockProcessExecutor.addProcessOutput(expectedWhich + " ddev", processOutput);
+
+        Assertions.assertNull(new BinaryLocatorImpl().findInPath(getProject()));
+    }
+
+    @Test
+    void lookupFailure() {
+        final String which = SystemInfo.isWindows ? "where" : "which";
+
+        MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
+        mockProcessExecutor.addProcessFailure(which + " ddev", new ExecutionException("not startable"));
 
         Assertions.assertNull(new BinaryLocatorImpl().findInPath(getProject()));
     }

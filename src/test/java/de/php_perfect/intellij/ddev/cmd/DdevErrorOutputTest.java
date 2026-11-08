@@ -29,4 +29,14 @@ final class DdevErrorOutputTest {
     void emptyOutput() {
         Assertions.assertNull(DdevErrorOutput.extractMessage(""));
     }
+
+    @Test
+    void keepsBrokenJsonAsPlainText() {
+        Assertions.assertEquals("{\"level\":\"fatal\"", DdevErrorOutput.extractMessage("{\"level\":\"fatal\"\n"));
+    }
+
+    @Test
+    void ignoresErrorLinesWithoutMessage() {
+        Assertions.assertNull(DdevErrorOutput.extractMessage("{\"level\":\"error\",\"msg\":{\"text\":\"x\"}}\n{\"msg\":\"no level\"}\n"));
+    }
 }

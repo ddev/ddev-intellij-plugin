@@ -1,5 +1,6 @@
 package de.php_perfect.intellij.ddev.cmd;
 
+import com.intellij.execution.ExecutionException;
 import com.intellij.execution.process.ProcessOutput;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
@@ -125,5 +126,69 @@ final class DdevImplTest extends BasePlatformTestCase {
 
         final CommandFailedException exception = Assertions.assertThrows(CommandFailedException.class, () -> new DdevImpl().describe("ddev", getProject()));
         Assertions.assertEquals("Failed to describe project(s): GetFileAttributesEx /home/user/projects/app: The system cannot find the path specified.", exception.getDdevMessage());
+    }
+
+    @Test
+    void versionWithUnexpectedOutput() {
+        this.executor().addProcessOutput("ddev --version", new ProcessOutput("something else", "", 0, false, false));
+
+        final CommandFailedException exception = Assertions.assertThrows(CommandFailedException.class, () -> new DdevImpl().version("ddev", getProject()));
+        Assertions.assertTrue(exception.getMessage().contains("something else"));
+    }
+
+    @Test
+    void versionTimeout() {
+        this.executor().addProcessOutput("ddev --version", new ProcessOutput("", "", -1, true, false));
+
+        final CommandFailedException exception = Assertions.assertThrows(CommandFailedException.class, () -> new DdevImpl().version("ddev", getProject()));
+        Assertions.assertTrue(exception.getMessage().startsWith("Command timed out after 15 seconds"));
+    }
+
+    @Test
+    void versionFailureCarriesDdevMessage() {
+        this.executor().addProcessOutput("ddev --version", new ProcessOutput("", "Docker is not running", 1, false, false));
+
+        final CommandFailedException exception = Assertions.assertThrows(CommandFailedException.class, () -> new DdevImpl().version("ddev", getProject()));
+        Assertions.assertEquals("Docker is not running", exception.getDdevMessage());
+    }
+
+    @Test
+    void versionExecutionFailure() {
+        final ExecutionException cause = new ExecutionException("not startable");
+        this.executor().addProcessFailure("ddev --version", cause);
+
+        final CommandFailedException exception = Assertions.assertThrows(CommandFailedException.class, () -> new DdevImpl().version("ddev", getProject()));
+        Assertions.assertSame(cause, exception.getCause());
+        Assertions.assertNull(exception.getDdevMessage());
+    }
+
+    @Test
+    void describeTimeout() {
+        this.executor().addProcessOutput("ddev describe --json-output", new ProcessOutput("", "", -1, true, false));
+
+        final CommandFailedException exception = Assertions.assertThrows(CommandFailedException.class, () -> new DdevImpl().describe("ddev", getProject()));
+        Assertions.assertTrue(exception.getMessage().startsWith("Command timed out after 300 seconds"));
+    }
+
+    @Test
+    void describeExecutionFailure() {
+        final ExecutionException cause = new ExecutionException("not startable");
+        this.executor().addProcessFailure("ddev describe --json-output", cause);
+
+        final CommandFailedException exception = Assertions.assertThrows(CommandFailedException.class, () -> new DdevImpl().describe("ddev", getProject()));
+        Assertions.assertSame(cause, exception.getCause());
+    }
+
+    @Test
+    void describeWithInvalidJson() {
+        this.executor().addProcessOutput("ddev describe --json-output", new ProcessOutput("not json", "", 0, false, false));
+
+        final CommandFailedException exception = Assertions.assertThrows(CommandFailedException.class, () -> new DdevImpl().describe("ddev", getProject()));
+        Assertions.assertTrue(exception.getMessage().endsWith("not json"));
+        Assertions.assertNotNull(exception.getCause());
+    }
+
+    private MockProcessExecutor executor() {
+        return (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
     }
 }

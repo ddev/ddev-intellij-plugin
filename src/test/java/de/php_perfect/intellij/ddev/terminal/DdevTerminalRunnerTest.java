@@ -7,6 +7,7 @@ import com.jediterm.terminal.TtyConnector;
 import com.pty4j.PtyProcess;
 import com.pty4j.WinSize;
 import com.pty4j.unix.UnixPtyProcess;
+import de.php_perfect.intellij.ddev.actions.DdevStateStub;
 import de.php_perfect.intellij.ddev.state.DdevConfigLoader;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import de.php_perfect.intellij.ddev.state.MockDdevConfigLoader;
@@ -15,11 +16,20 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.mockito.Mockito;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -43,6 +53,40 @@ final class DdevTerminalRunnerTest extends BasePlatformTestCase {
         field.set(state, null);
 
         Assertions.assertThrowsExactly(ExecutionException.class, ddevTerminalRunner::createSessionProcess);
+    }
+
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    void createProcessStartsDdevSsh() throws Exception {
+        stubDdevBinary("/bin/echo");
+        Files.createDirectories(Path.of(Objects.requireNonNull(getProject().getBasePath())));
+
+        final PtyProcess process = new DdevTerminalRunner(getProject()).createSessionProcess();
+        try {
+            // macOS blocks the exiting child until PTY output is drained.
+            final CompletableFuture<String> output = CompletableFuture.supplyAsync(() -> readOutput(process));
+
+            Assertions.assertEquals("ssh", output.get(10, TimeUnit.SECONDS).trim());
+            Assertions.assertTrue(process.waitFor(10, TimeUnit.SECONDS));
+            Assertions.assertEquals(0, process.exitValue());
+        } finally {
+            process.destroy();
+        }
+    }
+
+    @Test
+    void createProcessFailsForUnstartableBinary() {
+        stubDdevBinary("/nonexistent/ddev");
+
+        final DdevTerminalRunner ddevTerminalRunner = new DdevTerminalRunner(getProject());
+        final ExecutionException exception = Assertions.assertThrowsExactly(ExecutionException.class, ddevTerminalRunner::createSessionProcess);
+
+        Assertions.assertInstanceOf(com.intellij.execution.ExecutionException.class, exception.getCause());
+    }
+
+    @Test
+    void defaultTabTitleNamesWebContainer() {
+        Assertions.assertEquals("DDEV Web Container", new DdevTerminalRunner(getProject()).getDefaultTabTitle());
     }
 
     @Test
@@ -98,6 +142,19 @@ final class DdevTerminalRunnerTest extends BasePlatformTestCase {
 
         Mockito.verify(process).hangup();
         Assertions.assertTrue(destroyed.await(5, TimeUnit.SECONDS));
+    }
+
+    private void stubDdevBinary(String binary) {
+        final State state = DdevStateStub.install(getProject(), getTestRootDisposable(), true, true, null).getState();
+        Mockito.when(state.getDdevBinary()).thenReturn(binary);
+    }
+
+    private static String readOutput(PtyProcess process) {
+        try {
+            return new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     private static <T extends PtyProcess> T mockProcess(Class<T> type) {
