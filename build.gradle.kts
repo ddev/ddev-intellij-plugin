@@ -137,8 +137,9 @@ intellijPlatform {
 
     pluginConfiguration {
         name = properties("pluginName")
+        // Prereleases use the change notes of their upcoming stable version.
         changeNotes.set(provider {
-            changelog.getOrNull(pluginVersion)
+            changelog.getOrNull(pluginVersion.substringBefore('-'))
                 ?.let { changelog.renderItem(it, Changelog.OutputType.HTML) }
         })
 
