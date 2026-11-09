@@ -1,17 +1,22 @@
 package de.php_perfect.intellij.ddev.actions;
 
+import com.intellij.execution.process.ProcessHandler;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.impl.SimpleDataContext;
+import com.intellij.openapi.util.Disposer;
 import com.intellij.testFramework.TestActionEvent;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import de.php_perfect.intellij.ddev.cmd.Description.Status;
+import de.php_perfect.intellij.ddev.cmd.ShareManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
 
 import java.net.URI;
 import java.util.function.Supplier;
@@ -106,5 +111,20 @@ final class DdevAwareActionStateTest extends BasePlatformTestCase {
         action.update(event);
 
         Assertions.assertEquals(expectedEnabled, event.getPresentation().isEnabled());
+    }
+
+    @Test
+    void shareIsDisabledWhileSharing() {
+        DdevStateStub.install(getProject(), getTestRootDisposable(), true, true, Status.RUNNING);
+        final ShareManager shareManager = ShareManager.getInstance(getProject());
+        shareManager.setShareProcessHandler(Mockito.mock(ProcessHandler.class));
+        Disposer.register(getTestRootDisposable(), () -> shareManager.setShareProcessHandler(null));
+
+        final DdevShareAction action = new DdevShareAction();
+        final AnActionEvent event = TestActionEvent.createTestEvent(action, SimpleDataContext.getProjectContext(getProject()));
+
+        action.update(event);
+
+        Assertions.assertFalse(event.getPresentation().isEnabled());
     }
 }

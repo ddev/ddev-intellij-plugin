@@ -3,6 +3,7 @@ package de.php_perfect.intellij.ddev.actions;
 import com.intellij.openapi.project.Project;
 import de.php_perfect.intellij.ddev.cmd.DdevRunner;
 import de.php_perfect.intellij.ddev.cmd.Description;
+import de.php_perfect.intellij.ddev.cmd.ShareManager;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
 import de.php_perfect.intellij.ddev.state.State;
 import org.jetbrains.annotations.NotNull;
@@ -27,6 +28,6 @@ public final class DdevShareAction extends DdevRunAction {
             return false;
         }
 
-        return description.getStatus() == Description.Status.RUNNING;
+        return description.getStatus() == Description.Status.RUNNING && !ShareManager.getInstance(project).isSharing();
     }
 }
