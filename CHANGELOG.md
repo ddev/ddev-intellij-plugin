@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The formats is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
-## [1.3.0-alpha4]
+## [1.3.0]
 
 Cumulative release notes since the last stable release, **1.2.9**, including all 1.3.0 feature work and subsequent fixes.
 
