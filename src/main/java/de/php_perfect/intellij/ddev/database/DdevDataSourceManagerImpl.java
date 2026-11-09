@@ -64,33 +64,30 @@ public final class DdevDataSourceManagerImpl implements DdevDataSourceManager {
         ApplicationManager.getApplication().invokeLater(() -> {
             localDataSourceManager.fireDataSourceUpdated(dataSource);
 
-            // Only trigger introspection for newly created data sources
-            if (isNewDataSource) {
-                ApplicationManager.getApplication().executeOnPooledThread(() -> {
-                    try {
-                        // Give the data source a moment to be fully configured
-                        Thread.sleep(1000);
-                        LoaderContext loaderContext = LoaderContext.selectGeneralTask(project, dataSource);
-                        DataSourceUtilKt.performAutoIntrospection(loaderContext, false, new Continuation<Object>() {
-                            @Override
-                            public @NotNull CoroutineContext getContext() {
-                                return EmptyCoroutineContext.INSTANCE;
-                            }
+            ApplicationManager.getApplication().executeOnPooledThread(() -> {
+                try {
+                    // Give the data source a moment to be fully configured
+                    Thread.sleep(1000);
+                    LoaderContext loaderContext = LoaderContext.selectGeneralTask(project, dataSource);
+                    DataSourceUtilKt.performAutoIntrospection(loaderContext, false, new Continuation<Object>() {
+                        @Override
+                        public @NotNull CoroutineContext getContext() {
+                            return EmptyCoroutineContext.INSTANCE;
+                        }
 
-                            @Override
-                            public void resumeWith(@NotNull Object o) {
-                                // No action needed - auto-introspection is fire-and-forget
-                            }
-                        });
-                        LOG.debug("Triggered introspection for new data source: " + dataSource.getName());
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        LOG.debug("Interrupted while triggering introspection for new data source", e);
-                    } catch (Exception e) {
-                        LOG.debug("Could not trigger introspection for new data source", e);
-                    }
-                });
-            }
+                        @Override
+                        public void resumeWith(@NotNull Object o) {
+                            // No action needed - auto-introspection is fire-and-forget
+                        }
+                    });
+                    LOG.debug("Triggered introspection for data source: " + dataSource.getName());
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    LOG.debug("Interrupted while triggering introspection for data source", e);
+                } catch (Exception e) {
+                    LOG.debug("Could not trigger introspection for data source", e);
+                }
+            });
         });
 
         managedConfigurationIndex.set(dataSource.getUniqueId(), DataSourceConfig.class, hash);
