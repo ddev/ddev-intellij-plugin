@@ -1,6 +1,7 @@
 package de.php_perfect.intellij.ddev.cmd;
 
 import com.intellij.execution.configurations.GeneralCommandLine;
+import com.intellij.execution.process.ProcessHandler;
 import com.intellij.execution.ui.RunContentDescriptor;
 import com.intellij.execution.ui.RunContentManager;
 import com.intellij.openapi.application.ApplicationManager;
@@ -57,6 +58,26 @@ final class RunnerImplTest extends BasePlatformTestCase {
         final ArgumentCaptor<RunContentDescriptor> descriptor = ArgumentCaptor.forClass(RunContentDescriptor.class);
         Mockito.verify(contentManager).showRunContent(Mockito.any(), descriptor.capture());
         Assertions.assertEquals("Java Version", descriptor.getValue().getDisplayName());
+        ApplicationManager.getApplication().invokeAndWait(() -> Disposer.dispose(descriptor.getValue()));
+    }
+
+    @Test
+    void passesTheStartedProcessToTheConsumer() throws InterruptedException {
+        final GeneralCommandLine commandLine = new GeneralCommandLine(ProcessExecutorImplTest.javaBinary(), "-version")
+                .withWorkDirectory(System.getProperty("java.io.tmpdir"));
+        final CountDownLatch completed = new CountDownLatch(1);
+        final AtomicReference<ProcessHandler> started = new AtomicReference<>();
+        final RunContentManager contentManager = Mockito.mock(RunContentManager.class);
+        ServiceContainerUtil.replaceService(getProject(), RunContentManager.class, contentManager, getTestRootDisposable());
+
+        this.runner.run(commandLine, "Java Version", completed::countDown, started::set);
+
+        Assertions.assertTrue(completed.await(60, TimeUnit.SECONDS));
+        Assertions.assertNotNull(started.get());
+
+        final ArgumentCaptor<RunContentDescriptor> descriptor = ArgumentCaptor.forClass(RunContentDescriptor.class);
+        Mockito.verify(contentManager).showRunContent(Mockito.any(), descriptor.capture());
+        Assertions.assertSame(started.get(), descriptor.getValue().getProcessHandler());
         ApplicationManager.getApplication().invokeAndWait(() -> Disposer.dispose(descriptor.getValue()));
     }
 

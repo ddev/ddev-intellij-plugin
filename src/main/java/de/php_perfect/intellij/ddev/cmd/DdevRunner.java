@@ -18,6 +18,8 @@ public interface DdevRunner {
 
     void share(@NotNull Project project);
 
+    void stopShare(@NotNull Project project);
+
     void config(@NotNull Project project);
 
     static DdevRunner getInstance() {
