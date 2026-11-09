@@ -2,7 +2,7 @@ name: Verify Plugin
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, beta, alpha ]
   pull_request:
     types: [ opened, synchronize, reopened ]
 

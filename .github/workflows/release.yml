@@ -4,9 +4,6 @@ on:
   push:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'
-      - '[0-9]+.[0-9]+.[0-9]+-eap.*'
-      - '[0-9]+.[0-9]+.[0-9]+-beta.*'
-      - '[0-9]+.[0-9]+.[0-9]+-alpha.*'
 
 jobs:
   release:
@@ -38,5 +35,4 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         with:
-          prerelease: ${{ contains(github.ref, 'eap') || contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
           body_path: build/extracted_release_changelog.md
