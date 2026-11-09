@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      previous: ${{ steps.version.outputs.previous }}
     steps:
       - name: Fetch Sources
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -39,17 +40,23 @@ jobs:
           fi
 
           pattern="^${base//./\\.}-${CHANNEL}([0-9]+)(\\+|$)"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/$base-$CHANNEL" \
+            --jq '.[].ref | ltrimstr("refs/tags/")' > tags.txt
           # Tags also count, in case the API lags behind uploads.
           {
             curl -fsS "https://plugins.jetbrains.com/api/plugins/$PLUGIN_ID/updates?channel=$CHANNEL&size=100" \
               | jq -r '.[].version'
-            gh api --paginate "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/$base-$CHANNEL" --jq '.[].ref | ltrimstr("refs/tags/")'
+            cat tags.txt
           } > versions.txt
           last=$(sed -nE "s/${pattern}.*/\\1/p" versions.txt | sort -n | tail -n 1)
+
+          # Release notes compare against this channel's previous tag.
+          previous=$(grep -E "^${base//./\\.}-${CHANNEL}[0-9]+$" tags.txt | sort -V | tail -n 1 || true)
 
           version="$base-$CHANNEL$(( ${last:-0} + 1 ))"
           echo "Publishing $version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "previous=${previous:-$stable}" >> "$GITHUB_OUTPUT"
 
   publish:
     needs: version
@@ -79,5 +86,6 @@ jobs:
           prerelease: true
           make_latest: false
           generate_release_notes: true
+          previous_tag: ${{ needs.version.outputs.previous }}
           fail_on_unmatched_files: true
           files: distributions/*.zip
