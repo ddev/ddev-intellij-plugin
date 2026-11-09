@@ -1,10 +1,12 @@
 package de.php_perfect.intellij.ddev.cmd;
 
 import com.intellij.execution.configurations.GeneralCommandLine;
+import com.intellij.execution.process.ProcessHandler;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.extensions.ExtensionPointName;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.testFramework.ExtensionTestUtil;
 import com.intellij.testFramework.ServiceContainerUtil;
@@ -87,11 +89,35 @@ final class DdevRunnerImplTest extends BasePlatformTestCase {
     void share() {
         final ArgumentCaptor<GeneralCommandLine> commandLine = ArgumentCaptor.forClass(GeneralCommandLine.class);
 
+        @SuppressWarnings("unchecked") final ArgumentCaptor<Consumer<ProcessHandler>> processHandlerConsumer = ArgumentCaptor.forClass(Consumer.class);
+        final ArgumentCaptor<Runnable> afterCompletion = ArgumentCaptor.forClass(Runnable.class);
+        final ShareManager shareManager = ShareManager.getInstance(getProject());
+        final ProcessHandler processHandler = Mockito.mock(ProcessHandler.class);
+        Disposer.register(getTestRootDisposable(), () -> shareManager.setShareProcessHandler(null));
+
         new DdevRunnerImpl().share(getProject());
 
-        Mockito.verify(this.runner).run(commandLine.capture(), Mockito.eq("DDEV Share"));
+        Mockito.verify(this.runner).run(commandLine.capture(), Mockito.eq("DDEV Share"), afterCompletion.capture(), processHandlerConsumer.capture());
         Assertions.assertEquals("ddev share", commandLine.getValue().getCommandLineString());
         Assertions.assertEquals("true", commandLine.getValue().getEnvironment().get("DDEV_NONINTERACTIVE"));
+
+        processHandlerConsumer.getValue().accept(processHandler);
+        Assertions.assertTrue(shareManager.isSharing());
+
+        afterCompletion.getValue().run();
+        Assertions.assertFalse(shareManager.isSharing());
+    }
+
+    @Test
+    void stopShareDestroysTheShareProcess() {
+        final ProcessHandler processHandler = Mockito.mock(ProcessHandler.class);
+        ShareManager.getInstance(getProject()).setShareProcessHandler(processHandler);
+        Disposer.register(getTestRootDisposable(), () -> ShareManager.getInstance(getProject()).setShareProcessHandler(null));
+
+        new DdevRunnerImpl().stopShare(getProject());
+
+        Mockito.verify(processHandler).destroyProcess();
+        Assertions.assertFalse(ShareManager.getInstance(getProject()).isSharing());
     }
 
     @Test

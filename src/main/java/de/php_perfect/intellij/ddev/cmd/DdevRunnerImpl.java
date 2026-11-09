@@ -60,7 +60,13 @@ public final class DdevRunnerImpl implements DdevRunner {
     public void share(@NotNull Project project) {
         final String title = DdevIntegrationBundle.message("ddev.run.share");
         final Runner runner = Runner.getInstance(project);
-        runner.run(this.createCommandLine("share", project), title);
+        final ShareManager shareManager = ShareManager.getInstance(project);
+        runner.run(this.createCommandLine("share", project), title, shareManager::stopSharing, shareManager::setShareProcessHandler);
+    }
+
+    @Override
+    public void stopShare(@NotNull Project project) {
+        ShareManager.getInstance(project).stopSharing();
     }
 
     @Override
