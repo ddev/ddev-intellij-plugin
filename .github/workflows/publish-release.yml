@@ -2,93 +2,44 @@ name: Publish Release
 
 on:
   release:
-    types: [prereleased, released]
+    types: [released]
 
 jobs:
-  publish:
+  validate:
     runs-on: ubuntu-latest
     steps:
-      # Check out current repository
-      - name: Fetch Sources
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Extract Tag Name
-        uses: olegtarasov/get-tag@9a8716825750e73195b02db42777b92ffe960605 # v2.1.4
-
-      # Validate wrapper
-      - name: Gradle Wrapper Validation
-        uses: gradle/actions/wrapper-validation@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
-
-      # Set up Java environment for the next steps
-      - name: Setup Java
-        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
-        with:
-          distribution: zulu
-          java-version: 21
-
-      - name: Load secrets from 1Password
-        uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
-        with:
-          export-env: true
+      # Prereleases come from the alpha and beta branches.
+      - name: Require a stable version tag
         env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          JETBRAINS_MARKETPLACE_PUBLISHING_TOKEN: op://ddev-intellij-plugin-secrets/JetBrains Marketplace Publishing Token/password
-          JETBRAINS_MARKETPLACE_SIGNING_KEY: op://ddev-intellij-plugin-secrets/JetBrains Marketplace Signing Key/private key
-          JETBRAINS_MARKETPLACE_SIGNING_KEY_CHAIN: op://ddev-intellij-plugin-secrets/JetBrains Marketplace Signing Key/add more/private key chain
-          JETBRAINS_MARKETPLACE_SIGNING_KEY_PASSWORD: op://ddev-intellij-plugin-secrets/JetBrains Marketplace Signing Key/add more/private key password
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [[ ! "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Stable releases need an X.Y.Z tag, got '$TAG'"
+            exit 1
+          fi
 
-      - name: Extract Channel from Version
-        uses: actions-ecosystem/action-regex-match@9e6c4fb3d5e898f505be7a1fb6e7b0a278f6665b # v2.0.2
-        id: match-channel
+  publish:
+    needs: validate
+    uses: ./.github/workflows/publish-marketplace.yml
+    with:
+      version: ${{ github.event.release.tag_name }}
+    secrets: inherit
+
+  attach:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Assets
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          text: ${{ github.ref }}
-          regex: '(eap|beta|alpha).*$'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
-        with:
-          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
-
-      # Sequential, so a failing variant stops the release.
-      - name: Publish 2025.x variant to JetBrains Marketplace
-        run: ./gradlew publishPlugin -PplatformVariant=251
-        env:
-          PUBLISH_CHANNEL: ${{ steps.match-channel.outputs.group1 }}
-
-      - name: Publish 2026.1+ variant to JetBrains Marketplace
-        run: ./gradlew publishPlugin -PplatformVariant=261
-        env:
-          PUBLISH_CHANNEL: ${{ steps.match-channel.outputs.group1 }}
+          name: plugin-distributions
+          path: distributions
 
       - name: Update GitHub Release
         uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
         with:
+          tag_name: ${{ github.event.release.tag_name }}
           fail_on_unmatched_files: true
-          files: build/distributions/*.zip
-
-  sentry_release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-
-      - name: Extract Tag Name
-        uses: olegtarasov/get-tag@9a8716825750e73195b02db42777b92ffe960605 # v2.1.4
-        id: tagName
-
-      - name: Load secrets from 1Password
-        uses: 1password/load-secrets-action@70062d7a876d3eb6334754fa26efd2fbd90c32f2 # v5.0.1
-        with:
-          export-env: true
-        env:
-          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
-          SENTRY_AUTH_TOKEN: op://ddev-intellij-plugin-secrets/Sentry Token/credential
-          SENTRY_ORG: op://ddev-intellij-plugin-secrets/Sentry Token/organization
-          SENTRY_PROJECT: op://ddev-intellij-plugin-secrets/Sentry Token/project
-
-      - name: Create Sentry release
-        uses: getsentry/action-release@e6703d0b00208e0b3687ba660d18ab5af7892821 # v3.7.2
-        with:
-          release: ${{ steps.tagName.outputs.tag }}
+          files: distributions/*.zip

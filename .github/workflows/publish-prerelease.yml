@@ -1,0 +1,66 @@
+name: Publish Prerelease
+
+on:
+  push:
+    branches: [ alpha, beta ]
+
+# Serialized per branch so each run sees the previous run's tag.
+concurrency:
+  group: prerelease-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      # Next patch after the latest stable release, numbered per channel.
+      - name: Determine version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHANNEL: ${{ github.ref_name }}
+        run: |
+          stable=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)
+          if [[ ! "$stable" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "::error::Latest release tag '$stable' is not X.Y.Z"
+            exit 1
+          fi
+          base="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$((BASH_REMATCH[3] + 1))"
+          last=$(gh api --paginate "repos/$GITHUB_REPOSITORY/git/matching-refs/tags/$base-$CHANNEL." --jq '.[].ref' \
+            | { grep -oE '[0-9]+$' || true; } | sort -n | tail -n 1)
+          version="$base-$CHANNEL.$(( ${last:-0} + 1 ))"
+          echo "Publishing $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  publish:
+    needs: version
+    uses: ./.github/workflows/publish-marketplace.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+      channel: ${{ github.ref_name }}
+    secrets: inherit
+
+  release:
+    needs: [ version, publish ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Assets
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: plugin-distributions
+          path: distributions
+
+      - name: Create GitHub Prerelease
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
+        with:
+          tag_name: ${{ needs.version.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          prerelease: true
+          make_latest: false
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: distributions/*.zip

@@ -38,3 +38,16 @@ tasks {
     }
 }
 ```
+
+## Releases
+
+Every push to the `beta` or `alpha` branch publishes a prerelease to the JetBrains Marketplace channel of the same 
+name and creates a matching GitHub prerelease. The version is the next patch after the latest stable release, 
+numbered per channel, e.g. `1.2.11-beta.3`. To ship a beta, merge or fast-forward `main` into `beta`.
+
+Stable releases are published by creating a GitHub release with an `X.Y.Z` tag. Add the version's section to 
+[CHANGELOG.md](CHANGELOG.md) first.
+
+To test prereleases, add the channel's repository in `Settings > Plugins > ⚙ > Manage Plugin Repositories`:
+- Beta: `https://plugins.jetbrains.com/plugins/beta/list`
+- Alpha: `https://plugins.jetbrains.com/plugins/alpha/list`
