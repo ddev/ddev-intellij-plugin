@@ -42,10 +42,12 @@ tasks {
 ## Releases
 
 Every push to the `beta` or `alpha` branch publishes a prerelease to the JetBrains Marketplace channel of the same 
-name and creates a matching GitHub prerelease. The version is the next patch after the latest stable release, 
-numbered per channel, e.g. `1.2.11-beta.3`. To ship a beta, merge or fast-forward `main` into `beta`. 
-Prereleases show the change notes of their stable version, so `1.2.11-beta.3` uses the `## [1.2.11]` section of 
-[CHANGELOG.md](CHANGELOG.md).
+name and creates a matching GitHub prerelease. To ship a beta, merge or fast-forward `main` into `beta`.
+
+A prerelease targets the newest version in [CHANGELOG.md](CHANGELOG.md) when it is above the latest stable release, 
+otherwise the next patch. Adding a `## [1.3.0]` section on `alpha` makes its builds `1.3.0-alpha1`, `1.3.0-alpha2` 
+and so on, each showing that section as change notes. Numbering continues after the highest version already on the 
+Marketplace channel.
 
 Stable releases are published by creating a GitHub release with an `X.Y.Z` tag. Add the version's section to 
 [CHANGELOG.md](CHANGELOG.md) first.
