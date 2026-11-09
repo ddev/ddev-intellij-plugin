@@ -81,7 +81,7 @@ final class DdevDataSourceManagerImplTest extends BasePlatformTestCase {
 
         final DataSourceConfig changedConfig = new DataSourceConfig("DDEV", "DDEV generated data source", DataSourceConfig.Type.MARIADB, "10.11", "127.0.0.1", 2, "db", "db", "db");
         manager.updateDdevDataSource(changedConfig);
-        this.flushEventQueue();
+        this.awaitIntrospection();
 
         final List<LocalDataSource> dataSources = LocalDataSourceManager.getInstance(this.getProject()).getDataSources();
         Assertions.assertEquals(1, dataSources.size());
@@ -97,7 +97,7 @@ final class DdevDataSourceManagerImplTest extends BasePlatformTestCase {
         localDataSourceManager.addDataSource(legacyDataSource);
 
         new DdevDataSourceManagerImpl(this.getProject()).updateDdevDataSource(CONFIG);
-        this.flushEventQueue();
+        this.awaitIntrospection();
 
         Assertions.assertEquals(List.of(legacyDataSource), localDataSourceManager.getDataSources());
         Mockito.verify(this.dataSourceProvider).updateDataSource(legacyDataSource, CONFIG);
