@@ -60,7 +60,11 @@ public final class DdevDataSourceManagerImpl implements DdevDataSourceManager {
 
         final LocalDataSource dataSource = localDataSource;
         final boolean shouldTriggerIntrospection = isNewDataSource;
-        DataSourceProvider.getInstance().updateDataSource(dataSource, dataSourceConfig);
+        if (isNewDataSource) {
+            DataSourceProvider.getInstance().createDataSource(dataSource, dataSourceConfig);
+        } else {
+            DataSourceProvider.getInstance().updateDataSource(dataSource, dataSourceConfig);
+        }
 
         ApplicationManager.getApplication().invokeLater(() -> {
             localDataSourceManager.fireDataSourceUpdated(dataSource);
