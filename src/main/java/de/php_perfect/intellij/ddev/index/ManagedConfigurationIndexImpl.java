@@ -9,7 +9,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ManagedConfigurationIndexImpl implements ManagedConfigurationIndex {
     private static final @NotNull String NAMESPACE = "de.php_perfect.intellij.ddev.";
@@ -35,9 +37,9 @@ public class ManagedConfigurationIndexImpl implements ManagedConfigurationIndex 
         propertiesComponent.setValue(buildHashKey(key), hash);
 
         final List<String> list = ObjectUtils.firstNonNull(propertiesComponent.getList(INDEX_KEY), List.of());
-        final ArrayList<String> mutableList = new ArrayList<>(list);
-        mutableList.add(key);
-        propertiesComponent.setList(INDEX_KEY, mutableList);
+        final Set<String> keys = new LinkedHashSet<>(list);
+        keys.add(key);
+        propertiesComponent.setList(INDEX_KEY, new ArrayList<>(keys));
 
         LOG.debug(String.format("Set managed configuration id '%s' for %s", id, type));
     }
@@ -107,9 +109,9 @@ public class ManagedConfigurationIndexImpl implements ManagedConfigurationIndex 
         propertiesComponent.unsetValue(hashKey);
 
         final List<String> list = ObjectUtils.firstNonNull(propertiesComponent.getList(INDEX_KEY), List.of());
-        final ArrayList<String> mutableList = new ArrayList<>(list);
-        mutableList.remove(key);
-        propertiesComponent.setList(INDEX_KEY, mutableList);
+        final Set<String> keys = new LinkedHashSet<>(list);
+        keys.remove(key);
+        propertiesComponent.setList(INDEX_KEY, new ArrayList<>(keys));
 
         LOG.debug(String.format("Removed managed configuration id for %s", type));
     }
