@@ -2,6 +2,7 @@ package de.php_perfect.intellij.ddev.terminal;
 
 import com.intellij.openapi.project.Project;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
+import com.jediterm.core.util.TermSize;
 import com.jediterm.terminal.TtyConnector;
 import de.php_perfect.intellij.ddev.actions.DdevStateStub;
 import de.php_perfect.intellij.ddev.state.DdevStateManager;
@@ -15,8 +16,15 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.mockito.Mockito;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 final class PlatformTerminalRunnerTest extends BasePlatformTestCase {
     @Override
@@ -50,15 +58,35 @@ final class PlatformTerminalRunnerTest extends BasePlatformTestCase {
 
     @Test
     @DisabledOnOs(OS.WINDOWS)
-    void connectorWrapsStartedDdevSession() throws ExecutionException {
+    void terminalPluginRunsDdevSsh() throws Exception {
         final State state = DdevStateStub.install(getProject(), getTestRootDisposable(), true, true, null).getState();
         Mockito.when(state.getDdevBinary()).thenReturn("/bin/echo");
+        Files.createDirectories(Path.of(Objects.requireNonNull(getProject().getBasePath())));
 
-        final TtyConnector connector = new DdevTerminalRunner(getProject()).createTtyConnector(new ShellStartupOptions.Builder().build());
+        final ShellStartupOptions.Builder options = new ShellStartupOptions.Builder();
+        options.setInitialTermSize(new TermSize(80, 24));
+
+        final TtyConnector connector = new DdevTerminalRunner(getProject()).createTtyConnector(options.build());
         try {
-            Assertions.assertEquals("Local", connector.getName());
+            final CompletableFuture<String> output = CompletableFuture.supplyAsync(() -> readOutput(connector));
+
+            Assertions.assertEquals("ssh", output.get(10, TimeUnit.SECONDS).trim());
         } finally {
             connector.close();
         }
+    }
+
+    private static String readOutput(TtyConnector connector) {
+        final StringBuilder output = new StringBuilder();
+        final char[] buffer = new char[1024];
+        try {
+            int read;
+            while ((read = connector.read(buffer, 0, buffer.length)) >= 0) {
+                output.append(buffer, 0, read);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return output.toString();
     }
 }
