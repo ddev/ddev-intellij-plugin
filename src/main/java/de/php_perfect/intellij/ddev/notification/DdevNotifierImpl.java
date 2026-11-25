@@ -137,19 +137,6 @@ public final class DdevNotifierImpl implements DdevNotifier {
     }
 
     @Override
-    public void notifyDockerNotAvailable(final @NotNull String context) {
-        ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
-                .getNotificationGroup(STICKY)
-                .createNotification(
-                        DdevIntegrationBundle.message("notification.dockerNotAvailable.title"),
-                        DdevIntegrationBundle.message("notification.dockerNotAvailable.text", context),
-                        NotificationType.WARNING
-                )
-                .addAction(new ReloadPluginAction())
-                .notify(this.project), ModalityState.nonModal());
-    }
-
-    @Override
     public void notifyDdevCommandFailed(final @NotNull String command, final @NotNull String reason) {
         ApplicationManager.getApplication().invokeLater(() -> NotificationGroupManager.getInstance()
                 .getNotificationGroup(NON_STICKY)

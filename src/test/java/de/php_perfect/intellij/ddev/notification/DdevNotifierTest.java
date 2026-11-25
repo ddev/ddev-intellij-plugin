@@ -180,22 +180,6 @@ final class DdevNotifierTest extends BasePlatformTestCase {
         assertTrue(notifications[0].getContent().contains("cc83481fd7b74744afdd7f36ba827f7b"));
     }
 
-    @Test
-    void notifyDockerNotAvailable() {
-        Project project = getProject();
-
-        NotificationsManager notificationManager = NotificationsManager.getNotificationsManager();
-        Notification[] notifications = notificationManager.getNotificationsOfType(Notification.class, project);
-        assertEmpty(notifications);
-
-        new DdevNotifierImpl(project).notifyDockerNotAvailable("default");
-
-        this.waitForEventQueue();
-
-        notifications = notificationManager.getNotificationsOfType(Notification.class, project);
-        assertSize(1, notifications);
-    }
-
     private void waitForEventQueue() {
         ApplicationManager.getApplication().invokeAndWait(PlatformTestUtil::dispatchAllInvocationEventsInIdeEventQueue);
     }

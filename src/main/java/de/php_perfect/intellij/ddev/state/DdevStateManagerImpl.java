@@ -54,13 +54,6 @@ public final class DdevStateManagerImpl implements DdevStateManager {
     }
 
     public void initialize(boolean reinitialize) {
-        if (!reinitialize && !Docker.getInstance().isRunning(this.project.getBasePath())) {
-            LOG.debug("Docker not available. Skipping initialization");
-            DdevNotifier.getInstance(this.project).notifyDockerNotAvailable(Docker.getInstance().getContext(this.project.getBasePath()));
-
-            return;
-        }
-
         if (reinitialize) {
             this.isVersionFailureReported.set(false);
             this.isDescriptionFailureReported.set(false);

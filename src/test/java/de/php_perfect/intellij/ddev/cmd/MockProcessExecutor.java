@@ -14,8 +14,6 @@ public final class MockProcessExecutor implements ProcessExecutor {
     private final Map<String, ExecutionException> failureList = new HashMap<>();
 
     public MockProcessExecutor() {
-        this.addProcessOutput("docker info", new ProcessOutput(0));
-
         if (SystemInfo.isWindows) {
             this.addProcessOutput("where ddev", new ProcessOutput(1));
         } else {
