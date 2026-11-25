@@ -1,5 +1,6 @@
 package de.php_perfect.intellij.ddev.state;
 
+import com.intellij.execution.ExecutionException;
 import com.intellij.execution.process.ProcessOutput;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
@@ -55,16 +56,14 @@ final class DdevStateManagerUpdateTest extends BasePlatformTestCase {
     }
 
     @Test
-    void unavailableDockerSkipsInitialization() {
+    void initializationDoesNotDependOnDockerCommand() {
         final AtomicInteger initialized = new AtomicInteger();
         this.connection.subscribe(StateInitializedListener.STATE_INITIALIZED, state -> initialized.incrementAndGet());
-        this.processExecutor.addProcessOutput("docker info", new ProcessOutput(1));
-        this.configLoader.setExists(true);
+        this.processExecutor.addProcessFailure("docker info", new ExecutionException("docker: command not found"));
 
         DdevStateManager.getInstance(this.getProject()).initialize();
 
-        Assertions.assertEquals(0, initialized.get());
-        Assertions.assertFalse(DdevStateManager.getInstance(this.getProject()).getState().isConfigured());
+        Assertions.assertEquals(1, initialized.get());
     }
 
     @Test
@@ -124,7 +123,6 @@ final class DdevStateManagerUpdateTest extends BasePlatformTestCase {
     private DdevStateManager initializeAvailableProject() {
         DdevSettingsState.getInstance(this.getProject()).ddevBinary = "ddev";
         this.configLoader.setExists(true);
-        this.processExecutor.addProcessOutput("docker info", new ProcessOutput(0));
         this.processExecutor.addProcessOutput("ddev --version", new ProcessOutput("ddev version v1.19.0", "", 0, false, false));
         this.processExecutor.addProcessOutput("ddev describe --json-output", new ProcessOutput(STOPPED_DESCRIPTION, "", 0, false, false));
 

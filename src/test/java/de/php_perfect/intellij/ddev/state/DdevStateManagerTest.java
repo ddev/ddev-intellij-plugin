@@ -39,7 +39,6 @@ final class DdevStateManagerTest extends BasePlatformTestCase {
         final Project project = this.getProject();
         final MockDdevConfigLoader ddevConfigLoader = (MockDdevConfigLoader) DdevConfigLoader.getInstance(project);
         final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
-        mockProcessExecutor.addProcessOutput("docker info", new ProcessOutput(0));
         mockProcessExecutor.addProcessOutput(expectedWhich + " ddev", new ProcessOutput("/foo/bar/bin/ddev", "", 0, false, false));
 
         ddevConfigLoader.setExists(true);
@@ -93,7 +92,6 @@ final class DdevStateManagerTest extends BasePlatformTestCase {
         final Project project = this.getProject();
         final MockDdevConfigLoader ddevConfigLoader = (MockDdevConfigLoader) DdevConfigLoader.getInstance(project);
         MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
-        mockProcessExecutor.addProcessOutput("docker info", new ProcessOutput(0));
         mockProcessExecutor.addProcessOutput(expectedWhich + " ddev", new ProcessOutput("/foo/bar/bin/ddev", "", 0, false, false));
 
         ddevConfigLoader.setExists(true);
@@ -146,7 +144,6 @@ final class DdevStateManagerTest extends BasePlatformTestCase {
 
         try {
             final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
-            mockProcessExecutor.addProcessOutput("docker info", new ProcessOutput(0));
             mockProcessExecutor.addProcessOutput(expectedWhich + " ddev", new ProcessOutput("/foo/bar/bin/ddev", "", 0, false, false));
             this.prepareCommand("/foo/bar/bin/ddev --version", "ddev version v1.19.0");
 
@@ -172,7 +169,6 @@ final class DdevStateManagerTest extends BasePlatformTestCase {
             ddevConfigLoader.setExists(true);
 
             final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
-            mockProcessExecutor.addProcessOutput("docker info", new ProcessOutput(0));
             this.prepareCommand("ddev --version", "ddev version v1.19.0");
             mockProcessExecutor.addProcessOutput("ddev describe --json-output",
                     new ProcessOutput("", "{\"level\":\"fatal\",\"msg\":\"Failed to describe project(s)\"}", 1, false, false));
@@ -198,7 +194,6 @@ final class DdevStateManagerTest extends BasePlatformTestCase {
             final DdevStateManager ddevStateManager = DdevStateManager.getInstance(project);
 
             for (int attempt = 0; attempt < 2; attempt++) {
-                mockProcessExecutor.addProcessOutput("docker info", new ProcessOutput(0));
                 mockProcessExecutor.addProcessOutput("ddev --version",
                         new ProcessOutput("", "{\"level\":\"fatal\",\"msg\":\"Docker is not running\"}", 1, false, false));
 
@@ -225,7 +220,6 @@ final class DdevStateManagerTest extends BasePlatformTestCase {
 
         try {
             final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
-            mockProcessExecutor.addProcessOutput("docker info", new ProcessOutput(0));
             mockProcessExecutor.addProcessFailure("ddev-unstartable --version",
                     new ProcessNotCreatedException("Cannot run program", new GeneralCommandLine("ddev-unstartable", "--version")));
             mockProcessExecutor.addProcessOutput(expectedWhich + " ddev", new ProcessOutput("/foo/bar/bin/ddev", "", 0, false, false));
@@ -250,7 +244,6 @@ final class DdevStateManagerTest extends BasePlatformTestCase {
 
         try {
             final MockProcessExecutor mockProcessExecutor = (MockProcessExecutor) ApplicationManager.getApplication().getService(ProcessExecutor.class);
-            mockProcessExecutor.addProcessOutput("docker info", new ProcessOutput(0));
 
             final DdevStateManager ddevStateManager = DdevStateManager.getInstance(project);
             ddevStateManager.initialize();
