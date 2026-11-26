@@ -2,14 +2,9 @@ package de.php_perfect.intellij.ddev.database;
 
 import com.intellij.database.dataSource.LocalDataSource;
 import com.intellij.database.dataSource.LocalDataSourceManager;
-import com.intellij.database.util.DataSourceUtilKt;
-import com.intellij.database.util.LoaderContext;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
-import kotlin.coroutines.Continuation;
-import kotlin.coroutines.CoroutineContext;
-import kotlin.coroutines.EmptyCoroutineContext;
 import de.php_perfect.intellij.ddev.index.IndexEntry;
 import de.php_perfect.intellij.ddev.index.ManagedConfigurationIndex;
 import org.jetbrains.annotations.NotNull;
@@ -50,8 +45,7 @@ public final class DdevDataSourceManagerImpl implements DdevDataSourceManager {
                     .orElse(null);
         }
 
-        final boolean isNewDataSource = localDataSource == null;
-        if (isNewDataSource) {
+        if (localDataSource == null) {
             localDataSource = localDataSourceManager.createEmpty();
             dataSources.add(localDataSource);
             DataSourceProvider.getInstance().createDataSource(localDataSource, dataSourceConfig);
@@ -63,35 +57,8 @@ public final class DdevDataSourceManagerImpl implements DdevDataSourceManager {
 
         ApplicationManager.getApplication().invokeLater(() -> {
             localDataSourceManager.fireDataSourceUpdated(dataSource);
-
-            // Only trigger introspection for newly created data sources
-            if (isNewDataSource) {
-                ApplicationManager.getApplication().executeOnPooledThread(() -> {
-                    try {
-                        // Give the data source a moment to be fully configured
-                        Thread.sleep(1000);
-                        LoaderContext loaderContext = LoaderContext.selectGeneralTask(project, dataSource);
-                        DataSourceUtilKt.performAutoIntrospection(loaderContext, false, new Continuation<Object>() {
-                            @Override
-                            public @NotNull CoroutineContext getContext() {
-                                return EmptyCoroutineContext.INSTANCE;
-                            }
-
-                            @Override
-                            public void resumeWith(@NotNull Object o) {
-                                // No action needed - auto-introspection is fire-and-forget
-                            }
-                        });
-                        LOG.debug("Triggered introspection for new data source: " + dataSource.getName());
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        LOG.debug("Interrupted while triggering introspection for new data source", e);
-                    } catch (Exception e) {
-                        LOG.debug("Could not trigger introspection for new data source", e);
-                    }
-                });
-            }
-        });
+            DataSourceIntrospector.getInstance(this.project).introspect(dataSource);
+        }, this.project.getDisposed());
 
         managedConfigurationIndex.set(dataSource.getUniqueId(), DataSourceConfig.class, hash);
     }

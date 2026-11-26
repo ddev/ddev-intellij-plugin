@@ -4,6 +4,8 @@
                             serviceInterface="de.php_perfect.intellij.ddev.database.DataSourceProvider"/>
         <projectService serviceImplementation="de.php_perfect.intellij.ddev.database.DdevDataSourceManagerImpl"
                         serviceInterface="de.php_perfect.intellij.ddev.database.DdevDataSourceManager"/>
+        <projectService serviceImplementation="de.php_perfect.intellij.ddev.database.DataSourceIntrospectorImpl"
+                        serviceInterface="de.php_perfect.intellij.ddev.database.DataSourceIntrospector"/>
     </extensions>
 
     <projectListeners>
