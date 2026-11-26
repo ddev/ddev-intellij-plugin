@@ -6,7 +6,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import com.intellij.util.messages.MessageBusConnection;
-import de.php_perfect.intellij.ddev.DatabaseInfoChangedListener;
+import de.php_perfect.intellij.ddev.DescriptionChangedListener;
 import de.php_perfect.intellij.ddev.StateChangedListener;
 import de.php_perfect.intellij.ddev.StateInitializedListener;
 import de.php_perfect.intellij.ddev.cmd.DatabaseInfo;
@@ -88,7 +88,7 @@ final class DdevStateManagerUpdateTest extends BasePlatformTestCase {
         final DdevStateManager stateManager = this.initializeAvailableProject();
         final List<DatabaseInfo> databaseInfoChanges = new ArrayList<>();
         final AtomicInteger changes = new AtomicInteger();
-        this.connection.subscribe(DatabaseInfoChangedListener.DATABASE_INFO_CHANGED_TOPIC, databaseInfoChanges::add);
+        this.connection.subscribe(DescriptionChangedListener.DESCRIPTION_CHANGED, changed -> databaseInfoChanges.add(changed.getDatabaseInfo()));
         this.connection.subscribe(StateChangedListener.DDEV_CHANGED, state -> {
             changes.incrementAndGet();
             stateManager.updateDescription();

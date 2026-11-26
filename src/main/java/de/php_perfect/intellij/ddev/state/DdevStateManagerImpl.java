@@ -5,7 +5,6 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.ExceptionUtil;
 import com.intellij.util.messages.MessageBus;
-import de.php_perfect.intellij.ddev.DatabaseInfoChangedListener;
 import de.php_perfect.intellij.ddev.DescriptionChangedListener;
 import de.php_perfect.intellij.ddev.StateChangedListener;
 import de.php_perfect.intellij.ddev.StateInitializedListener;
@@ -118,10 +117,6 @@ public final class DdevStateManagerImpl implements DdevStateManager {
     private void checkChanged(Runnable runnable) {
         final int oldState = this.state.hashCode();
         final int oldDescription = Objects.hashCode(this.state.getDescription());
-        int oldDatabaseInfoHash = 0;
-        if (this.state.getDescription() != null) {
-            oldDatabaseInfoHash = Objects.hashCode(this.state.getDescription().getDatabaseInfo());
-        }
 
         runnable.run();
 
@@ -137,16 +132,7 @@ public final class DdevStateManagerImpl implements DdevStateManager {
             var newDescription = this.state.getDescription();
 
             if (oldDescription != Objects.hashCode(newDescription)) {
-                messageBus.syncPublisher(DescriptionChangedListener.DESCRIPTION_CHANGED).onDescriptionChanged(this.state.getDescription());
-
-                DatabaseInfo newDatabaseInfo = null;
-                if (newDescription != null) {
-                    newDatabaseInfo = newDescription.getDatabaseInfo();
-                }
-
-                if (oldDatabaseInfoHash != Objects.hashCode(newDatabaseInfo)) {
-                    messageBus.syncPublisher(DatabaseInfoChangedListener.DATABASE_INFO_CHANGED_TOPIC).onDatabaseInfoChanged(newDatabaseInfo);
-                }
+                messageBus.syncPublisher(DescriptionChangedListener.DESCRIPTION_CHANGED).onDescriptionChanged(newDescription);
             }
         }
     }

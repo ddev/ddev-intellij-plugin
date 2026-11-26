@@ -1,15 +1,16 @@
 package de.php_perfect.intellij.ddev.database;
 
 import com.intellij.openapi.project.Project;
-import de.php_perfect.intellij.ddev.DatabaseInfoChangedListener;
+import de.php_perfect.intellij.ddev.DescriptionChangedListener;
 import de.php_perfect.intellij.ddev.cmd.DatabaseInfo;
+import de.php_perfect.intellij.ddev.cmd.Description;
 import de.php_perfect.intellij.ddev.settings.DdevSettingsState;
 import de.php_perfect.intellij.ddev.util.FeatureRequiredPlugins;
 import de.php_perfect.intellij.ddev.util.PluginChecker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public final class AutoConfigureDataSourceListener implements DatabaseInfoChangedListener {
+public final class AutoConfigureDataSourceListener implements DescriptionChangedListener {
     private static final @NotNull String HOST = "127.0.0.1";
     private final @NotNull Project project;
 
@@ -19,7 +20,13 @@ public final class AutoConfigureDataSourceListener implements DatabaseInfoChange
     }
 
     @Override
-    public void onDatabaseInfoChanged(@Nullable DatabaseInfo databaseInfo) {
+    public void onDescriptionChanged(@Nullable Description description) {
+        // DDEV reports running only once the database accepts connections.
+        if (description == null || description.getStatus() != Description.Status.RUNNING) {
+            return;
+        }
+
+        final DatabaseInfo databaseInfo = description.getDatabaseInfo();
         if (databaseInfo == null) {
             return;
         }
