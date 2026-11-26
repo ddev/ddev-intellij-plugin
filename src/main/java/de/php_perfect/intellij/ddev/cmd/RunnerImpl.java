@@ -18,6 +18,8 @@ import de.php_perfect.intellij.ddev.cmd.wsl.WslAware;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.Consumer;
+
 public final class RunnerImpl implements Runner, Disposable {
     private static final Logger LOG = Logger.getInstance(RunnerImpl.class);
 
@@ -34,10 +36,19 @@ public final class RunnerImpl implements Runner, Disposable {
 
     @Override
     public void run(@NotNull GeneralCommandLine commandLine, @NotNull String title, @Nullable Runnable afterCompletion) {
+        this.run(commandLine, title, afterCompletion, null);
+    }
+
+    @Override
+    public void run(@NotNull GeneralCommandLine commandLine, @NotNull String title, @Nullable Runnable afterCompletion, @Nullable Consumer<ProcessHandler> processHandlerConsumer) {
         // Create process handler on background thread to avoid EDT violations
         ApplicationManager.getApplication().executeOnPooledThread(() -> {
             try {
                 final ProcessHandler processHandler = this.createProcessHandler(commandLine);
+
+                if (processHandlerConsumer != null) {
+                    processHandlerConsumer.accept(processHandler);
+                }
 
                 // Switch back to EDT for UI operations
                 ApplicationManager.getApplication().invokeLater(() -> {
