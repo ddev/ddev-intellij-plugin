@@ -3,6 +3,7 @@ package de.php_perfect.intellij.ddev.database;
 import com.intellij.testFramework.ServiceContainerUtil;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import de.php_perfect.intellij.ddev.cmd.DatabaseInfo;
+import de.php_perfect.intellij.ddev.cmd.Description;
 import de.php_perfect.intellij.ddev.settings.DdevSettingsState;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -76,6 +77,27 @@ final class AutoConfigureDataSourceListenerTest extends BasePlatformTestCase {
     }
 
     @Test
+    void projectThatIsNotRunningIsIgnored() {
+        final DatabaseInfo databaseInfo = info(DatabaseInfo.Type.MYSQL, "8.0", "db", "user", "pass", 32768);
+
+        for (Description.Status status : Description.Status.values()) {
+            if (status != Description.Status.RUNNING) {
+                this.notifyChanged(databaseInfo, status);
+            }
+        }
+        this.notifyChanged(databaseInfo, null);
+
+        Mockito.verifyNoInteractions(this.dataSourceManager);
+    }
+
+    @Test
+    void missingDescriptionIsIgnored() {
+        new AutoConfigureDataSourceListener(this.getProject()).onDescriptionChanged(null);
+
+        Mockito.verifyNoInteractions(this.dataSourceManager);
+    }
+
+    @Test
     void unpublishedPortIsIgnored() {
         this.notifyChanged(info(DatabaseInfo.Type.MYSQL, "8.0", "db", "user", "pass", 0));
 
@@ -83,7 +105,12 @@ final class AutoConfigureDataSourceListenerTest extends BasePlatformTestCase {
     }
 
     private void notifyChanged(DatabaseInfo databaseInfo) {
-        new AutoConfigureDataSourceListener(this.getProject()).onDatabaseInfoChanged(databaseInfo);
+        this.notifyChanged(databaseInfo, Description.Status.RUNNING);
+    }
+
+    private void notifyChanged(DatabaseInfo databaseInfo, Description.Status status) {
+        new AutoConfigureDataSourceListener(this.getProject())
+                .onDescriptionChanged(Description.builder().status(status).databaseInfo(databaseInfo).build());
     }
 
     private void verifyDataSource(DataSourceConfig.Type type, String version) {

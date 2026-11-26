@@ -8,6 +8,6 @@
 
     <projectListeners>
         <listener class="de.php_perfect.intellij.ddev.database.AutoConfigureDataSourceListener"
-                  topic="de.php_perfect.intellij.ddev.DatabaseInfoChangedListener"/>
+                  topic="de.php_perfect.intellij.ddev.DescriptionChangedListener"/>
     </projectListeners>
 </idea-plugin>
