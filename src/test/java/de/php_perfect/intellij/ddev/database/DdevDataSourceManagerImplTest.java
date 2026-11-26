@@ -53,7 +53,8 @@ final class DdevDataSourceManagerImplTest extends BasePlatformTestCase {
         Assertions.assertEquals(1, dataSources.size());
 
         final LocalDataSource dataSource = dataSources.get(0);
-        Mockito.verify(this.dataSourceProvider).updateDataSource(dataSource, CONFIG);
+        Mockito.verify(this.dataSourceProvider).createDataSource(dataSource, CONFIG);
+        Mockito.verify(this.dataSourceProvider, Mockito.never()).updateDataSource(Mockito.any(), Mockito.any());
 
         final IndexEntry indexEntry = ManagedConfigurationIndex.getInstance(this.getProject()).get(DataSourceConfig.class);
         Assertions.assertNotNull(indexEntry);
@@ -70,7 +71,8 @@ final class DdevDataSourceManagerImplTest extends BasePlatformTestCase {
         manager.updateDdevDataSource(CONFIG);
 
         Assertions.assertEquals(1, LocalDataSourceManager.getInstance(this.getProject()).getDataSources().size());
-        Mockito.verify(this.dataSourceProvider, Mockito.times(1)).updateDataSource(Mockito.any(), Mockito.any());
+        Mockito.verify(this.dataSourceProvider, Mockito.times(1)).createDataSource(Mockito.any(), Mockito.any());
+        Mockito.verify(this.dataSourceProvider, Mockito.never()).updateDataSource(Mockito.any(), Mockito.any());
     }
 
     @Test
@@ -101,6 +103,7 @@ final class DdevDataSourceManagerImplTest extends BasePlatformTestCase {
 
         Assertions.assertEquals(List.of(legacyDataSource), localDataSourceManager.getDataSources());
         Mockito.verify(this.dataSourceProvider).updateDataSource(legacyDataSource, CONFIG);
+        Mockito.verify(this.dataSourceProvider, Mockito.never()).createDataSource(Mockito.any(), Mockito.any());
     }
 
     private void flushEventQueue() {

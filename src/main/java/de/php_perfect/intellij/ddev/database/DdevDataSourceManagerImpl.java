@@ -43,8 +43,6 @@ public final class DdevDataSourceManagerImpl implements DdevDataSourceManager {
 
         LOG.debug(String.format("Updating data source configuration %s", dataSourceConfig.name()));
 
-        boolean isNewDataSource = false;
-
         if (localDataSource == null) {
             localDataSource = dataSources.stream()
                     .filter(currentDataSource -> currentDataSource.getName().equals(LEGACY_DATA_SOURCE_NAME))
@@ -52,21 +50,22 @@ public final class DdevDataSourceManagerImpl implements DdevDataSourceManager {
                     .orElse(null);
         }
 
-        if (localDataSource == null) {
+        final boolean isNewDataSource = localDataSource == null;
+        if (isNewDataSource) {
             localDataSource = localDataSourceManager.createEmpty();
             dataSources.add(localDataSource);
-            isNewDataSource = true;
+            DataSourceProvider.getInstance().createDataSource(localDataSource, dataSourceConfig);
+        } else {
+            DataSourceProvider.getInstance().updateDataSource(localDataSource, dataSourceConfig);
         }
 
         final LocalDataSource dataSource = localDataSource;
-        final boolean shouldTriggerIntrospection = isNewDataSource;
-        DataSourceProvider.getInstance().updateDataSource(dataSource, dataSourceConfig);
 
         ApplicationManager.getApplication().invokeLater(() -> {
             localDataSourceManager.fireDataSourceUpdated(dataSource);
 
             // Only trigger introspection for newly created data sources
-            if (shouldTriggerIntrospection) {
+            if (isNewDataSource) {
                 ApplicationManager.getApplication().executeOnPooledThread(() -> {
                     try {
                         // Give the data source a moment to be fully configured

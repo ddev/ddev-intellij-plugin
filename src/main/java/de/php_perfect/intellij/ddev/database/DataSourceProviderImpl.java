@@ -16,21 +16,37 @@ import org.jetbrains.annotations.NotNull;
 import static com.intellij.database.introspection.DBIntrospectionConsts.ALL_NAMESPACES;
 
 public final class DataSourceProviderImpl implements DataSourceProvider {
-    public void updateDataSource(final @NotNull LocalDataSource dataSource, final @NotNull DataSourceConfig dataSourceConfig) {
-        final DatabaseDriver driver = this.getDriverByDatabaseType(dataSourceConfig.type(), dataSourceConfig.version());
-        final String dsn = getDsnByDatabaseType(dataSourceConfig);
-
-        dataSource.setUrlSmart(dsn);
-        dataSource.setDatabaseDriver(driver);
+    @Override
+    public void createDataSource(final @NotNull LocalDataSource dataSource, final @NotNull DataSourceConfig dataSourceConfig) {
+        this.applyConnection(dataSource, dataSourceConfig);
         dataSource.setPasswordStorage(LocalDataSource.Storage.PERSIST);
         dataSource.setName(dataSourceConfig.name());
         dataSource.setComment(dataSourceConfig.description());
-        dataSource.setUsername(dataSourceConfig.username());
         dataSource.setSchemaControl(SchemaControl.AUTOMATIC);
         dataSource.setAutoSynchronize(true);
         dataSource.setCheckOutdated(true);
         dataSource.setSourceLoading(DBIntrospectionOptions.SourceLoading.USER_AND_SYSTEM_SOURCES);
+        applyDefaultIntrospection(dataSource);
+    }
 
+    @Override
+    public void updateDataSource(final @NotNull LocalDataSource dataSource, final @NotNull DataSourceConfig dataSourceConfig) {
+        final Dbms previousDbms = Dbms.forConnection(dataSource);
+        this.applyConnection(dataSource, dataSourceConfig);
+
+        // A scope built for another DBMS no longer matches.
+        if (!previousDbms.equals(Dbms.forConnection(dataSource))) {
+            applyDefaultIntrospection(dataSource);
+        }
+    }
+
+    private void applyConnection(final @NotNull LocalDataSource dataSource, final @NotNull DataSourceConfig dataSourceConfig) {
+        dataSource.setUrlSmart(getDsnByDatabaseType(dataSourceConfig));
+        dataSource.setDatabaseDriver(this.getDriverByDatabaseType(dataSourceConfig.type(), dataSourceConfig.version()));
+        dataSource.setUsername(dataSourceConfig.username());
+    }
+
+    private static void applyDefaultIntrospection(final @NotNull LocalDataSource dataSource) {
         final Dbms dbms = Dbms.forConnection(dataSource);
         final TreePattern treePattern = TreePatternUtils.importPattern(dbms, ALL_NAMESPACES);
         dataSource.setIntrospectionScope(treePattern);
