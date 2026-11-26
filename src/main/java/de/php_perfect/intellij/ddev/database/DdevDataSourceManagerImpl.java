@@ -45,8 +45,7 @@ public final class DdevDataSourceManagerImpl implements DdevDataSourceManager {
                     .orElse(null);
         }
 
-        final boolean isNewDataSource = localDataSource == null;
-        if (isNewDataSource) {
+        if (localDataSource == null) {
             localDataSource = localDataSourceManager.createEmpty();
             dataSources.add(localDataSource);
             DataSourceProvider.getInstance().createDataSource(localDataSource, dataSourceConfig);
